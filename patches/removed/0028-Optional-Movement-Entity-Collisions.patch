@@ -1,0 +1,37 @@
+From 0ae19591ae4e6c235cc0bbb3eaf9c0aaa0eafddf Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 29 Nov 2020 20:42:34 +0000
+Subject: [PATCH] Optional Movement Entity Collisions
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index d4bab384e..5b4437190 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -284,5 +284,11 @@ public class BlossomConfig {
+     private static void MergeSpawnedItems() {
+         mergeSpawnedItems = getBoolean("items.merged-spawned-items", false);
+     }
++    
++    public static boolean movementEntityCollisions;
++    private static void MovementEntityCollisions() {
++        movementEntityCollisions = getBoolean("movement.entity-collisions", true);
++    }
++
+ 
+ }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 7f7594ee4..af41c9fad 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1468,6 +1468,7 @@ public abstract class World implements IBlockAccess {
+         }
+         // Spigot end
+ 
++        if (!me.samsuik.blossom.configuration.BlossomConfig.movementEntityCollisions) return arraylist; // Blossom - Optimise general movement...
+         if (entity instanceof EntityItem) return arraylist; // PaperSpigot - Optimize item movement
+         if (entity instanceof EntityArmorStand) return arraylist; // TacoSpigot - Optimize armor stand movement
+         if (entity instanceof EntityTNTPrimed) return arraylist; // TacoSpigot - Optimize tnt entity movement
+-- 
+2.37.2.windows.2
+

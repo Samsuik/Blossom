@@ -1,0 +1,40 @@
+From b0c4ffc8c0148d195b571f723436255da85cc354 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 18 Jul 2023 20:20:39 +0100
+Subject: [PATCH] Waterproof Redstone
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 1522549ca..be173787b 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -525,4 +525,9 @@ public class BlossomConfig {
+         lavaObsidianGeneration = getBoolean("fluids.lava.create-obsidian", true);
+     }
+ 
++    public static boolean waterProofRedstone;
++    private static void WaterProofRedstone() {
++        waterProofRedstone = getBoolean("fluids.water-proof-redstone", true);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
+index 6d0e5502f..80a583ff1 100644
+--- a/src/main/java/net/minecraft/server/BlockFlowing.java
++++ b/src/main/java/net/minecraft/server/BlockFlowing.java
+@@ -243,6 +243,12 @@ public class BlockFlowing extends BlockFluids {
+     }
+ 
+     private boolean g(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        // Blossom start
++        if (me.samsuik.blossom.configuration.BlossomConfig.waterProofRedstone) {
++            Block block = iblockdata.getBlock();
++            return !(block == Blocks.AIR || block instanceof BlockFluids);
++        }
++        // Blossom end
+         Block block = world.getType(blockposition).getBlock();
+ 
+         return !(block instanceof BlockDoor) && block != Blocks.STANDING_SIGN && block != Blocks.LADDER && block != Blocks.REEDS ? (block.material == Material.PORTAL ? true : block.material.isSolid()) : true;
+-- 
+2.40.0.windows.1
+

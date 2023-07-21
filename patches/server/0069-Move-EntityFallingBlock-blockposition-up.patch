@@ -1,0 +1,32 @@
+From dd93e20fea05e796f4680e678b388adb6557a5d8 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 21 Jun 2023 15:46:57 +0100
+Subject: [PATCH] Move EntityFallingBlock blockposition up
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index 6cd75692f..051e34b7b 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -157,8 +157,8 @@ public class EntityFallingBlock extends Entity {
+             this.motY *= 0.9800000190734863D;
+             this.motZ *= 0.9800000190734863D;
+             if (!this.world.isClientSide) {
+-                blockposition = new BlockPosition(this);
+                 if (this.onGround) {
++                    blockposition = new BlockPosition(this); // Blossom
+                     this.motX *= 0.699999988079071D;
+                     this.motZ *= 0.699999988079071D;
+                     this.motY *= -0.5D;
+@@ -204,7 +204,7 @@ public class EntityFallingBlock extends Entity {
+                             }
+                         }
+                     }
+-                } else if (this.ticksLived > 100 && !this.world.isClientSide && (blockposition.getY() < 1 || blockposition.getY() > 256) || this.ticksLived > 600) {
++                } else if (this.ticksLived > 100 && !this.world.isClientSide && (locY < 1.0 || locY >= 257.0) || this.ticksLived > 600) { // Blossom
+                     if (this.dropItem && this.world.getGameRules().getBoolean("doEntityDrops")) {
+                         this.a(new ItemStack(block, 1, block.getDropData(this.block)), 0.0F);
+                     }
+-- 
+2.40.0.windows.1
+

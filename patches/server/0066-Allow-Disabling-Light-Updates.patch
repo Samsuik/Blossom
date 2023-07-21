@@ -1,0 +1,63 @@
+From 2631a472bc63cadb207f22f7e8dad00f1a12b416 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 19 Jun 2023 19:04:35 +0100
+Subject: [PATCH] Allow Disabling Light Updates
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index ad476841c..cedc33260 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -375,4 +375,11 @@ public class BlossomConfig {
+         leftShootingThreshold = getDouble("tnt.left-shooting-threshold", 80.0);
+     }
+ 
++    public static boolean disableLight;
++    public static boolean ignoreNonPlayerLight;
++    private static void Lighting() {
++        disableLight = getBoolean("player.disable-light", false);
++        ignoreNonPlayerLight = getBoolean("player.ignore-non-player-light-updates", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 448597881..579bf3ce5 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -116,6 +116,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+     public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+     public int autosavePeriod;
+     // CraftBukkit end
++    public static boolean IGNORE_LIGHT_UPDATES = false; // Blossom
+ 
+     public MinecraftServer(OptionSet options, Proxy proxy, File file1) {
+         io.netty.util.ResourceLeakDetector.setEnabled( false ); // Spigot - disable
+@@ -777,11 +778,13 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+         Queue queue = this.j;
+ 
+         // Spigot start
++        IGNORE_LIGHT_UPDATES = false; // Blossom
+         FutureTask<?> entry;
+         int count = this.j.size();
+         while (count-- > 0 && (entry = this.j.poll()) != null) {
+             SystemUtils.a(entry, MinecraftServer.LOGGER);
+          }
++        IGNORE_LIGHT_UPDATES = me.samsuik.blossom.configuration.BlossomConfig.ignoreNonPlayerLight; // Blossom
+         // Spigot end
+         SpigotTimings.minecraftSchedulerTimer.stopTiming(); // Spigot
+ 
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 361a3549f..b6df58466 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -3019,6 +3019,7 @@ public abstract class World implements IBlockAccess {
+      * PaperSpigot - Asynchronous lighting updates
+      */
+     public boolean updateLight(final EnumSkyBlock enumskyblock, final BlockPosition position) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.disableLight || MinecraftServer.IGNORE_LIGHT_UPDATES) return false; // Blossom
+         int x = position.getX();
+         int z = position.getZ();
+         final Chunk chunk = this.getChunkIfLoaded(x >> 4, z >> 4);
+-- 
+2.40.0.windows.1
+

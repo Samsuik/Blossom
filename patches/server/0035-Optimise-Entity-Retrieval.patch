@@ -1,0 +1,452 @@
+From 11d4a05b5ac0ed98b06c053959c59a4b2817606e Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 21 Feb 2021 22:36:38 +0000
+Subject: [PATCH] Optimise Entity Retrieval
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 2a57ffa09..934c3b34f 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -74,6 +74,8 @@ public class Chunk {
+     private int v;
+     private ConcurrentLinkedQueue<BlockPosition> w;
+     protected gnu.trove.map.hash.TObjectIntHashMap<Class> entityCount = new gnu.trove.map.hash.TObjectIntHashMap<Class>(); // Spigot
++    protected it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap<Class<?>, List<Entity>>[] classToEntityListMap = new it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap[16]; // Blossom
++    public List<Entity>[] hardColliding = new me.samsuik.blossom.utils.collections.UnorderedIndexedList[16]; // Blossom
+     // PaperSpigot start - Asynchronous light updates
+     public AtomicInteger pendingLightUpdates = new AtomicInteger();
+     public long lightUpdateTime;
+@@ -166,6 +168,8 @@ public class Chunk {
+ 
+         for (int k = 0; k < this.entitySlices.length; ++k) {
+             this.entitySlices[k] = new org.bukkit.craftbukkit.util.UnsafeList(); // Spigot
++            this.classToEntityListMap[k] = new it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap<>(); // Blossom
++            this.hardColliding[k] = new me.samsuik.blossom.utils.collections.UnorderedIndexedList<>(); // Blossom
+         }
+ 
+         Arrays.fill(this.f, -999);
+@@ -793,6 +797,16 @@ public class Chunk {
+             inventoryEntityCounts[k]++;
+         }
+         // PaperSpigot end
++        // Blossom start
++        Class<?> entityClass = entity.getClass();
++        List<Entity> list = classToEntityListMap[k].get(entityClass);
++        if (list == null)
++            classToEntityListMap[k].put(entityClass, list = Lists.newArrayList());
++        list.add(entity);
++        if (entity.isHardColliding()) {
++            hardColliding[k].add(entity);
++        }
++        // Blossom end
+         // Spigot start - increment creature type count
+         // Keep this synced up with World.a(Class)
+         if (entity instanceof EntityInsentient) {
+@@ -834,6 +848,19 @@ public class Chunk {
+             inventoryEntityCounts[i]--;
+         }
+         // PaperSpigot end
++        // Blossom start
++        Class<?> entityClass = entity.getClass();
++        List<Entity> list = classToEntityListMap[i].get(entityClass);
++        if (list != null) {
++            list.remove(entity);
++        }
++        if (list == null || list.isEmpty()) {
++            classToEntityListMap[i].remove(entityClass);
++        }
++        if (entity.isHardColliding()) {
++            hardColliding[i].remove(entity);
++        }
++        // Blossom end
+         // Spigot start - decrement creature type count
+         // Keep this synced up with World.a(Class)
+         if (entity instanceof EntityInsentient) {
+@@ -1014,6 +1041,102 @@ public class Chunk {
+         this.q = true;
+     }
+ 
++    // Blossom start - collect entities from chunk with a limited amount of look-ups
++    public boolean collectEntitiesLimited(Entity source, AxisAlignedBB axisalignedbb, List<Entity> entities,
++                                           Predicate<? super Entity> by, int limit, int search) {
++        int i = MathHelper.floor((axisalignedbb.b - 2.0D) / 16.0D);
++        int j = MathHelper.floor((axisalignedbb.e + 2.0D) / 16.0D);
++
++        i = MathHelper.clamp(i, 0, this.entitySlices.length - 1);
++        j = MathHelper.clamp(j, 0, this.entitySlices.length - 1);
++
++        for (int k = i; k <= j; ++k) {
++            if (!this.entitySlices[k].isEmpty()) {
++                if (collectEntities(source, axisalignedbb, this.entitySlices[k], entities, by, limit, search)) {
++                    return true;
++                }
++            }
++        }
++
++        return false;
++    }
++
++    private boolean collectEntities(Entity source, AxisAlignedBB axisalignedbb, List<Entity> slice,
++                                    List<Entity> entities, Predicate<? super Entity> by, int limit, int search) {
++        int index = world.random.nextInt(slice.size()); // starting position
++        for (int i = 0; i < slice.size(); ++i) {
++            index = (index + 1) % slice.size(); // Update index
++
++            if (entities.size() >= limit) {
++                return true;
++            } else if (search-- <= 0) {
++                return false;
++            }
++
++            Entity entity = slice.get(index);
++
++            if (entity.getBoundingBox().b(axisalignedbb) && entity != source) {
++                if (by == null || by.apply(entity)) {
++                    entities.add(entity);
++                }
++
++                Entity[] passengers = entity.aB();
++
++                if (passengers != null) {
++                    for (Entity value : passengers) {
++                        if (value != source && value.getBoundingBox().b(axisalignedbb) && (by == null || by.apply(value))) {
++                            entities.add(value);
++                        }
++                    }
++                }
++            }
++        }
++
++        return false;
++    }
++
++    public <T extends Entity> boolean collectEntitiesLimitedByType(Class<? extends T> oclass, AxisAlignedBB axisalignedbb, List<T> entities,
++                                          Predicate<? super T> by, int limit, int search) {
++        int i = MathHelper.floor((axisalignedbb.b - 2.0D) / 16.0D);
++        int j = MathHelper.floor((axisalignedbb.e + 2.0D) / 16.0D);
++
++        i = MathHelper.clamp(i, 0, this.entitySlices.length - 1);
++        j = MathHelper.clamp(j, 0, this.entitySlices.length - 1);
++
++        for (int k = i; k <= j; ++k) {
++            for (it.unimi.dsi.fastutil.objects.Reference2ObjectMap.Entry<Class<?>, List<Entity>> entry : classToEntityListMap[k].reference2ObjectEntrySet()) {
++                if (oclass.isAssignableFrom(entry.getKey()) && collectEntitiesByType(axisalignedbb, entry.getValue(), entities, by, limit, search)) {
++                    return true;
++                }
++            }
++        }
++
++        return false;
++    }
++
++    private <T extends Entity> boolean collectEntitiesByType(AxisAlignedBB axisalignedbb, List<Entity> slice,
++                                    List<T> entities, Predicate<? super T> by, int limit, int search) {
++        int index = world.random.nextInt(slice.size()); // starting position
++        for (int i = 0; i < slice.size(); ++i) {
++            index = (index + 1) % slice.size(); // Update index
++
++            if (entities.size() >= limit || search-- <= 0) {
++                return !entities.isEmpty();
++            }
++
++            Entity entity = slice.get(index);
++
++            if (entity.getBoundingBox().b(axisalignedbb)) {
++                if (by == null || by.apply((T) entity)) {
++                    entities.add((T) entity);
++                }
++            }
++        }
++
++        return false;
++    }
++    // Blossom end
++
+     public void a(Entity entity, AxisAlignedBB axisalignedbb, List<Entity> list, Predicate<? super Entity> predicate) {
+         int i = MathHelper.floor((axisalignedbb.b - 2.0D) / 16.0D);
+         int j = MathHelper.floor((axisalignedbb.e + 2.0D) / 16.0D);
+@@ -1077,14 +1200,22 @@ public class Chunk {
+         // PaperSpigot end
+         for (int k = i; k <= j; ++k) {
+             if (counts != null && counts[k] <= 0) continue; // PaperSpigot - Don't check a chunk if it doesn't have the type we are looking for
+-            Iterator iterator = this.entitySlices[k].iterator(); // Spigot
++            // Blossom start - optimise type specific entity retrieval
++            for (it.unimi.dsi.fastutil.objects.Reference2ObjectMap.Entry<Class<?>, List<Entity>> entry : classToEntityListMap[k].reference2ObjectEntrySet()) {
++                if (oclass.isAssignableFrom(entry.getKey())) {
++                    collectEntitiesOfType(entry.getValue(), axisalignedbb, list, predicate);
++                }
++            }
++        }
++    }
+ 
+-            while (iterator.hasNext()) {
+-                Entity entity = (Entity) iterator.next();
++    private <T extends Entity> void collectEntitiesOfType(List<Entity> entities, AxisAlignedBB axisalignedbb, List<T> list, Predicate<? super T> predicate) {
++        for (int i = 0, entitiesSize = entities.size(); i < entitiesSize; i++) {
++            Entity entity = entities.get(i);
+ 
+-                if (oclass.isInstance(entity) && entity.getBoundingBox().b(axisalignedbb) && (predicate == null || predicate.apply((T) entity))) { // CraftBukkit - fix decompile error // Spigot
+-                    list.add((T) entity); // Fix decompile error
+-                }
++            if (entity.getBoundingBox().b(axisalignedbb) && (predicate == null || predicate.apply((T) entity))) { // CraftBukkit - fix decompile error // Spigot
++                list.add((T) entity); // Fix decompile error
++                // Blossom end
+             }
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 81f67d2b1..e2d649132 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -141,6 +141,45 @@ public abstract class Entity implements ICommandListener {
+     public void inactiveTick() { }
+     // Spigot end
+     public boolean isCannoningEntity = this instanceof EntityTNTPrimed || this instanceof EntityFallingBlock;
++    // Blossom start
++    public boolean hasMoved = false;
++    public List<Entity> hardColliding = new java.util.ArrayList<>(0);
++    public final com.google.common.base.Predicate<Entity> IS_COLLIDABLE = (ent) -> {
++        return ent != this && !ent.getBoundingBox().b(getBoundingBox().shrink(0.01, 0.01, 0.01));
++    };
++
++    public boolean hardCollideCached(AxisAlignedBB bounds, List<AxisAlignedBB> shapes) {
++        int size = shapes.size();
++        for (Entity ent : hardColliding) {
++            AxisAlignedBB bb = ent.getHardCollision(this, bounds);
++            if (bb != null) shapes.add(bb);
++        }
++        return size + hardColliding.size() == shapes.size();
++    }
++
++    public AxisAlignedBB getHardCollision(Entity cause, AxisAlignedBB bounds) {
++        if (!IS_COLLIDABLE.apply(cause))
++            return null;
++        AxisAlignedBB bb = S();
++        if (bb != null && bb.b(bounds)) {
++            return bb;
++        }
++
++        bb = cause.j(this);
++        if (bb != null && bb.b(bounds)) {
++            return bb;
++        }
++        return null;
++    }
++
++    public boolean isHardColliding() {
++        return false;
++    }
++
++    public boolean shouldHardCollide() {
++        return true; // possibly?
++    }
++    // Blossom end
+ 
+     public int getId() {
+         return this.id;
+@@ -891,6 +930,7 @@ public abstract class Entity implements ICommandListener {
+         this.locX = (this.getBoundingBox().a + this.getBoundingBox().d) / 2.0D;
+         this.locY = this.getBoundingBox().b;
+         this.locZ = (this.getBoundingBox().c + this.getBoundingBox().f) / 2.0D;
++        this.hasMoved = locX != lastX || locY != lastY || locZ != lastZ; // Blossom
+     }
+ 
+     protected String P() {
+diff --git a/src/main/java/net/minecraft/server/EntityBoat.java b/src/main/java/net/minecraft/server/EntityBoat.java
+index 0e6f8c035..b6bb13339 100644
+--- a/src/main/java/net/minecraft/server/EntityBoat.java
++++ b/src/main/java/net/minecraft/server/EntityBoat.java
+@@ -43,6 +43,12 @@ public class EntityBoat extends Entity {
+         super.collide(entity);
+     }
+     // CraftBukkit end
++    // Blossom start
++    @Override
++    public boolean isHardColliding() {
++        return true;
++    }
++    // Blossom end
+ 
+     public EntityBoat(World world) {
+         super(world);
+diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
+index 010bb9063..e4b863499 100644
+--- a/src/main/java/net/minecraft/server/EntityHuman.java
++++ b/src/main/java/net/minecraft/server/EntityHuman.java
+@@ -431,7 +431,11 @@ public abstract class EntityHuman extends EntityLiving {
+                 axisalignedbb = this.getBoundingBox().grow(1.0D, 0.5D, 1.0D);
+             }
+ 
+-            List list = this.world.getEntities(this, axisalignedbb);
++            // Blossom start
++            int apparentLimit = Math.max(world.spigotConfig.maxCollisionsPerEntity, 1);
++            int search = Math.max(apparentLimit * 2, 16);
++            List list = this.world.getEntitiesLimited(this, axisalignedbb, IEntitySelector.d, apparentLimit, search);
++            // Blossom end
+ 
+             if (this.ae()) { // Spigot: Add this.ae() condition (second !this.isDead near bottom of EntityLiving)
+             for (int i = 0; i < list.size(); ++i) {
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 49402ca7f..8cc0cef0b 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1693,15 +1693,11 @@ public abstract class EntityLiving extends Entity {
+     protected void doTick() {}
+ 
+     protected void bL() {
+-        List list = this.world.a((Entity) this, this.getBoundingBox().grow(0.20000000298023224D, 0.0D, 0.20000000298023224D), Predicates.and(IEntitySelector.d, new Predicate() {
+-            public boolean a(Entity entity) {
+-                return entity.ae();
+-            }
+-
+-            public boolean apply(Object object) {
+-                return this.a((Entity) object);
+-            }
+-        }));
++        // Blossom start - optimise push entities
++        int limit = world.spigotConfig.maxCollisionsPerEntity;
++        List list = this.world.getEntitiesLimited(this, this.getBoundingBox().grow(0.20000000298023224D, 0.0D, 0.20000000298023224D),
++                input -> IEntitySelector.d.apply(input) && input != null && input.ae(), limit, limit * limit);
++        // Blossom end
+ 
+         if (this.ad() && !list.isEmpty()) { // Spigot: Add this.ad() condition
+             numCollisions -= world.spigotConfig.maxCollisionsPerEntity; // Spigot
+diff --git a/src/main/java/net/minecraft/server/EntityMinecartAbstract.java b/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
+index 4bf790cdf..98864383a 100644
+--- a/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
+@@ -35,6 +35,19 @@ public abstract class EntityMinecartAbstract extends Entity implements INamableT
+     private double flyingZ = 0.95;
+     public double maxSpeed = 0.4D;
+     // CraftBukkit end
++    // Blossom start
++    @Override
++    public boolean isHardColliding() {
++        // todo: figure out how to only add derailed minecarts to the hardcolliding list
++        return true;
++    }
++
++    @Override
++    public boolean shouldHardCollide() {
++        IBlockData iblockdata = this.world.getType(blockposition);
++        return !BlockMinecartTrackAbstract.d(iblockdata);
++    }
++    // Blossom end
+ 
+     public EntityMinecartAbstract(World world) {
+         super(world);
+@@ -191,7 +204,7 @@ public abstract class EntityMinecartAbstract extends Entity implements INamableT
+         float prevYaw = this.yaw;
+         float prevPitch = this.pitch;
+         // CraftBukkit end
+-        
++
+         if (this.getType() > 0) {
+             this.j(this.getType() - 1);
+         }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 5ba37c4f4..3a4a074ed 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1460,25 +1460,32 @@ public abstract class World implements IBlockAccess {
+         if (entity instanceof EntityTNTPrimed) return arraylist; // TacoSpigot - Optimize tnt entity movement
+         if (entity instanceof EntityFallingBlock) return arraylist; // TacoSpigot - Optimize falling block movement
+ 
+-        double d0 = 0.25D;
+-        List list = this.getEntities(entity, axisalignedbb.grow(d0, d0, d0));
++        // Blossom start - optimise hard colliding movement
++        if (!entity.shouldHardCollide()) return arraylist;
++        if (entity.hasMoved || !entity.hardCollideCached(axisalignedbb, arraylist)) {
++            collectHardCollisions(entity, axisalignedbb, arraylist);
++        }
+ 
+-        for (int j2 = 0; j2 < list.size(); ++j2) {
+-            if (entity.passenger != list && entity.vehicle != list) {
+-                AxisAlignedBB axisalignedbb1 = ((Entity) list.get(j2)).S();
++        return arraylist;
++    }
+ 
+-                if (axisalignedbb1 != null && axisalignedbb1.b(axisalignedbb)) {
+-                    arraylist.add(axisalignedbb1);
+-                }
++    private void collectHardCollisions(Entity entity, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> shapes) {
++        Chunk chunk = getChunkIfLoaded(entity.getChunkX(), entity.getChunkZ());
++        if (chunk == null) return;
++        AxisAlignedBB grownBB = axisalignedbb.grow(0.25, 0.25, 0.25);
++        entity.hardColliding.clear();
+ 
+-                axisalignedbb1 = entity.j((Entity) list.get(j2));
+-                if (axisalignedbb1 != null && axisalignedbb1.b(axisalignedbb)) {
+-                    arraylist.add(axisalignedbb1);
+-                }
++        int minChunkY = Math.max(MathHelper.floor(grownBB.b) >> 4, 0);
++        int maxChunkY = Math.min(MathHelper.floor(grownBB.e) >> 4, 15);
++        for (int chunkY = minChunkY; chunkY <= maxChunkY; ++chunkY) {
++            for (Entity ent : chunk.hardColliding[chunkY]) {
++                AxisAlignedBB bb = ent.getHardCollision(entity, axisalignedbb);
++                if (bb == null) continue;
++                shapes.add(bb);
++                entity.hardColliding.add(ent);
+             }
+         }
+-
+-        return arraylist;
++        // Blossom end
+     }
+ 
+     public boolean a(WorldBorder worldborder, Entity entity) {
+@@ -2842,6 +2849,49 @@ public abstract class World implements IBlockAccess {
+         return null;
+     }
+ 
++    // Blossom start - provide limited getEntities
++    public List<Entity> getEntitiesLimited(Entity entity, AxisAlignedBB axisalignedbb, Predicate<? super Entity> by, int amount, int search) {
++        List<Entity> entities = new ArrayList<>();
++
++        int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
++        int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
++        int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
++        int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
++
++        for (int i1 = i; i1 <= j; ++i1) {
++            for (int j1 = k; j1 <= l; ++j1) {
++                if (this.isChunkLoaded(i1, j1, true)) {
++                    if (this.getChunkAt(i1, j1).collectEntitiesLimited(entity, axisalignedbb, entities, by, amount, search)) {
++                        return entities;
++                    }
++                }
++            }
++        }
++
++        return entities;
++    }
++
++    public <T extends Entity> List<T> getEntitiesLimitedByType(Class<? extends T> oclass, AxisAlignedBB axisalignedbb, Predicate<? super T> by, int amount, int search) {
++        List<T> entities = new ArrayList<>();
++
++        int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
++        int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
++        int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
++        int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
++
++        for (int i1 = i; i1 <= j; ++i1) {
++            for (int j1 = k; j1 <= l; ++j1) {
++                if (this.isChunkLoaded(i1, j1, true)) {
++                    if (this.getChunkAt(i1, j1).collectEntitiesLimitedByType(oclass, axisalignedbb, entities, by, amount, search)) {
++                        return entities;
++                    }
++                }
++            }
++        }
++
++        return entities;
++    }
++    // Blossom end
+     public List<Entity> getEntities(Entity entity, AxisAlignedBB axisalignedbb) {
+         return this.a(entity, axisalignedbb, IEntitySelector.d);
+     }
+-- 
+2.40.0.windows.1
+

@@ -1,0 +1,60 @@
+From ce2c1ab465c2a937a2899cfe8802d18cbc1d2b7e Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 23 May 2023 23:20:49 +0100
+Subject: [PATCH] Use faster entity storage collections
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 95ec20b9d..d10970073 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -168,7 +168,7 @@ public class Chunk {
+         this.heightMap = new int[256];
+ 
+         for (int k = 0; k < this.entitySlices.length; ++k) {
+-            this.entitySlices[k] = new org.bukkit.craftbukkit.util.UnsafeList(); // Spigot
++            this.entitySlices[k] = new me.samsuik.blossom.utils.collections.UnorderedIndexedList<>(); // Blossom
+             this.classToEntityListMap[k] = new it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap<>(); // Blossom
+             this.hardColliding[k] = new me.samsuik.blossom.utils.collections.UnorderedIndexedList<>(); // Blossom
+         }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index b6c0b7731..d4b0f2169 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -33,32 +33,7 @@ public abstract class World implements IBlockAccess {
+ 
+     private int a = 63;
+     protected boolean e;
+-    // Spigot start - guard entity list from removals
+-    public final List<Entity> entityList = new java.util.ArrayList<Entity>()
+-    {
+-        @Override
+-        public Entity remove(int index)
+-        {
+-            guard();
+-            return super.remove( index );
+-        }
+-
+-        @Override
+-        public boolean remove(Object o)
+-        {
+-            guard();
+-            return super.remove( o );
+-        }
+-
+-        private void guard()
+-        {
+-            if ( guardEntityList )
+-            {
+-                throw new java.util.ConcurrentModificationException();
+-            }
+-        }
+-    };
+-    // Spigot end
++    public final List<Entity> entityList = new me.samsuik.blossom.utils.collections.OrderedComparatorList<>(Comparator.comparingInt(Entity::getId)); // Blossom
+     protected final Set<Entity> g = Sets.newHashSet(); // Paper
+     //public final List<TileEntity> h = Lists.newArrayList(); // PaperSpigot - Remove unused list
+     public final List<TileEntity> tileEntityList = Lists.newArrayList();
+-- 
+2.40.0.windows.1
+

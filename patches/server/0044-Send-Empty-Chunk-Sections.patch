@@ -1,0 +1,80 @@
+From 063f7041b88e2a78ad77ebd4e8ef2a14e8ff7c53 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 5 Jul 2022 16:32:15 +0100
+Subject: [PATCH] Send Empty Chunk Sections
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index d957fc334..3d937a15b 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -298,4 +298,9 @@ public class BlossomConfig {
+         reduceEntityChecks = getBoolean("mobs.reduce-entity-checks", true);
+     }
+ 
++    public static boolean sendEmptyChunkSections;
++    private static void SendEmptyChunkSections() {
++        sendEmptyChunkSections = getBoolean("player.send-empty-chunk-sections", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 2fbe39515..95ec20b9d 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -180,6 +180,14 @@ public class Chunk {
+         if (!(this instanceof EmptyChunk)) {
+             this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
+         }
++
++        // Blossom start - send empty chunk sections
++        if (me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
++            for (int k = 0; k < this.sections.length; ++k) {
++                this.sections[k] = new ChunkSection(k << 4, !world.worldProvider.o());
++            }
++        }
++        // Blossom end
+     }
+ 
+     public org.bukkit.Chunk bukkitChunk;
+@@ -1417,9 +1425,16 @@ public class Chunk {
+             Chunk.c.warn("Could not set level chunk sections, array length is " + achunksection.length + " instead of " + this.sections.length);
+         } else {
+             for (int i = 0; i < this.sections.length; ++i) {
+-                this.sections[i] = achunksection[i];
+-            }
++                // Blossom start - send empty chunk sections
++                ChunkSection section = achunksection[i];
+ 
++                if (section == null && me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
++                    section = new ChunkSection(i << 4, !world.worldProvider.o());
++                }
++
++                this.sections[i] = section;
++                // Blossom end
++            }
+         }
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+index bfda7fb0e..3f5e89f51 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+@@ -83,6 +83,14 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+         for (j = 0; j < achunksection.length; ++j) {
+             ChunkSection chunksection = achunksection[j];
+ 
++            // Blossom start - fun
++            if (chunksection != null && flag && me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
++                packetplayoutmapchunk_chunkmap.b |= 1 << j;
++                arraylist.add(chunksection);
++                continue;
++            }
++            // Blossom end
++
+             if (chunksection != null && (!flag || !chunksection.a()) && (i & 1 << j) != 0) {
+                 packetplayoutmapchunk_chunkmap.b |= 1 << j;
+                 arraylist.add(chunksection);
+-- 
+2.40.0.windows.1
+

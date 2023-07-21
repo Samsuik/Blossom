@@ -1,0 +1,48 @@
+From 28abd597363ba6751c2cb213620868699a84c1a7 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 16 Jun 2023 20:33:09 +0100
+Subject: [PATCH] Activation Range Delay
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 25a60efb5..ab9adf86f 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -352,4 +352,9 @@ public class BlossomConfig {
+         mergeEntitiesOnSpawn = getBoolean("tnt.merging.on-spawn", true);
+     }
+ 
++    public static int activationRangeDelay;
++    private static void ActivationRange() {
++        activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 78d22fc2b..176f63885 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1646,6 +1646,7 @@ public abstract class World implements IBlockAccess {
+         timings.entityRemoval.stopTiming(); // Spigot
+         this.methodProfiler.c("regular");
+ 
++        if (MinecraftServer.currentTick % me.samsuik.blossom.configuration.BlossomConfig.activationRangeDelay == 0) // Blossom
+         org.spigotmc.ActivationRange.activateEntities(this); // Spigot
+         timings.entityTick.startTiming(); // Spigot
+         guardEntityList = true; // Spigot
+diff --git a/src/main/java/org/spigotmc/ActivationRange.java b/src/main/java/org/spigotmc/ActivationRange.java
+index d3767d2a8..64532b4d8 100644
+--- a/src/main/java/org/spigotmc/ActivationRange.java
++++ b/src/main/java/org/spigotmc/ActivationRange.java
+@@ -268,7 +268,7 @@ public class ActivationRange
+                 if ( checkEntityImmunities( entity ) )
+                 {
+                     // Triggered some sort of immunity, give 20 full ticks before we check again.
+-                    entity.activatedTick = MinecraftServer.currentTick + 20;
++                    entity.activatedTick = MinecraftServer.currentTick + 20 + me.samsuik.blossom.configuration.BlossomConfig.activationRangeDelay; // Blossom
+                 }
+                 isActive = true;
+             }
+-- 
+2.40.0.windows.1
+

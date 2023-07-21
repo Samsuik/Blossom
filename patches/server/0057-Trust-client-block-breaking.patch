@@ -1,0 +1,74 @@
+From a0b4f368d36fb8bd61745aa9e1dd2e68064a4c42 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 11 Jun 2023 16:55:53 +0100
+Subject: [PATCH] Trust client block breaking
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 220ec205e..2023e0028 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -79,6 +79,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         return this.collidesWithEntities && super.ae(); // (second !this.isDead near bottom of EntityLiving)
+     }
+     // Spigot end
++    public int movementTick = 0; // Blossom
+ 
+     public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
+         super(worldserver, gameprofile);
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 0ddaa6860..1de413e0b 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -447,6 +447,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+             this.h = true;
+             if (!this.player.viewingCredits) {
++                this.player.movementTick++; // Blossom
+                 double d0 = this.player.locX;
+                 double d1 = this.player.locY;
+                 double d2 = this.player.locZ;
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index 404641a2f..27d09b102 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -15,6 +15,8 @@ public class PlayerInteractManager {
+     private WorldSettings.EnumGamemode gamemode;
+     private boolean d;
+     private int lastDigTick;
++    private int lastPlayerDigTick; // Blossom
++    private long startBreaking; // Blossom
+     private BlockPosition f;
+     private int currentTick;
+     private boolean h;
+@@ -144,6 +146,8 @@ public class PlayerInteractManager {
+ 
+             // this.world.douseFire((EntityHuman) null, blockposition, enumdirection); // CraftBukkit - Moved down
+             this.lastDigTick = this.currentTick;
++            this.lastPlayerDigTick = this.player.movementTick; // Blossom
++            this.startBreaking = System.currentTimeMillis(); // Blossom
+             float f = 1.0F;
+ 
+             // CraftBukkit start - Swings at air do *NOT* exist.
+@@ -208,9 +212,16 @@ public class PlayerInteractManager {
+             Block block = this.world.getType(blockposition).getBlock();
+ 
+             if (block.getMaterial() != Material.AIR) {
+-                float f = block.getDamage(this.player, this.player.world, blockposition) * (float) (i + 1);
++                // Blossom start - trust based block breaking
++                long timeInTicks = (System.currentTimeMillis() - this.startBreaking) / 50L;
++                int playerDigTicks = this.player.movementTick - this.lastPlayerDigTick;
++                float damagePerTick = block.getDamage(this.player, this.player.world, blockposition);
+ 
+-                if (f >= 0.7F) {
++                float requiredTicks = 1f / damagePerTick;
++                float compensation = 20f / Math.min((float) MinecraftServer.getServer().tps1.getAverage(), 20f) - 1f;
++
++                if (timeInTicks + 1 >= requiredTicks - compensation || playerDigTicks >= requiredTicks) {
++                    // Blossom end
+                     this.d = false;
+                     this.world.c(this.player.getId(), blockposition, -1);
+                     this.breakBlock(blockposition);
+-- 
+2.40.0.windows.1
+

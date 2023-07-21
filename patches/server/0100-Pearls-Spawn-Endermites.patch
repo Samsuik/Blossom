@@ -1,0 +1,37 @@
+From 413757039884eb563e730c7de30159937e7c1f00 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 14 Jul 2023 21:56:38 +0100
+Subject: [PATCH] Pearls Spawn Endermites
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 577cc4ab4..a8b7c7665 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -478,5 +478,10 @@ public class BlossomConfig {
+     private static void PearlInsideBlocks() {
+         pearlInsideBlocks = getBoolean("projectiles.pearl.teleport-inside-blocks", false);
+     }
++
++    public static boolean pearlSpawnEndermite;
++    private static void PearlSpawnEndermite() {
++        pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
++    }
+     
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityEnderPearl.java b/src/main/java/net/minecraft/server/EntityEnderPearl.java
+index 714908b8e..a2ae3d59e 100644
+--- a/src/main/java/net/minecraft/server/EntityEnderPearl.java
++++ b/src/main/java/net/minecraft/server/EntityEnderPearl.java
+@@ -84,7 +84,7 @@ public class EntityEnderPearl extends EntityProjectile {
+                     Bukkit.getPluginManager().callEvent(teleEvent);
+ 
+                     if (!teleEvent.isCancelled() && !entityplayer.playerConnection.isDisconnected()) {
+-                        if (this.random.nextFloat() < 0.05F && this.world.getGameRules().getBoolean("doMobSpawning")) {
++                        if (me.samsuik.blossom.configuration.BlossomConfig.pearlSpawnEndermite && this.random.nextFloat() < 0.05F && this.world.getGameRules().getBoolean("doMobSpawning")) { // Blossom
+                             EntityEndermite entityendermite = new EntityEndermite(this.world);
+ 
+                             entityendermite.a(true);
+-- 
+2.40.0.windows.1
+

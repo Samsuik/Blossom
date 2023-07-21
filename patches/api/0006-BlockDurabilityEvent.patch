@@ -1,0 +1,57 @@
+From 157bfcd0ca86de4be8e16fadcece8b4e9d919e16 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 8 Jul 2023 21:50:01 +0100
+Subject: [PATCH] BlockDurabilityEvent
+
+
+diff --git a/src/main/java/me/samsuik/blossom/events/durability/BlockDurabilityEvent.java b/src/main/java/me/samsuik/blossom/events/durability/BlockDurabilityEvent.java
+new file mode 100644
+index 00000000..f1ea64cb
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/events/durability/BlockDurabilityEvent.java
+@@ -0,0 +1,42 @@
++package me.samsuik.blossom.events.durability;
++
++import org.bukkit.block.Block;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.block.BlockEvent;
++
++public class BlockDurabilityEvent extends BlockEvent {
++    private static final HandlerList handlers = new HandlerList();
++    private int durability;
++    private float resistance;
++
++    public BlockDurabilityEvent(Block theBlock, int durability, float resistance) {
++        super(theBlock);
++        this.durability = durability;
++        this.resistance = resistance;
++    }
++
++    public void setDurability(int durability) {
++        this.durability = durability;
++    }
++
++    public int getDurability() {
++        return durability;
++    }
++
++    public void setResistance(float resistance) {
++        this.resistance = resistance;
++    }
++
++    public float getResistance() {
++        return resistance;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+-- 
+2.40.0.windows.1
+

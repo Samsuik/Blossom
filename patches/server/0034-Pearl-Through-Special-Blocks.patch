@@ -1,0 +1,55 @@
+From 9a626c0304607ba31cce91dbee3b45626937ab91 Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 16 Dec 2020 22:10:37 +0000
+Subject: [PATCH] Pearl Through Special Blocks
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index d218b6a19..5fd40bb48 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -264,4 +264,13 @@ public class BlossomConfig {
+         smoothPotting = getBoolean("projectiles.potion.smooth", true);
+     }
+ 
++    public static boolean pearlThroughGates;
++    public static boolean pearlThroughString;
++    public static boolean pearlThroughCobwebs;
++    private static void PearlThrough() {
++        pearlThroughGates = getBoolean("projectiles.pearl.through-fence-gates", true);
++        pearlThroughString = getBoolean("projectiles.pearl.through-string", false);
++        pearlThroughCobwebs = getBoolean("projectiles.pearl.through-cobwebs", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityProjectile.java b/src/main/java/net/minecraft/server/EntityProjectile.java
+index b11a7f83a..6cd060831 100644
+--- a/src/main/java/net/minecraft/server/EntityProjectile.java
++++ b/src/main/java/net/minecraft/server/EntityProjectile.java
+@@ -165,7 +165,22 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+             if (movingobjectposition.type == MovingObjectPosition.EnumMovingObjectType.BLOCK && this.world.getType(movingobjectposition.a()).getBlock() == Blocks.PORTAL) {
+                 this.d(movingobjectposition.a());
+             } else {
++                // Blossom start
++                boolean hit = true;
++                if (movingobjectposition.type == MovingObjectPosition.EnumMovingObjectType.BLOCK) {
++                    IBlockData iblockdata = this.world.getType(movingobjectposition.a());
++                    Block block = iblockdata.getBlock();
++
++                    if (block instanceof BlockFenceGate && me.samsuik.blossom.configuration.BlossomConfig.pearlThroughGates && iblockdata.get(BlockFenceGate.OPEN)
++                        || block instanceof BlockTripwire && me.samsuik.blossom.configuration.BlossomConfig.pearlThroughString
++                        || block == Blocks.WEB && me.samsuik.blossom.configuration.BlossomConfig.pearlThroughCobwebs) {
++                        hit = false;
++                    }
++                }
++                if (hit) {
+                 this.a(movingobjectposition);
++                }
++                // Blossom end
+                 // CraftBukkit start
+                 if (this.dead) {
+                     org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this);
+-- 
+2.40.0.windows.1
+

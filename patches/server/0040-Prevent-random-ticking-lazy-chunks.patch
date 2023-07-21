@@ -1,0 +1,25 @@
+From cfd24daa89a5bb8ceaa7c6a35bb673c1918492a0 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 28 Jun 2022 23:39:35 +0100
+Subject: [PATCH] Prevent random ticking lazy chunks
+
+
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index e5d821625..bfd0ff5a7 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -415,6 +415,11 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 this.methodProfiler.a("getChunk");
+                 Chunk chunk = this.getChunkAt(chunkX, chunkZ);
+                 // CraftBukkit end
++                // Blossom start - don't random tick in lazy chunks, this could cause chunk loads
++                if (!chunk.areNeighborsLoaded(1)) {
++                    continue;
++                }
++                // Blossom end
+ 
+                 this.a(k, l, chunk);
+                 this.methodProfiler.c("tickChunk");
+-- 
+2.40.0.windows.1
+

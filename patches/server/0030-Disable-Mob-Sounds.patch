@@ -1,0 +1,75 @@
+From c74af22f11861a5598c70f68b1d5eea37a3c0c28 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 29 Oct 2020 21:09:34 +0000
+Subject: [PATCH] Disable Mob Sounds
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index a7f0e7291..4c0c0eb8c 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -243,4 +243,11 @@ public class BlossomConfig {
+         requirePlayers = getBoolean("spawners.nearby.require-players", true);
+     }
+ 
++    public static boolean footstepSounds;
++    public static boolean silenceSounds;
++    private static void Sounds() {
++        footstepSounds = getBoolean("mobs.sounds.footsteps", true);
++        silenceSounds = getBoolean("mobs.sounds.silenced", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 0cda9a608..81f67d2b1 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -832,7 +832,11 @@ public abstract class Entity implements ICommandListener {
+                         this.makeSound(this.P(), f, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+                     }
+ 
++                    // Blossom start - Disable footstep sounds
++                    if (me.samsuik.blossom.configuration.BlossomConfig.footstepSounds) {
+                     this.a(blockposition, block);
++                    }
++                    // Blossom end
+                     block.a(this.world, blockposition, this); // CraftBukkit moved from above
+                 }
+             }
+@@ -940,7 +944,7 @@ public abstract class Entity implements ICommandListener {
+     }
+ 
+     public boolean R() {
+-        return this.datawatcher.getByte(4) == 1;
++        return !me.samsuik.blossom.configuration.BlossomConfig.silenceSounds && this.datawatcher.getByte(4) == 1; // Blossom
+     }
+ 
+     public void b(boolean flag) {
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index a72956075..49402ca7f 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -155,7 +155,7 @@ public abstract class EntityLiving extends Entity {
+                 // CraftBukkit start - visiblity api
+                 if (this instanceof EntityPlayer) {
+                     ((WorldServer) this.world).sendParticles((EntityPlayer) this, EnumParticle.BLOCK_DUST, false, this.locX, this.locY, this.locZ, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D, new int[] { Block.getCombinedId(iblockdata)});
+-                } else {
++                } else if (!me.samsuik.blossom.configuration.BlossomConfig.silenceSounds) { // Blossom
+                     ((WorldServer) this.world).a(EnumParticle.BLOCK_DUST, this.locX, this.locY, this.locZ, i, 0.0D, 0.0D, 0.0D, 0.15000000596046448D, new int[] { Block.getCombinedId(iblockdata)});
+                 }
+                 // CraftBukkit end
+@@ -966,7 +966,11 @@ public abstract class EntityLiving extends Entity {
+             if (block.getMaterial() != Material.AIR) {
+                 Block.StepSound block_stepsound = block.stepSound;
+ 
++                // Blossom start - Disable footstep sounds
++                if (me.samsuik.blossom.configuration.BlossomConfig.footstepSounds) {
+                 this.makeSound(block_stepsound.getStepSound(), block_stepsound.getVolume1() * 0.5F, block_stepsound.getVolume2() * 0.75F);
++                }
++                // Blossom end
+             }
+         }
+ 
+-- 
+2.40.0.windows.1
+

@@ -1,0 +1,265 @@
+From a25d963d5faded1fc882bf253f28bf2b55aa6eeb Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 6 Jul 2022 16:34:42 +0100
+Subject: [PATCH] Rewritten Data Watcher
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 3d937a15b..a9051bb82 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -303,4 +303,9 @@ public class BlossomConfig {
+         sendEmptyChunkSections = getBoolean("player.send-empty-chunk-sections", false);
+     }
+ 
++    public static boolean rewrittenDataWatcher;
++    private static void RewrittenDataWatcher() {
++        rewrittenDataWatcher = getBoolean("mobs.rewritten-data-watcher", true);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/utils/BlossomDataWatcher.java b/src/main/java/me/samsuik/blossom/utils/BlossomDataWatcher.java
+new file mode 100644
+index 000000000..d7326d461
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/utils/BlossomDataWatcher.java
+@@ -0,0 +1,188 @@
++package me.samsuik.blossom.utils;
++
++import net.minecraft.server.DataWatcher;
++import net.minecraft.server.Entity;
++import net.minecraft.server.ItemStack;
++import net.minecraft.server.PacketDataSerializer;
++import net.minecraft.server.Vector3f;
++import org.apache.commons.lang3.ObjectUtils;
++
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.Arrays;
++import java.util.List;
++
++public class BlossomDataWatcher extends DataWatcher {
++
++    private WatchableObject[] storage = new WatchableObject[0];
++    private boolean isDirty = false;
++
++    public BlossomDataWatcher(Entity entity) {
++        super(entity);
++    }
++
++    @Override
++    public <T> void a(int i, T t0) {
++        // type checking is broken in tacospigot, so it shouldn't be required here
++        // They switched to using fastutil collections which return 0 as a default
++        // but the condition for checking invalid types is expecting it to be -1.
++        if (i > 31)
++            throw new IllegalArgumentException("Data value id is too big with " + i + "! (Max is " + 31 + ")");
++        if (requiresExpansion(i))
++            expandStorage(i);
++        if (storage[i] != null)
++            throw new IllegalArgumentException("Duplicate id value for " + i + "!");
++        int type = classToId.getInt(t0.getClass());
++        storage[i] = new WatchableObject(type, i, t0); // Spigot
++    }
++
++    @Override
++    public void add(int i, int j) {
++        if (requiresExpansion(i))
++            expandStorage(i);
++        storage[i] = new WatchableObject(j, i, null);
++    }
++
++    @Override
++    public byte getByte(int i) {
++        return (Byte) this.storage[i].b();
++    }
++
++    @Override
++    public short getShort(int i) {
++        return (Short) this.storage[i].b();
++    }
++
++    @Override
++    public int getInt(int i) {
++        return (Integer) this.storage[i].b();
++    }
++
++    @Override
++    public float getFloat(int i) {
++        return (Float) this.storage[i].b();
++    }
++
++    @Override
++    public String getString(int i) {
++        return (String) this.storage[i].b();
++    }
++
++    @Override
++    public ItemStack getItemStack(int i) {
++        return (ItemStack) this.storage[i].b();
++    }
++
++    @Override
++    public Vector3f h(int i) {
++        return (Vector3f) this.storage[i].b();
++    }
++
++    @Override
++    public <T> void watch(int i, T t0) {
++        WatchableObject object = this.storage[i];
++
++        if (ObjectUtils.notEqual(t0, object.b())) {
++            object.a(t0);
++            this.getEntity().i(i);
++            object.a(true);
++            this.isDirty = true;
++        }
++    }
++
++    @Override
++    public void update(int i) {
++        this.storage[i].a(true);
++        this.isDirty = true;
++    }
++
++    @Override
++    public boolean a() {
++        return this.isDirty;
++    }
++
++    @Override
++    public void e() {
++        this.isDirty = false;
++    }
++
++    @Override
++    public boolean d() {
++        return storage.length == 0;
++    }
++
++    public List<WatchableObject> b() {
++        if (!this.isDirty) {
++            return null;
++        }
++
++        List<WatchableObject> list = null;
++
++        for (WatchableObject object : storage) {
++            if (object == null || !object.d()) continue;
++
++            if (list == null) {
++                list = new ArrayList<>(0);
++            }
++
++            object.a(false);
++
++            // Spigot start - copy ItemStacks to prevent ConcurrentModificationExceptions
++            if (object.b() instanceof ItemStack) {
++                object = new WatchableObject(
++                        object.c(),
++                        object.a(),
++                        ((ItemStack) object.b()).cloneItemStack()
++                );
++            }
++            // Spigot end
++
++            list.add(object);
++        }
++
++        this.isDirty = false;
++        return list;
++    }
++
++    @Override
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        for (WatchableObject object : storage) {
++            if (object == null) continue;
++            writeObjectToSerializer(packetdataserializer, object);
++        }
++
++        packetdataserializer.writeByte(127);
++    }
++
++    @Override
++    public List<WatchableObject> c() {
++        List<WatchableObject> objects = new ArrayList<>(storage.length);
++
++        for (WatchableObject object : storage) {
++            if (object == null) continue;
++
++            // Spigot start - copy ItemStacks to prevent ConcurrentModificationExceptions
++            if (object.b() instanceof ItemStack) {
++                object = new WatchableObject(
++                        object.c(),
++                        object.a(),
++                        ((ItemStack) object.b()).cloneItemStack()
++                );
++            }
++            // Spigot end
++
++            objects.add(object);
++        }
++
++        return objects;
++    }
++
++    private boolean requiresExpansion(int to) {
++        return storage.length <= to;
++    }
++
++    private void expandStorage(int to) {
++        storage = Arrays.copyOf(storage, to + 1);
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/DataWatcher.java b/src/main/java/net/minecraft/server/DataWatcher.java
+index 1fbbfaaed..b0d0667a9 100644
+--- a/src/main/java/net/minecraft/server/DataWatcher.java
++++ b/src/main/java/net/minecraft/server/DataWatcher.java
+@@ -20,11 +20,11 @@ import it.unimi.dsi.fastutil.ints.IntIterator;
+ 
+ public class DataWatcher {
+ 
+-    private final Entity a;
++    private final Entity a; public Entity getEntity() { return a; }
+     private boolean b = true;
+     // Spigot Start
+     // TacoSpigot start - use fastutil instead of trove
+-    private static final Object2IntMap<Class<?>> classToId = new Object2IntOpenHashMap(10, 0.5f);
++    protected static final Object2IntMap<Class<?>> classToId = new Object2IntOpenHashMap(10, 0.5f); // Blossom - private -> protectd
+     private final Int2ObjectMap dataValues = new Int2ObjectOpenHashMap(10, 0.5f);
+     // These exist as an attempt at backwards compatability for (broken) NMS plugins
+     private static final Map<Class<?>, Integer> c = classToId;
+@@ -226,6 +226,11 @@ public class DataWatcher {
+         return arraylist;
+     }
+ 
++    // Blossom start
++    protected static void writeObjectToSerializer(PacketDataSerializer packetdataserializer, DataWatcher.WatchableObject datawatcher_watchableobject) throws IOException {
++        a(packetdataserializer, datawatcher_watchableobject);
++    }
++    // Blossom end
+     private static void a(PacketDataSerializer packetdataserializer, DataWatcher.WatchableObject datawatcher_watchableobject) throws IOException {
+         int i = (datawatcher_watchableobject.c() << 5 | datawatcher_watchableobject.a() & 31) & 255;
+ 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index dd2286e5a..edd3843f8 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -295,7 +295,13 @@ public abstract class Entity implements ICommandListener {
+         }
+         // Spigot end
+ 
++        // Blossom start - rewritten data watcher
++        if (me.samsuik.blossom.configuration.BlossomConfig.rewrittenDataWatcher) {
++            this.datawatcher = new me.samsuik.blossom.utils.BlossomDataWatcher(this);
++        } else {
+         this.datawatcher = new DataWatcher(this);
++        }
++        // Blossom end
+         this.datawatcher.a(0, Byte.valueOf((byte) 0));
+         this.datawatcher.a(1, Short.valueOf((short) 300));
+         this.datawatcher.a(3, Byte.valueOf((byte) 0));
+-- 
+2.40.0.windows.1
+

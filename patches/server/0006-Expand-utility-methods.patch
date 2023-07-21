@@ -1,0 +1,94 @@
+From c9e60136b7cafac37f74c4197b9f1f95a5b0d10d Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 28 Jun 2023 18:23:59 +0100
+Subject: [PATCH] Expand utility methods
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
+index ac43e5a90..04766afdf 100644
+--- a/src/main/java/net/minecraft/server/BlockPosition.java
++++ b/src/main/java/net/minecraft/server/BlockPosition.java
+@@ -152,6 +152,32 @@ public class BlockPosition extends BaseBlockPosition {
+         return ((long) this.getX() & BlockPosition.h) << BlockPosition.g | ((long) this.getY() & BlockPosition.i) << BlockPosition.f | ((long) this.getZ() & BlockPosition.j) << 0;
+     }
+ 
++    // Blossom start
++    public static long asLong(int x, int y, int z) {
++        return ((long) x & BlockPosition.h) << BlockPosition.g | ((long) y & BlockPosition.i) << BlockPosition.f | ((long) z & BlockPosition.j);
++    }
++
++    public static int getX(long pack) {
++        return (int) (pack >> BlockPosition.g & BlockPosition.h);
++    }
++
++    public static int getY(long pack) {
++        return (int) (pack >> BlockPosition.f & BlockPosition.i);
++    }
++
++    public static int getZ(long pack) {
++        return (int) (pack & BlockPosition.j);
++    }
++
++    public BlockPosition.MutableBlockPosition mutable() {
++        return new MutableBlockPosition(getX(), getY(), getZ());
++    }
++
++    public BlockPosition immutable() {
++        return new BlockPosition(getX(), getY(), getZ());
++    }
++    // Blossom end
++
+     public static BlockPosition fromLong(long i) {
+         int j = (int) (i << 64 - BlockPosition.g - BlockPosition.c >> 64 - BlockPosition.c);
+         int k = (int) (i << 64 - BlockPosition.f - BlockPosition.e >> 64 - BlockPosition.e);
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index a7281229f..2a57ffa09 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -519,6 +519,26 @@ public class Chunk {
+     }
+ 
+     // PaperSpigot start - Optimize getBlockData
++    // Blossom start - expand utility methods
++    public boolean isWithin(int x, int z) {
++        return locX == x && locZ == z && isLoaded();
++    }
++
++    public boolean isWithin(BlockPosition blockposition) {
++        return isWithin(blockposition.getX() >> 4, blockposition.getZ() >> 4);
++    }
++
++    public IBlockData getBlockData(int x, int y, int z) {
++        if (y >= 0 && y >> 4 < this.sections.length) {
++            ChunkSection chunksection = this.sections[y >> 4];
++            if (chunksection != null) {
++                return chunksection.getType(x & 15, y & 15, z & 15);
++            }
++        }
++        return Blocks.AIR.getBlockData();
++    }
++    // Blossom end
++
+     public IBlockData getBlockData(final BlockPosition blockposition) {
+         if (blockposition.getY() >= 0 && blockposition.getY() >> 4 < this.sections.length) {
+             ChunkSection chunksection = this.sections[blockposition.getY() >> 4];
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 9883c0a9b..ae17ee28a 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -831,6 +831,12 @@ public abstract class World implements IBlockAccess {
+         return null;
+     }
+     // Paper end
++    // Blossom start - expand utilty methods
++    public IBlockData getTypeIfLoaded(int x, int y, int z) {
++        Chunk chunk = getChunkIfLoaded(x >> 4, z >> 4);
++        return chunk != null ? chunk.getBlockData(x, y, z) : null;
++    }
++    // Blossom end
+ 
+     // Spigot start
+     public IBlockData getType(BlockPosition blockposition)
+-- 
+2.40.0.windows.1
+

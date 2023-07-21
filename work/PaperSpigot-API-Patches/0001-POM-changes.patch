@@ -1,0 +1,136 @@
+From e114bda2c5dc78c800483592dcd4ca11082631e6 Mon Sep 17 00:00:00 2001
+From: Techcable <Techcable@outlook.com>
+Date: Tue, 6 Jan 2015 22:12:31 -0600
+Subject: [PATCH] POM changes
+
+Check our github versioning
+
+diff --git a/pom.xml b/pom.xml
+index fe9d6d2..b61d116 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -4,18 +4,18 @@
+     <modelVersion>4.0.0</modelVersion>
+ 
+     <parent>
+-        <groupId>org.github.paperspigot</groupId>
+-        <artifactId>paperspigot-parent</artifactId>
++        <groupId>net.techcable.tacospigot</groupId>
++        <artifactId>parent</artifactId>
+         <version>dev-SNAPSHOT</version>
+     </parent>
+ 
+-    <groupId>org.github.paperspigot</groupId>
+-    <artifactId>paperspigot-api</artifactId>
+-    <version>1.8.8-R0.1-SNAPSHOT</version>
++    <groupId>net.techcable.tacospigot</groupId>
++    <artifactId>api</artifactId>
++    <version>1.8.8-R0.2-SNAPSHOT</version>
+     <packaging>jar</packaging>
+ 
+-    <name>PaperSpigot-API</name>
+-    <url>https://hub.spigotmc.org/stash/projects/PAPER/</url>
++    <name>TacoSpigot-API</name>
++    <url>https://github.com/TacoSpigot</url>
+     <description>An enhanced plugin API for Minecraft servers.</description>
+ 
+     <properties>
+diff --git a/src/main/java/org/bukkit/command/defaults/VersionCommand.java b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
+index e91e1d8..42da60a 100644
+--- a/src/main/java/org/bukkit/command/defaults/VersionCommand.java
++++ b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
+@@ -28,6 +28,11 @@ import org.json.simple.JSONObject;
+ import org.json.simple.parser.JSONParser;
+ import org.json.simple.parser.ParseException;
+ 
++// TacoSpigot start
++import java.io.InputStreamReader;
++import java.net.HttpURLConnection;
++// TacoSpigot end
++
+ public class VersionCommand extends BukkitCommand {
+     public VersionCommand(String name) {
+         super(name);
+@@ -185,6 +190,25 @@ public class VersionCommand extends BukkitCommand {
+     private void obtainVersion() {
+         String version = Bukkit.getVersion();
+         if (version == null) version = "Custom";
++        // TacoSpigot start
++        if (version.startsWith("git-TacoSpigot-")) {
++            String[] parts = version.substring("git-Tacospigot-".length()).split("[-\\s]");
++            int distance = getDistance("TacoSpigot/TacoSpigot", parts[0]);
++            switch (distance) {
++                case -1:
++                    setVersionMessage("Error obtaining version information");
++                    break;
++                case 0:
++                    setVersionMessage("You are running the latest version");
++                    break;
++                case -2:
++                    setVersionMessage("Unknown version");
++                    break;
++                default:
++                    setVersionMessage("You are " + distance + " version(s) behind");
++            }
++            // remove checking for other forks
++        /*
+         // PaperSpigot start
+         if (version.startsWith("git-PaperSpigot-")) {
+             String[] parts = version.substring("git-PaperSpigot-".length()).split("[-\\s]");
+@@ -225,6 +249,8 @@ public class VersionCommand extends BukkitCommand {
+                     setVersionMessage("You are " + cbVersions + " version(s) behind");
+                 }
+             }
++            */
++            // TacoSpigot end
+         } else {
+             setVersionMessage("Unknown version, custom build?");
+         }
+@@ -247,7 +273,15 @@ public class VersionCommand extends BukkitCommand {
+     }
+ 
+     private static int getDistance(String repo, String currentVerInt) { // PaperSpigot
++        // TacoSpigot start
++        currentVerInt = currentVerInt.replace("\"", "");
++        return getFromRepo(repo, currentVerInt);
++    }
++
++    private static final String BRANCH = "version/1.8.8";
++    private static int getFromRepo(String repo, String hash) {
+         try {
++            /*
+             BufferedReader reader = Resources.asCharSource(
+                     new URL("https://ci.destroystokyo.com/job/PaperSpigot/lastSuccessfulBuild/buildNumber"), // PaperSpigot
+                     Charsets.UTF_8
+@@ -264,6 +298,28 @@ public class VersionCommand extends BukkitCommand {
+             } finally {
+                 reader.close();
+             }
++            */
++            HttpURLConnection connection = (HttpURLConnection) new URL("https://api.github.com/repos/" + repo + "/compare/" + BRANCH + "..." + hash).openConnection();
++            connection.connect();
++            if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND) return -2; // Unknown commit
++            try (
++                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))
++            ) {
++                JSONObject obj = (JSONObject) new JSONParser().parse(reader);
++                String status = (String) obj.get("status");
++                switch (status) {
++                    case "identical":
++                        return 0;
++                    case "behind":
++                        return ((Number) obj.get("behind_by")).intValue();
++                    default:
++                        return -2;
++                }
++            } catch (ParseException | NumberFormatException e) {
++                e.printStackTrace();
++                return -1;
++            }
++            // TacoSpigot end
+         } catch (IOException e) {
+             e.printStackTrace();
+             return -1;
+-- 
+2.8.0
+

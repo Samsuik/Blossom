@@ -1,0 +1,132 @@
+From d54e7e760fd261d07c651a7f4ffa723aef99cbf0 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 4 Jul 2023 00:59:10 +0100
+Subject: [PATCH] Movement Cache
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index ed1e137b4..2939ffb74 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -392,4 +392,9 @@ public class BlossomConfig {
+         groupedSandMovement = getBoolean("sand.group-sand-layer-movement", false);
+     }
+ 
++    public static boolean movementCache;
++    private static void MovementCache() {
++        movementCache = getBoolean("tnt.movement-cache", true);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/entity/EntityMovement.java b/src/main/java/me/samsuik/blossom/entity/EntityMovement.java
+new file mode 100644
+index 000000000..a8c9b2531
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/entity/EntityMovement.java
+@@ -0,0 +1,50 @@
++package me.samsuik.blossom.entity;
++
++import net.minecraft.server.AxisAlignedBB;
++import net.minecraft.server.Entity;
++
++public class EntityMovement {
++
++    private double lx, ly, lz;
++    private double mx, my, mz, lmx, lmy, lmz;
++    private AxisAlignedBB bb, lastBB;
++    private boolean ground; // seriously?
++
++    public boolean retrieve(Entity entity) {
++        if (entity.locX == lx && entity.locY == ly && entity.locZ == lz &&
++            entity.motX == lmx && entity.motY == lmy - 0.04f && entity.motZ == lmz &&
++            entity.getBoundingBox().equals(lastBB)
++        ) {
++            entity.a(bb);
++            entity.recalcPosition();
++            entity.motX = mx;
++            entity.motY = my;
++            entity.motZ = mz;
++            entity.onGround = ground;
++            return true;
++        }
++
++        return false;
++    }
++
++    public void store(Entity entity) {
++        // ... this is taking the piss
++        lx = entity.lastX;
++        ly = entity.lastY;
++        lz = entity.lastZ;
++        lmx = entity.lastMotX;
++        lmy = entity.lastMotY;
++        lmz = entity.lastMotZ;
++        mx = entity.motX;
++        my = entity.motY;
++        mz = entity.motZ;
++        ground = entity.onGround;
++        bb = entity.getBoundingBox();
++        lastBB = entity.lastBB;
++    }
++
++    public void wipe() {
++        lx = Double.MAX_VALUE;
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 30fd2b9c0..cc87e1380 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -669,6 +669,15 @@ public abstract class Entity implements ICommandListener {
+     }
+ 
+     protected void move_cannon(double moveX, double moveY, double moveZ) {
++        // Blossom start - movement cache
++        if (me.samsuik.blossom.configuration.BlossomConfig.movementCache) {
++            if (world.entityMovement.retrieve(this)) {
++                return;
++            } else {
++                world.entityMovement.store(this);
++            }
++        }
++        // Blossom end - movement cache
+         if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
+ 
+         // CraftBukkit start - Don't do anything if we aren't moving
+@@ -1200,7 +1209,7 @@ public abstract class Entity implements ICommandListener {
+         }
+     }
+ 
+-    protected void recalcPosition() { // Blossom - protected
++    public void recalcPosition() { // Blossom - public
+         this.locX = (this.getBoundingBox().a + this.getBoundingBox().d) / 2.0D;
+         this.locY = this.getBoundingBox().b;
+         this.locZ = (this.getBoundingBox().c + this.getBoundingBox().f) / 2.0D;
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 478c4d292..c87b78e8c 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -903,6 +903,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                 worldserver.mergeHistory = null;
+                 worldserver.mergingEntity = null;
+                 // Blossom end
++                worldserver.entityMovement.wipe(); // Blossom
+             // } // CraftBukkit
+ 
+             // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index be4c301cb..e132af769 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -174,6 +174,7 @@ public abstract class World implements IBlockAccess {
+     public Entity mergingEntity;
+     // Blossom end
+     public EntityFallingBlock lastSandSpawn = null; // Blossom
++    public final me.samsuik.blossom.entity.EntityMovement entityMovement = new me.samsuik.blossom.entity.EntityMovement(); // Blossom
+ 
+     protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
+         this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
+-- 
+2.40.0.windows.1
+

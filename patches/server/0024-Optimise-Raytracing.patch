@@ -1,0 +1,370 @@
+From ed8b992caaa5cc6a17562219d23d653b40c747ef Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 19 Jun 2022 21:18:56 +0100
+Subject: [PATCH] Optimise Raytracing
+
+
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 281738980..0911ae12a 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -396,6 +396,75 @@ public class Block {
+         return this.durability / 5.0F;
+     }
+ 
++    // Blossom start - optimise raytracing
++    public boolean clip(IBlockData iblockdata, World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
++        this.updateShape(world, blockposition);
++        vec3d = vec3d.add(-blockposition.getX(), -blockposition.getY(), -blockposition.getZ());
++        vec3d1 = vec3d1.add(-blockposition.getX(), -blockposition.getY(), -blockposition.getZ());
++
++        double x = vec3d1.a - vec3d.a;
++        double y = vec3d1.b - vec3d.b;
++        double z = vec3d1.c - vec3d.c;
++
++        double minXd = clip(this.minX, x, vec3d.a);
++        double minYd = clip(this.minY, y, vec3d.b);
++        double minZd = clip(this.minZ, z, vec3d.c);
++        double maxXd = clip(this.maxX, x, vec3d.a);
++        double maxYd = clip(this.maxY, y, vec3d.b);
++        double maxZd = clip(this.maxZ, z, vec3d.c);
++
++        return clipX(vec3d, minXd, y, z) || clipY(vec3d, minYd, x, z) || clipZ(vec3d, minZd, x, y)
++            || clipX(vec3d, maxXd, y, z) || clipY(vec3d, maxYd, x, z) || clipZ(vec3d, maxZd, x, y);
++    }
++
++    private double clip(double bound, double axisD, double axisN) {
++        if (axisD * axisD < 1.0000000116860974E-7D) { // float -> double precision loss epsilon 1.0e-7 moment
++            return -1.0;
++        }
++
++        double n = (bound - axisN) / axisD;
++
++        if (n < 0.0D || n > 1.0D) {
++            return -1.0;
++        }
++
++        return n;
++    }
++
++    private boolean clipX(Vec3D vec3d, double n, double y, double z) {
++        if (n == -1.0) {
++            return false;
++        }
++
++        y = vec3d.b + y * n;
++        z = vec3d.c + z * n;
++
++        return y >= this.minY && y <= this.maxY && z >= this.minZ && z <= this.maxZ;
++    }
++
++    private boolean clipY(Vec3D vec3d, double n, double x, double z) {
++        if (n == -1.0) {
++            return false;
++        }
++
++        x = vec3d.a + x * n;
++        z = vec3d.c + z * n;
++
++        return x >= this.minX && x <= this.maxX && z >= this.minZ && z <= this.maxZ;
++    }
++
++    private boolean clipZ(Vec3D vec3d, double n, double x, double y) {
++        if (n == -1.0) {
++            return false;
++        }
++
++        x = vec3d.a + x * n;
++        y = vec3d.b + y * n;
++
++        return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
++    }
++    // Blossom end
++
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         this.updateShape(world, blockposition);
+         vec3d = vec3d.add((double) (-blockposition.getX()), (double) (-blockposition.getY()), (double) (-blockposition.getZ()));
+diff --git a/src/main/java/net/minecraft/server/BlockDoor.java b/src/main/java/net/minecraft/server/BlockDoor.java
+index bbaa2b5a4..d33d59bb7 100644
+--- a/src/main/java/net/minecraft/server/BlockDoor.java
++++ b/src/main/java/net/minecraft/server/BlockDoor.java
+@@ -190,10 +190,12 @@ public class BlockDoor extends Block {
+         return iblockdata.get(BlockDoor.HALF) == BlockDoor.EnumDoorHalf.UPPER ? null : this.l();
+     }
+ 
++    /* // Blossom start
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         this.updateShape(world, blockposition);
+         return super.a(world, blockposition, vec3d, vec3d1);
+     }
++    */ // Blossom end
+ 
+     public boolean canPlace(World world, BlockPosition blockposition) {
+         return blockposition.getY() >= 255 ? false : World.a((IBlockAccess) world, blockposition.down()) && super.canPlace(world, blockposition) && super.canPlace(world, blockposition.up());
+diff --git a/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java b/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
+index ec42421c0..e2aef3148 100644
+--- a/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
++++ b/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
+@@ -33,10 +33,12 @@ public abstract class BlockMinecartTrackAbstract extends Block {
+         return false;
+     }
+ 
++    /* // Blossom start
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         this.updateShape(world, blockposition);
+         return super.a(world, blockposition, vec3d, vec3d1);
+     }
++    */ // Blossom end
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+         IBlockData iblockdata = iblockaccess.getType(blockposition);
+diff --git a/src/main/java/net/minecraft/server/BlockPistonMoving.java b/src/main/java/net/minecraft/server/BlockPistonMoving.java
+index 3b3334365..80a5ee63d 100644
+--- a/src/main/java/net/minecraft/server/BlockPistonMoving.java
++++ b/src/main/java/net/minecraft/server/BlockPistonMoving.java
+@@ -83,6 +83,12 @@ public class BlockPistonMoving extends BlockContainer {
+         }
+     }
+ 
++    // Blossom start
++    public boolean clip(IBlockData iblockdata, World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
++        return false;
++    }
++    // Blossom end
++
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         return null;
+     }
+diff --git a/src/main/java/net/minecraft/server/BlockStairs.java b/src/main/java/net/minecraft/server/BlockStairs.java
+index fb2ddf5b8..0a60daeb2 100644
+--- a/src/main/java/net/minecraft/server/BlockStairs.java
++++ b/src/main/java/net/minecraft/server/BlockStairs.java
+@@ -455,6 +455,27 @@ public class BlockStairs extends Block {
+         return enumdirection != EnumDirection.DOWN && (enumdirection == EnumDirection.UP || (double) f1 <= 0.5D) ? iblockdata.set(BlockStairs.HALF, EnumHalf.BOTTOM) : iblockdata.set(BlockStairs.HALF, EnumHalf.TOP);
+     }
+ 
++    // Blossom start - whoever wrote the code below this method is deranged.
++    // shitty mock up that should preserve behaviour of that abomination
++    public boolean clip(IBlockData iblockdata, World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
++        int i = iblockdata.get(BlockStairs.FACING).b();
++        boolean flag = iblockdata.get(BlockStairs.HALF) == EnumHalf.TOP;
++        int[] emptyParts = BlockStairs.O[i + (flag ? 4 : 0)];
++        this.R = true; // the "has block states initialised" field, WHY mojank
++
++        for (int j = 0; j < 8; ++j) {
++            if (Arrays.binarySearch(emptyParts, j) < 0) {
++                this.S = j; // Cursed. if you're reading this check out what this field does
++                if (super.clip(iblockdata, world, blockposition, vec3d, vec3d1)) {
++                    return true;
++                }
++            }
++        }
++
++        return false;
++    }
++    // Blossom end
++
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         MovingObjectPosition[] amovingobjectposition = new MovingObjectPosition[8];
+         IBlockData iblockdata = world.getType(blockposition);
+diff --git a/src/main/java/net/minecraft/server/BlockTrapdoor.java b/src/main/java/net/minecraft/server/BlockTrapdoor.java
+index 1a2cdd1bc..88131b507 100644
+--- a/src/main/java/net/minecraft/server/BlockTrapdoor.java
++++ b/src/main/java/net/minecraft/server/BlockTrapdoor.java
+@@ -128,10 +128,12 @@ public class BlockTrapdoor extends Block {
+         }
+     }
+ 
++    /* // Blossom start - why?
+     public MovingObjectPosition a(World world, BlockPosition blockposition, Vec3D vec3d, Vec3D vec3d1) {
+         this.updateShape(world, blockposition);
+         return super.a(world, blockposition, vec3d, vec3d1);
+     }
++    */ // Blossom end
+ 
+     public IBlockData getPlacedState(World world, BlockPosition blockposition, EnumDirection enumdirection, float f, float f1, float f2, int i, EntityLiving entityliving) {
+         IBlockData iblockdata = this.getBlockData();
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index a54b62d7b..5ba37c4f4 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -894,9 +894,12 @@ public abstract class World implements IBlockAccess {
+                 int l = MathHelper.floor(vec3d.a);
+                 int i1 = MathHelper.floor(vec3d.b);
+                 int j1 = MathHelper.floor(vec3d.c);
+-                BlockPosition blockposition = new BlockPosition(l, i1, j1);
+-                IBlockData iblockdata = this.getTypeIfLoaded(blockposition); // Paper
+-                if (iblockdata == null) return null; // Paper
++                // Blossom start - optimise rayTracing
++                BlockPosition.MutableBlockPosition blockposition = new BlockPosition.MutableBlockPosition(l, i1, j1);
++                Chunk chunk = this.getChunkIfLoaded(l >> 4, j1 >> 4);
++                if (chunk == null) return null;
++                IBlockData iblockdata = chunk.getBlockData(blockposition);
++                // Blossom end
+                 Block block = iblockdata.getBlock();
+ 
+                 if ((!flag1 || block.a(this, blockposition, iblockdata) != null) && block.a(iblockdata, flag)) {
+@@ -997,9 +1000,16 @@ public abstract class World implements IBlockAccess {
+                     l = MathHelper.floor(vec3d.a) - (enumdirection == EnumDirection.EAST ? 1 : 0);
+                     i1 = MathHelper.floor(vec3d.b) - (enumdirection == EnumDirection.UP ? 1 : 0);
+                     j1 = MathHelper.floor(vec3d.c) - (enumdirection == EnumDirection.SOUTH ? 1 : 0);
+-                    blockposition = new BlockPosition(l, i1, j1);
+-                    IBlockData iblockdata1 = this.getTypeIfLoaded(blockposition); // Paper
+-                    if (iblockdata1 == null) return null; // Paper
++                    // Blossom start - optimise rayTracing
++                    blockposition.setValues(l, i1, j1);
++                    int chunkX = l >> 4;
++                    int chunkZ = j1 >> 4;
++                    if (chunk.locX != chunkX || chunk.locZ != chunkZ) {
++                        chunk = this.getChunkIfLoaded(chunkX, chunkZ);
++                        if (chunk == null) return null;
++                    };
++                    IBlockData iblockdata1 = chunk.getBlockData(blockposition);
++                    // Blossom end
+                     Block block1 = iblockdata1.getBlock();
+ 
+                     if (!flag1 || block1.a(this, blockposition, iblockdata1) != null) {
+@@ -1024,6 +1034,131 @@ public abstract class World implements IBlockAccess {
+         }
+     }
+ 
++    // Blossom start - optimise raytracing
++    public MovingObjectPosition rayTraceStripped(Vec3D vec3d, Vec3D vec3d1) {
++        int endX = MathHelper.floor(vec3d1.a);
++        int endY = MathHelper.floor(vec3d1.b);
++        int endZ = MathHelper.floor(vec3d1.c);
++        int currX = MathHelper.floor(vec3d.a);
++        int currY = MathHelper.floor(vec3d.b);
++        int currZ = MathHelper.floor(vec3d.c);
++
++        BlockPosition.MutableBlockPosition blockposition = new BlockPosition.MutableBlockPosition(currX, currY, currZ);
++        Chunk chunk = this.getChunkIfLoaded(currX >> 4, currZ >> 4);
++        if (chunk == null) return null;
++        IBlockData iblockdata = chunk.getBlockData(blockposition);
++        Block block = iblockdata.getBlock();
++
++        if (block.a(iblockdata, false) && block.clip(iblockdata, this, blockposition, vec3d, vec3d1)) {
++            return new MovingObjectPosition(vec3d, EnumDirection.UP);
++        }
++
++        int steps = 200;
++
++        while (steps-- >= 0) {
++            if (currX == endX && currY == endY && currZ == endZ) {
++                return null;
++            }
++
++            boolean flag3 = true;
++            boolean flag4 = true;
++            boolean flag5 = true;
++            double d0 = 999.0D;
++            double d1 = 999.0D;
++            double d2 = 999.0D;
++
++            if (endX > currX) {
++                d0 = (double) currX + 1.0D;
++            } else if (endX < currX) {
++                d0 = (double) currX + 0.0D;
++            } else {
++                flag3 = false;
++            }
++
++            if (endY > currY) {
++                d1 = (double) currY + 1.0D;
++            } else if (endY < currY) {
++                d1 = (double) currY + 0.0D;
++            } else {
++                flag4 = false;
++            }
++
++            if (endZ > currZ) {
++                d2 = (double) currZ + 1.0D;
++            } else if (endZ < currZ) {
++                d2 = (double) currZ + 0.0D;
++            } else {
++                flag5 = false;
++            }
++
++            double d3 = 999.0D;
++            double d4 = 999.0D;
++            double d5 = 999.0D;
++            double d6 = vec3d1.a - vec3d.a;
++            double d7 = vec3d1.b - vec3d.b;
++            double d8 = vec3d1.c - vec3d.c;
++
++            if (flag3) {
++                d3 = (d0 - vec3d.a) / d6;
++            }
++
++            if (flag4) {
++                d4 = (d1 - vec3d.b) / d7;
++            }
++
++            if (flag5) {
++                d5 = (d2 - vec3d.c) / d8;
++            }
++
++            if (d3 == -0.0D) {
++                d3 = -1.0E-4D;
++            }
++
++            if (d4 == -0.0D) {
++                d4 = -1.0E-4D;
++            }
++
++            if (d5 == -0.0D) {
++                d5 = -1.0E-4D;
++            }
++
++            int ox = 0, oy = 0, oz = 0;
++
++            if (d3 < d4 && d3 < d5) {
++                vec3d = new Vec3D(d0, vec3d.b + d7 * d3, vec3d.c + d8 * d3);
++                if (endX <= currX) ox = 1;
++            } else if (d4 < d5) {
++                vec3d = new Vec3D(vec3d.a + d6 * d4, d1, vec3d.c + d8 * d4);
++                if (endY <= currY) oy = 1;
++            } else {
++                vec3d = new Vec3D(vec3d.a + d6 * d5, vec3d.b + d7 * d5, d2);
++                if (endZ <= currZ) oz = 1;
++            }
++
++            currX = MathHelper.floor(vec3d.a) - ox;
++            currY = MathHelper.floor(vec3d.b) - oy;
++            currZ = MathHelper.floor(vec3d.c) - oz;
++            blockposition.setValues(currX, currY, currZ);
++
++            int chunkX = currX >> 4;
++            int chunkZ = currZ >> 4;
++            if (chunk.locX != chunkX || chunk.locZ != chunkZ) {
++                chunk = this.getChunkIfLoaded(chunkX, chunkZ);
++                if (chunk == null) return null;
++            }
++
++            iblockdata = chunk.getBlockData(blockposition);
++            block = iblockdata.getBlock();
++
++            if (block.a(iblockdata, false) && block.clip(iblockdata, this, blockposition, vec3d, vec3d1)) {
++                return new MovingObjectPosition(vec3d, EnumDirection.UP);
++            }
++        }
++
++        return null;
++    }
++    // Blossom end
++
+     public void makeSound(Entity entity, String s, float f, float f1) {
+         for (int i = 0; i < this.u.size(); ++i) {
+             ((IWorldAccess) this.u.get(i)).a(s, entity.locX, entity.locY, entity.locZ, f, f1);
+@@ -2039,7 +2174,7 @@ public abstract class World implements IBlockAccess {
+                         double d6 = axisalignedbb.b + (axisalignedbb.e - axisalignedbb.b) * (double) f1;
+                         double d7 = axisalignedbb.c + (axisalignedbb.f - axisalignedbb.c) * (double) f2;
+ 
+-                        if (this.rayTrace(new Vec3D(d5 + d3, d6, d7 + d4), vec3d) == null) {
++                        if (this.rayTraceStripped(new Vec3D(d5 + d3, d6, d7 + d4), vec3d) == null) { // Blossom - optimise raytracing
+                             ++i;
+                         }
+ 
+-- 
+2.40.0.windows.1
+

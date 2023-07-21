@@ -1,0 +1,100 @@
+From a4d5f94eb2974fff8f7ba9c204b036492237c409 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 29 Oct 2020 20:47:08 +0000
+Subject: [PATCH] Configurable Spawners
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 7781b9791..a7f0e7291 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -222,4 +222,25 @@ public class BlossomConfig {
+         }
+     }
+ 
++    public static int minSpawnDelay;
++    public static int maxSpawnDelay;
++    public static int spawnCount;
++    public static int spawnRange;
++    public static int maxNearbyEntities;
++    public static int requiredPlayerRange;
++    public static boolean requirePlayers;
++    public static boolean checkMaxEntities;
++    public static boolean checkConditions;
++    private static void Spawners() {
++        minSpawnDelay = getInt("spawners.spawning.min-delay", 200);
++        maxSpawnDelay = getInt("spawners.spawning.max-delay", 800);
++        spawnCount = getInt("spawners.spawning.count", 4);
++        spawnRange = getInt("spawners.spawning.range", 4);
++        maxNearbyEntities = getInt("spawners.nearby.max-entities", 6);
++        requiredPlayerRange = getInt("spawners.nearby.player-range", 16);
++        checkConditions = getBoolean("spawners.spawning.check-conditions", true);
++        checkMaxEntities = getBoolean("spawners.nearby.check-max-entities", true);
++        requirePlayers = getBoolean("spawners.nearby.require-players", true);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/MobSpawnerAbstract.java b/src/main/java/net/minecraft/server/MobSpawnerAbstract.java
+index 846d8dd86..beacf3e88 100644
+--- a/src/main/java/net/minecraft/server/MobSpawnerAbstract.java
++++ b/src/main/java/net/minecraft/server/MobSpawnerAbstract.java
+@@ -13,6 +13,7 @@ import org.bukkit.entity.EntityType;
+ import org.bukkit.event.entity.CreatureSpawnEvent;
+ import org.bukkit.event.entity.SpawnerSpawnEvent;
+ // CraftBukkit end
++import me.samsuik.blossom.configuration.BlossomConfig; // Blossom
+ 
+ public abstract class MobSpawnerAbstract {
+ 
+@@ -22,13 +23,15 @@ public abstract class MobSpawnerAbstract {
+     private MobSpawnerAbstract.TileEntityMobSpawnerData spawnData;
+     private double e;
+     private double f;
+-    private int minSpawnDelay = 200;
+-    private int maxSpawnDelay = 800;
+-    private int spawnCount = 4;
++    // Blossom start - Configurable Spawners
++    private int minSpawnDelay = BlossomConfig.minSpawnDelay;
++    private int maxSpawnDelay = BlossomConfig.maxSpawnDelay;
++    private int spawnCount = BlossomConfig.spawnCount;
+     private Entity j;
+-    private int maxNearbyEntities = 6;
+-    private int requiredPlayerRange = 16;
+-    private int spawnRange = 4;
++    private int maxNearbyEntities = BlossomConfig.maxNearbyEntities;
++    private int requiredPlayerRange = BlossomConfig.requiredPlayerRange;
++    private int spawnRange = BlossomConfig.spawnRange;
++    // Blossom end
+     private int tickDelay = 0; // PaperSpigot
+ 
+     public MobSpawnerAbstract() {}
+@@ -65,7 +68,7 @@ public abstract class MobSpawnerAbstract {
+         if (spawnDelay > 0 && --tickDelay > 0) return;
+         tickDelay = this.a().paperSpigotConfig.mobSpawnerTickRate;
+         // PaperSpigot end
+-        if (this.g()) {
++        if (!BlossomConfig.requirePlayers || this.g()) { // Blossom
+             BlockPosition blockposition = this.b();
+             double d0;
+ 
+@@ -111,7 +114,7 @@ public abstract class MobSpawnerAbstract {
+                         return;
+                     }
+ 
+-                    int j = this.a().a(entity.getClass(), (new AxisAlignedBB((double) blockposition.getX(), (double) blockposition.getY(), (double) blockposition.getZ(), (double) (blockposition.getX() + 1), (double) (blockposition.getY() + 1), (double) (blockposition.getZ() + 1))).grow((double) this.spawnRange, (double) this.spawnRange, (double) this.spawnRange)).size();
++                    int j = !BlossomConfig.checkMaxEntities ? -1 : this.a().a(entity.getClass(), (new AxisAlignedBB((double) blockposition.getX(), (double) blockposition.getY(), (double) blockposition.getZ(), (double) (blockposition.getX() + 1), (double) (blockposition.getY() + 1), (double) (blockposition.getZ() + 1))).grow((double) this.spawnRange, (double) this.spawnRange, (double) this.spawnRange)).size(); // Blossom
+ 
+                     if (j >= this.maxNearbyEntities) {
+                         this.h();
+@@ -124,7 +127,7 @@ public abstract class MobSpawnerAbstract {
+                     EntityInsentient entityinsentient = entity instanceof EntityInsentient ? (EntityInsentient) entity : null;
+ 
+                     entity.setPositionRotation(d0, d3, d4, this.a().random.nextFloat() * 360.0F, 0.0F);
+-                    if (entityinsentient == null || entityinsentient.bR() && entityinsentient.canSpawn()) {
++                    if (entityinsentient == null || !BlossomConfig.checkConditions && this.a().getCubes(entityinsentient, entityinsentient.getBoundingBox()).isEmpty() || BlossomConfig.checkConditions && entityinsentient.bR() && entityinsentient.canSpawn()) { // Blossom
+                         this.a(entity, true);
+                         this.a().triggerEffect(2004, blockposition, 0);
+                         if (entityinsentient != null) {
+-- 
+2.40.0.windows.1
+

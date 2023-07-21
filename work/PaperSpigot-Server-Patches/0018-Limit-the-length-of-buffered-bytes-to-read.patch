@@ -1,0 +1,104 @@
+From 77477830850d4292aac4ef1d41dd49d002520d52 Mon Sep 17 00:00:00 2001
+From: Thinkofdeath <thinkofdeath@spigotmc.org>
+Date: Mon, 28 Mar 2016 15:41:31 -0700
+Subject: [PATCH] Limit the length of buffered bytes to read
+
+This is a particularly severe/exploitable issue -- clients can send packets forcing the server to allocate any valid array size, without actually sending any data for it to fill. This is fixed by limiting the size of read byte arrays to at most Short.MAX_VALUE (31 KB).
+
+However, we have to make an exception for 1.7 ProtocolSupport clients,
+or they will crash. For them we limit the packets to 31 MB, which should
+still be plenty although it leaves the server slightly more vulnearable.
+
+The arrays in encryption packets are limited to 256 bytes.
+
+diff --git a/src/main/java/net/minecraft/server/PacketDataSerializer.java b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+index f426c2e1..21ab829a 100644
+--- a/src/main/java/net/minecraft/server/PacketDataSerializer.java
++++ b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+@@ -22,12 +22,27 @@ import java.nio.charset.Charset;
+ import java.util.UUID;
+ 
+ import org.bukkit.craftbukkit.inventory.CraftItemStack; // CraftBukkit
++// TacoSpigot start
++import net.techcable.tacospigot.CompatHacks;
++// TacoSpigot end
+ 
+ public class PacketDataSerializer extends ByteBuf {
+ 
+     private final ByteBuf a;
+ 
++    // TacoSpigot start
++    private final boolean allowLargePackets;
+     public PacketDataSerializer(ByteBuf bytebuf) {
++        /*
++         * By default, we limit the size of the received byte array to Short.MAX_VALUE, which is 31 KB.
++         * However, we make an exception when ProtocolSupport is installed, to allow 1.7 clients to work,
++         * and limit them to 31 MEGABYTES as they seem to need to send larger packets sometimes.
++         * Although a 31 MB limit leaves the server slightly vulnerable,
++         * it's still much better than the old system of having no limit,
++         * which would leave the server vulnerable to packets up to 2 GIGABYTES in size.
++         */
++        this.allowLargePackets = CompatHacks.hasProtocolSupport();
++        // TacoSpigot end
+         this.a = bytebuf;
+     }
+ 
+@@ -46,9 +61,20 @@ public class PacketDataSerializer extends ByteBuf {
+         this.writeBytes(abyte);
+     }
+ 
++    // TacoSpigot start
++    private static final int DEFAULT_LIMIT = Short.MAX_VALUE;
++    private static final int LARGE_PACKET_LIMIT = Short.MAX_VALUE * 1024;
+     public byte[] a() {
+-        byte[] abyte = new byte[this.e()];
++        // TacoSpigot start
++        int limit = allowLargePackets ? LARGE_PACKET_LIMIT : DEFAULT_LIMIT;
++        return readByteArray(limit);
++    }
+ 
++    public byte[] readByteArray(int limit) {
++        int len = this.e();
++        if (len > limit) throw new DecoderException("The received a byte array longer than allowed " + len + " > " + limit);
++        byte[] abyte = new byte[len];
++        // TacoSpigot end
+         this.readBytes(abyte);
+         return abyte;
+     }
+diff --git a/src/main/java/net/minecraft/server/PacketLoginInEncryptionBegin.java b/src/main/java/net/minecraft/server/PacketLoginInEncryptionBegin.java
+index a591b2f3..2d408b54 100644
+--- a/src/main/java/net/minecraft/server/PacketLoginInEncryptionBegin.java
++++ b/src/main/java/net/minecraft/server/PacketLoginInEncryptionBegin.java
+@@ -12,8 +12,10 @@ public class PacketLoginInEncryptionBegin implements Packet<PacketLoginInListene
+     public PacketLoginInEncryptionBegin() {}
+ 
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+-        this.a = packetdataserializer.a();
+-        this.b = packetdataserializer.a();
++        // TacoSpigot start - limit to 256 bytes
++        this.a = packetdataserializer.readByteArray(256);
++        this.b = packetdataserializer.readByteArray(256);
++        // TacoSpigot end
+     }
+ 
+     public void b(PacketDataSerializer packetdataserializer) throws IOException {
+diff --git a/src/main/java/net/techcable/tacospigot/CompatHacks.java b/src/main/java/net/techcable/tacospigot/CompatHacks.java
+new file mode 100644
+index 00000000..6ebc9c89
+--- /dev/null
++++ b/src/main/java/net/techcable/tacospigot/CompatHacks.java
+@@ -0,0 +1,10 @@
++package net.techcable.tacospigot;
++
++import org.bukkit.Bukkit;
++
++public class CompatHacks {
++    private CompatHacks() {}
++    public static boolean hasProtocolSupport() {
++        return Bukkit.getPluginManager().isPluginEnabled("ProtocolSupport");
++    }
++}
+\ No newline at end of file
+-- 
+2.13.1
+

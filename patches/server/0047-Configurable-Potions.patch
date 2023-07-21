@@ -1,0 +1,68 @@
+From 6f0ceb499641ef4ba0b4b5d247edd66d1d11fa3e Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 18 Dec 2020 20:58:59 +0000
+Subject: [PATCH] Configurable Potions
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index a9051bb82..d4d0f7710 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -308,4 +308,15 @@ public class BlossomConfig {
+         rewrittenDataWatcher = getBoolean("mobs.rewritten-data-watcher", true);
+     }
+ 
++    public static int potionTime;
++    public static float potionSpeed;
++    public static float potionGravity;
++    public static float potionVerticalOffset;
++    private static void Potions() {
++        potionTime = getInt("projectiles.potion.time", 5);
++        potionGravity = (float) getDouble("projectiles.potion.gravity", 0.05);
++        potionSpeed = (float) getDouble("projectiles.potion.speed", 0.5);
++        potionVerticalOffset = (float) getDouble("projectiles.potion.vertical-offset", -20.0);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityPotion.java b/src/main/java/net/minecraft/server/EntityPotion.java
+index fd174c346..e2b4d3d68 100644
+--- a/src/main/java/net/minecraft/server/EntityPotion.java
++++ b/src/main/java/net/minecraft/server/EntityPotion.java
+@@ -33,15 +33,17 @@ public class EntityPotion extends EntityProjectile {
+     }
+ 
+     protected float m() {
+-        return 0.05F;
++        // Blossom start - Configurable Potions
++        return me.samsuik.blossom.configuration.BlossomConfig.potionGravity;
+     }
+ 
+     protected float j() {
+-        return 0.5F;
++        return me.samsuik.blossom.configuration.BlossomConfig.potionSpeed;
+     }
+ 
+     protected float l() {
+-        return -20.0F;
++        return me.samsuik.blossom.configuration.BlossomConfig.potionVerticalOffset;
++        // Blossom end
+     }
+ 
+     public void setPotionValue(int i) {
+diff --git a/src/main/java/net/minecraft/server/EntityProjectile.java b/src/main/java/net/minecraft/server/EntityProjectile.java
+index 6cd060831..2f757ee38 100644
+--- a/src/main/java/net/minecraft/server/EntityProjectile.java
++++ b/src/main/java/net/minecraft/server/EntityProjectile.java
+@@ -126,7 +126,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+             for (int i = 0; i < list.size(); ++i) {
+                 Entity entity1 = (Entity) list.get(i);
+ 
+-                if (entity1.ad() && (entity1 != entityliving || this.ar >= 5)) {
++                if (entity1.ad() && (entity1 != entityliving || this.ar >= (this instanceof EntityPotion ? me.samsuik.blossom.configuration.BlossomConfig.potionTime : 5))) { // Blossom - Configurable Potions
+                     float f = 0.3F;
+                     AxisAlignedBB axisalignedbb = entity1.getBoundingBox().grow((double) f, (double) f, (double) f);
+                     MovingObjectPosition movingobjectposition1 = axisalignedbb.a(vec3d, vec3d1);
+-- 
+2.40.0.windows.1
+

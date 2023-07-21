@@ -1,0 +1,22 @@
+From d42fc342b45edd5e1dd099de24dc6e374b42e45a Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 6 Jul 2023 22:33:29 +0100
+Subject: [PATCH] Don't fully tick lightning
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityLightning.java b/src/main/java/net/minecraft/server/EntityLightning.java
+index 286fdef9a..400fd3321 100644
+--- a/src/main/java/net/minecraft/server/EntityLightning.java
++++ b/src/main/java/net/minecraft/server/EntityLightning.java
+@@ -65,7 +65,7 @@ public class EntityLightning extends EntityWeather {
+     // Spigot end
+ 
+     public void t_() {
+-        super.t_();
++        // super.t_(); // Blossom
+         if (!isSilent && this.lifeTicks == 2) { // Spigot
+             // CraftBukkit start - Use relative location for far away sounds
+             //this.world.makeSound(this.locX, this.locY, this.locZ, "ambient.weather.thunder", 10000.0F, 0.8F + this.random.nextFloat() * 0.2F);
+-- 
+2.40.0.windows.1
+

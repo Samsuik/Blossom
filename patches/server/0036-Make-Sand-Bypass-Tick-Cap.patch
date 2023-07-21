@@ -1,0 +1,23 @@
+From 5d51998bc2a093164bd31aa6456e5764c578ef68 Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 22 Feb 2021 21:16:27 +0000
+Subject: [PATCH] Make Sand Bypass Tick Cap
+
+
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index ebc5da9e4..bc603bfba 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -656,7 +656,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                             break;
+                         }
+ 
+-                        if (next.a().isPowerSource() || next.a() instanceof IContainer) {
++                        if (next.a().isPowerSource() || next.a() instanceof IContainer || next.a() instanceof BlockFalling) { // Blossom - falling blocks should bypass tick cap
+                             iterator.remove();
+                             this.V.add(next);
+                         }
+-- 
+2.40.0.windows.1
+

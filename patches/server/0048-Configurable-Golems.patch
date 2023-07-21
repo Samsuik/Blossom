@@ -1,0 +1,26 @@
+From 6ffd261286be2162b36c95e5629883e65d6dc4cf Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 19 Dec 2020 19:35:00 +0000
+Subject: [PATCH] Configurable Golems
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index d4d0f7710..30c3a0900 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -319,4 +319,11 @@ public class BlossomConfig {
+         potionVerticalOffset = (float) getDouble("projectiles.potion.vertical-offset", -20.0);
+     }
+ 
++    public static boolean ironGolemsDropPoppies;
++    public static boolean ironGolemsFallDamage;
++    private static void IronGolems() {
++        ironGolemsDropPoppies = getBoolean("mobs.iron-golems.drop-poppies", true);
++        ironGolemsFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
++    }
++
+ }
+-- 
+2.40.0.windows.1
+

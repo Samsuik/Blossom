@@ -1,0 +1,81 @@
+From c370b3d2f366b34cdbf8bf91c06c6d1cc53a77a2 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 28 Jun 2022 22:10:19 +0100
+Subject: [PATCH] Optimise getLightLevel
+
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 1a5182515..ea8460bfb 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -663,6 +663,67 @@ public abstract class World implements IBlockAccess {
+     }
+ 
+     public int c(BlockPosition blockposition, boolean flag) {
++        // Blossom start - optimise light level
++        if (blockposition.getX() < -30000000 || blockposition.getZ() < -30000000 || blockposition.getX() >= 30000000 || blockposition.getZ() >= 30000000) {
++            return 15;
++        }
++
++        Chunk chunk = getChunkIfLoaded(blockposition.getX() >> 4, blockposition.getZ() >> 4);
++
++        if (chunk == null) {
++            return 15;
++        }
++
++        int light = chunk.a(blockposition, this.I);
++
++        if (light == 0 || light == 15 || !flag || !chunk.getBlockData(blockposition).getBlock().s() || !chunk.areNeighborsLoaded(1)) {
++            return light;
++        }
++
++        return getHighestSurroundingLightLevel(blockposition, chunk);
++    }
++
++    private static final EnumDirection[] LIGHT_DIRECTIONS = {
++            EnumDirection.UP, EnumDirection.EAST, EnumDirection.WEST, EnumDirection.NORTH, EnumDirection.SOUTH
++    };
++
++    private int getHighestSurroundingLightLevel(BlockPosition blockposition, Chunk chunk) {
++        BlockPosition.MutableBlockPosition mutablePos = new BlockPosition.MutableBlockPosition();
++        int light = 0;
++
++        for (EnumDirection direction : LIGHT_DIRECTIONS) {
++            int x = blockposition.getX() + direction.getAdjacentX();
++            int y = Math.min(blockposition.getY() + direction.getAdjacentY(), 255);
++            int z = blockposition.getZ() + direction.getAdjacentZ();
++
++            int chunkX = x >> 4;
++            int chunkZ = z >> 4;
++
++            Chunk next = chunk;
++
++            if (chunkX != chunk.locX || chunkZ != chunk.locZ) {
++                next = getChunkIfLoaded(chunkX, chunkZ);
++            }
++
++            // should not be null, but I do not want to take any risks here
++            if (next == null) {
++                continue;
++            }
++
++            mutablePos.setValues(x, y, z);
++
++            light = Math.max(next.a(mutablePos, this.I), light);
++
++            if (light == 15) {
++                break;
++            }
++        }
++
++        return light;
++    }
++
++    private int old_getLightLevel(BlockPosition blockposition, boolean flag) {
++        // Blossom end
+         if (blockposition.getX() >= -30000000 && blockposition.getZ() >= -30000000 && blockposition.getX() < 30000000 && blockposition.getZ() < 30000000) {
+             if (flag && this.getType(blockposition).getBlock().s()) {
+                 int i = this.c(blockposition.up(), false);
+-- 
+2.40.0.windows.1
+

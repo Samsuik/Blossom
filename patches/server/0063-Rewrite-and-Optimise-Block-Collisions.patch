@@ -1,0 +1,1184 @@
+From 66ceff11a03fb562ce78511f3ca5f8203284c60d Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 17 Jun 2023 15:47:14 +0100
+Subject: [PATCH] Rewrite and Optimise Block Collisions
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index ab9adf86f..872867ee4 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -357,4 +357,9 @@ public class BlossomConfig {
+         activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
+     }
+ 
++    public static boolean extendedCollisionSearch;
++    private static void ExtendedCollisionSearch() {
++        extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
+new file mode 100644
+index 000000000..6b43d6bd7
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
+@@ -0,0 +1,34 @@
++package me.samsuik.blossom.utils;
++
++import net.minecraft.server.*;
++
++public class SectionChunkCache {
++
++    private final Chunk[][] chunks;
++    private final int baseX, baseZ;
++
++    public SectionChunkCache(World world, AxisAlignedBB bb) {
++        int minChunkX = MathHelper.floor(bb.a) >> 4;
++        int minChunkZ = MathHelper.floor(bb.c) >> 4;
++        int maxChunkX = MathHelper.floor(bb.d) >> 4;
++        int maxChunkZ = MathHelper.floor(bb.f) >> 4;
++
++        chunks = new Chunk[maxChunkX - minChunkX + 1][maxChunkZ - minChunkZ + 1];
++
++        baseX = minChunkX;
++        baseZ = minChunkZ;
++
++        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
++            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
++                chunks[chunkX - baseX][chunkZ - baseZ] = world.getChunkAt(chunkX, chunkZ);
++            }
++        }
++    }
++
++    public IBlockData getType(int x, int y, int z) {
++        Chunk chunk = chunks[(x >> 4) - baseX][(z >> 4) - baseZ];
++        ChunkSection section = chunk.getSections()[y >> 4];
++        return section != null ? section.getType(x & 15, y & 15, z & 15) : Blocks.AIR.getBlockData();
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/AxisAlignedBB.java b/src/main/java/net/minecraft/server/AxisAlignedBB.java
+index 431097ec3..ab5fe46dc 100644
+--- a/src/main/java/net/minecraft/server/AxisAlignedBB.java
++++ b/src/main/java/net/minecraft/server/AxisAlignedBB.java
+@@ -93,6 +93,38 @@ public class AxisAlignedBB {
+         return new AxisAlignedBB(this.a + d0, this.b + d1, this.c + d2, this.d + d0, this.e + d1, this.f + d2);
+     }
+ 
++    // Blossom start
++    public double collideX(AxisAlignedBB axisalignedbb, double dir) {
++        if (dir > 0.0D && axisalignedbb.d <= a) {
++            return Math.min(a - axisalignedbb.d, dir);
++        } else if (dir < 0.0D && axisalignedbb.a >= d) {
++            return Math.max(d - axisalignedbb.a, dir);
++        } else {
++            return dir;
++        }
++    }
++
++    public double collideY(AxisAlignedBB axisalignedbb, double dir) {
++        if (dir > 0.0D && axisalignedbb.e <= b) {
++            return Math.min(b - axisalignedbb.e, dir);
++        } else if (dir < 0.0D && axisalignedbb.b >= e) {
++            return Math.max(e - axisalignedbb.b, dir);
++        } else {
++            return dir;
++        }
++    }
++
++    public double collideZ(AxisAlignedBB axisalignedbb, double dir) {
++        if (dir > 0.0D && axisalignedbb.f <= c) {
++            return Math.min(c - axisalignedbb.f, dir);
++        } else if (dir < 0.0D && axisalignedbb.c >= f) {
++            return Math.max(f - axisalignedbb.c, dir);
++        } else {
++            return dir;
++        }
++    }
++    // Blossom end
++
+     public double a(AxisAlignedBB axisalignedbb, double d0) {
+         if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
+             double d1;
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 7233a4939..e784aa551 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -297,6 +297,23 @@ public class Block {
+         return iblockaccess.getType(blockposition).getBlock().getMaterial().isBuildable();
+     }
+ 
++    // Blossom start
++    public void testShape(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
++        if (iblockdata.isShapeDynamic()) {
++            a(world, blockposition, iblockdata, axisalignedbb, list, entity);
++        } else {
++            List<AxisAlignedBB> shape = iblockdata.shape();
++            //noinspection ForLoopReplaceableByForEach
++            for (int i = 0, len = shape.size(); i < len; i++) {
++                final AxisAlignedBB moved = shape.get(i).c(blockposition.getX(), blockposition.getY(), blockposition.getZ());
++                if (axisalignedbb.b(moved)) {
++                    list.add(moved);
++                }
++            }
++        }
++    }
++    // Blossom end
++
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+         AxisAlignedBB axisalignedbb1 = this.a(world, blockposition, iblockdata);
+ 
+@@ -618,6 +635,14 @@ public class Block {
+         return vec3d;
+     }
+ 
++    // Blossom start
++    protected boolean dynamicShape() {
++        return false;
++    }
++
++    public void updateShape(IBlockData iblockdata) {}
++    // Blossom end
++
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {}
+ 
+     public final double B() {
+@@ -1063,10 +1088,17 @@ public class Block {
+                 int i = Block.REGISTRY.b(block13) << 4 | block13.toLegacyData(iblockdata);
+                 // TacoSpigot start
+ 
++                // Blossom start
++                if (iblockdata instanceof BlockStateList.BlockData) {
++                    ((BlockStateList.BlockData) iblockdata).calculateShape();
++                }
++                if (block13.dynamicShape()) {
++                    ((BlockStateList.BlockData) iblockdata).markDynamic();
++                }
++                // Blossom end
+                 Block.d.a(iblockdata, i);
+             }
+         }
+-
+     }
+ 
+     private static void a(int i, MinecraftKey minecraftkey, Block block) {
+diff --git a/src/main/java/net/minecraft/server/BlockCobbleWall.java b/src/main/java/net/minecraft/server/BlockCobbleWall.java
+index 08f8b5e29..3eb088845 100644
+--- a/src/main/java/net/minecraft/server/BlockCobbleWall.java
++++ b/src/main/java/net/minecraft/server/BlockCobbleWall.java
+@@ -35,10 +35,15 @@ public class BlockCobbleWall extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        boolean flag = this.e(iblockaccess, blockposition.north());
+-        boolean flag1 = this.e(iblockaccess, blockposition.south());
+-        boolean flag2 = this.e(iblockaccess, blockposition.west());
+-        boolean flag3 = this.e(iblockaccess, blockposition.east());
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        boolean flag = iblockdata.get(BlockFence.NORTH);
++        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
++        boolean flag2 = iblockdata.get(BlockFence.WEST);
++        boolean flag3 = iblockdata.get(BlockFence.EAST);
++        // Blossom end
+         float f = 0.25F;
+         float f1 = 0.75F;
+         float f2 = 0.25F;
+@@ -75,7 +80,7 @@ public class BlockCobbleWall extends Block {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        this.updateShape(iblockdata); // Blossom
+         this.maxY = 1.5D;
+         return super.a(world, blockposition, iblockdata);
+     }
+diff --git a/src/main/java/net/minecraft/server/BlockCocoa.java b/src/main/java/net/minecraft/server/BlockCocoa.java
+index c77b648ae..8455d8465 100644
+--- a/src/main/java/net/minecraft/server/BlockCocoa.java
++++ b/src/main/java/net/minecraft/server/BlockCocoa.java
+@@ -46,12 +46,16 @@ public class BlockCocoa extends BlockDirectional implements IBlockFragilePlantEl
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        // Blossom start
++        this.updateShape(iblockdata);
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        // Blossom end
+         EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockCocoa.FACING);
+         int i = ((Integer) iblockdata.get(BlockCocoa.AGE)).intValue();
+         int j = 4 + i * 2;
+diff --git a/src/main/java/net/minecraft/server/BlockDoor.java b/src/main/java/net/minecraft/server/BlockDoor.java
+index d33d59bb7..74bc5479f 100644
+--- a/src/main/java/net/minecraft/server/BlockDoor.java
++++ b/src/main/java/net/minecraft/server/BlockDoor.java
+@@ -35,12 +35,23 @@ public class BlockDoor extends Block {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        // Blossom start - the best notchian code
++        // 1) make a giant bitmap of everything that is already accessible in blockstates
++        // 2) make your get AABB code do THREE world lookups while creating the mentioned bitmap
++        // 3) only use a small portion of that bitmap
++        // 4) refuse to elaborate
++        this.updateShape(iblockdata);
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        this.k(e(iblockaccess, blockposition));
++        updateShape(iblockaccess.getType(blockposition));
++    }
++
++    public void updateShape(IBlockData iblockdata) {
++        Block block = iblockdata.getBlock();
++        this.k(block.toLegacyData(iblockdata));
++        // Blossom end
+     }
+ 
+     private void k(int i) {
+@@ -49,7 +60,7 @@ public class BlockDoor extends Block {
+         this.a(0.0F, 0.0F, 0.0F, 1.0F, 2.0F, 1.0F);
+         EnumDirection enumdirection = f(i);
+         boolean flag = g(i);
+-        boolean flag1 = j(i);
++        boolean flag1 = (i & 1) != 0; // Blossom
+ 
+         if (flag) {
+             if (enumdirection == EnumDirection.EAST) {
+diff --git a/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java b/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java
+index 43e1da0ee..1f49d5c17 100644
+--- a/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java
++++ b/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java
+@@ -25,7 +25,7 @@ public class BlockEnderPortalFrame extends Block {
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+         this.a(0.0F, 0.0F, 0.0F, 1.0F, 0.8125F, 1.0F);
+         super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+-        if (((Boolean) world.getType(blockposition).get(BlockEnderPortalFrame.EYE)).booleanValue()) {
++        if (((Boolean) iblockdata.get(BlockEnderPortalFrame.EYE)).booleanValue()) { // Blossom
+             this.a(0.3125F, 0.8125F, 0.3125F, 0.6875F, 1.0F, 0.6875F);
+             super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+         }
+diff --git a/src/main/java/net/minecraft/server/BlockFence.java b/src/main/java/net/minecraft/server/BlockFence.java
+index 1d500553b..3e673d59c 100644
+--- a/src/main/java/net/minecraft/server/BlockFence.java
++++ b/src/main/java/net/minecraft/server/BlockFence.java
+@@ -20,10 +20,12 @@ public class BlockFence extends Block {
+     }
+ 
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+-        boolean flag = this.e(world, blockposition.north());
+-        boolean flag1 = this.e(world, blockposition.south());
+-        boolean flag2 = this.e(world, blockposition.west());
+-        boolean flag3 = this.e(world, blockposition.east());
++        // Blossom start
++        boolean flag = iblockdata.get(BlockFence.NORTH);
++        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
++        boolean flag2 = iblockdata.get(BlockFence.WEST);
++        boolean flag3 = iblockdata.get(BlockFence.EAST);
++        // Blossom end
+         float f = 0.375F;
+         float f1 = 0.625F;
+         float f2 = 0.375F;
+@@ -69,10 +71,13 @@ public class BlockFence extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        boolean flag = this.e(iblockaccess, blockposition.north());
+-        boolean flag1 = this.e(iblockaccess, blockposition.south());
+-        boolean flag2 = this.e(iblockaccess, blockposition.west());
+-        boolean flag3 = this.e(iblockaccess, blockposition.east());
++        // Blossom start
++        IBlockData iblockdata = iblockaccess.getType(blockposition);
++        boolean flag = iblockdata.get(BlockFence.NORTH);
++        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
++        boolean flag2 = iblockdata.get(BlockFence.WEST);
++        boolean flag3 = iblockdata.get(BlockFence.EAST);
++        // Blossom end
+         float f = 0.375F;
+         float f1 = 0.625F;
+         float f2 = 0.375F;
+diff --git a/src/main/java/net/minecraft/server/BlockLadder.java b/src/main/java/net/minecraft/server/BlockLadder.java
+index c12c43bb1..0b452b01f 100644
+--- a/src/main/java/net/minecraft/server/BlockLadder.java
++++ b/src/main/java/net/minecraft/server/BlockLadder.java
+@@ -14,13 +14,16 @@ public class BlockLadder extends Block {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        // Blossom start
++        this.updateShape(iblockdata);
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
+-
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        // Blossom end
+         if (iblockdata.getBlock() == this) {
+             float f = 0.125F;
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockPiston.java b/src/main/java/net/minecraft/server/BlockPiston.java
+index 3592951f9..e78eabb05 100644
+--- a/src/main/java/net/minecraft/server/BlockPiston.java
++++ b/src/main/java/net/minecraft/server/BlockPiston.java
+@@ -183,8 +183,11 @@ public class BlockPiston extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
+-
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        // Blossom end
+         if (iblockdata.getBlock() == this && ((Boolean) iblockdata.get(BlockPiston.EXTENDED)).booleanValue()) {
+             float f = 0.25F;
+             EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockPiston.FACING);
+@@ -231,7 +234,7 @@ public class BlockPiston extends Block {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        this.updateShape(iblockdata); // Blossom
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockSkull.java b/src/main/java/net/minecraft/server/BlockSkull.java
+index 95a104903..7f4ba92fb 100644
+--- a/src/main/java/net/minecraft/server/BlockSkull.java
++++ b/src/main/java/net/minecraft/server/BlockSkull.java
+@@ -44,7 +44,12 @@ public class BlockSkull extends BlockContainer {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        switch (BlockSkull.SyntheticClass_1.a[((EnumDirection) iblockaccess.getType(blockposition).get(BlockSkull.FACING)).ordinal()]) {
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        switch (BlockSkull.SyntheticClass_1.a[iblockdata.get(BlockSkull.FACING).ordinal()]) {
++        // Blossom end
+         case 1:
+         default:
+             this.a(0.25F, 0.0F, 0.25F, 0.75F, 0.5F, 0.75F);
+@@ -69,7 +74,7 @@ public class BlockSkull extends BlockContainer {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        this.updateShape(iblockdata); // Blossom
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockSnow.java b/src/main/java/net/minecraft/server/BlockSnow.java
+index 03b1a8bc8..2624876ec 100644
+--- a/src/main/java/net/minecraft/server/BlockSnow.java
++++ b/src/main/java/net/minecraft/server/BlockSnow.java
+@@ -22,6 +22,7 @@ public class BlockSnow extends Block {
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+         int i = ((Integer) iblockdata.get(BlockSnow.LAYERS)).intValue() - 1;
+         float f = 0.125F;
++        if (i == 0) return null; // Blossom
+ 
+         return new AxisAlignedBB((double) blockposition.getX() + this.minX, (double) blockposition.getY() + this.minY, (double) blockposition.getZ() + this.minZ, (double) blockposition.getX() + this.maxX, (double) ((float) blockposition.getY() + (float) i * f), (double) blockposition.getZ() + this.maxZ);
+     }
+diff --git a/src/main/java/net/minecraft/server/BlockStairs.java b/src/main/java/net/minecraft/server/BlockStairs.java
+index 0a60daeb2..5301abb60 100644
+--- a/src/main/java/net/minecraft/server/BlockStairs.java
++++ b/src/main/java/net/minecraft/server/BlockStairs.java
+@@ -37,6 +37,13 @@ public class BlockStairs extends Block {
+ 
+     }
+ 
++    // Blossom start
++    @Override
++    protected boolean dynamicShape() {
++        return true;
++    }
++    // Blossom end
++
+     public boolean c() {
+         return false;
+     }
+@@ -46,7 +53,12 @@ public class BlockStairs extends Block {
+     }
+ 
+     public void e(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        if (iblockaccess.getType(blockposition).get(BlockStairs.HALF) == EnumHalf.TOP) {
++        // Blossom start
++        solidBase(iblockaccess.getType(blockposition));
++    }
++    public void solidBase(IBlockData iblockdata) {
++        if (iblockdata.get(BlockStairs.HALF) == EnumHalf.TOP) {
++            // Blossom end
+             this.a(0.0F, 0.5F, 0.0F, 1.0F, 1.0F, 1.0F);
+         } else {
+             this.a(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
+@@ -283,104 +295,98 @@ public class BlockStairs extends Block {
+         return flag1;
+     }
+ 
+-    public boolean i(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
+-        EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockStairs.FACING);
+-        EnumHalf blockstairs_enumhalf = (EnumHalf) iblockdata.get(BlockStairs.HALF);
+-        boolean flag = blockstairs_enumhalf == EnumHalf.TOP;
+-        float f = 0.5F;
+-        float f1 = 1.0F;
++    // Blossom start
++    public boolean outerRow(IBlockData iblockdata) {
++        EnumDirection facing = iblockdata.get(FACING);
++        EnumStairShape shape = iblockdata.get(SHAPE);
++        boolean top = iblockdata.get(HALF) == EnumHalf.TOP;
+ 
+-        if (flag) {
+-            f = 0.0F;
+-            f1 = 0.5F;
+-        }
++        float minX = 0.0F;
++        float maxX = 1.0F;
++        float minZ = 0.0F;
++        float maxZ = 1.0F;
+ 
+-        float f2 = 0.0F;
+-        float f3 = 0.5F;
+-        float f4 = 0.5F;
+-        float f5 = 1.0F;
+-        boolean flag1 = false;
+-        IBlockData iblockdata1;
+-        Block block;
+-        EnumDirection enumdirection1;
++        if (facing == EnumDirection.EAST || facing == EnumDirection.SOUTH) {
++            minX = 0.5F;
+ 
+-        if (enumdirection == EnumDirection.EAST) {
+-            iblockdata1 = iblockaccess.getType(blockposition.west());
+-            block = iblockdata1.getBlock();
+-            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
+-                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
+-                if (enumdirection1 == EnumDirection.NORTH && !a(iblockaccess, blockposition.north(), iblockdata)) {
+-                    f4 = 0.0F;
+-                    f5 = 0.5F;
+-                    flag1 = true;
+-                } else if (enumdirection1 == EnumDirection.SOUTH && !a(iblockaccess, blockposition.south(), iblockdata)) {
+-                    f4 = 0.5F;
+-                    f5 = 1.0F;
+-                    flag1 = true;
+-                }
++            if (shape == EnumStairShape.OUTER_LEFT) {
++                minZ = 0.5F;
++            } else if (shape == EnumStairShape.OUTER_RIGHT) {
++                maxZ = 0.5F;
+             }
+-        } else if (enumdirection == EnumDirection.WEST) {
+-            iblockdata1 = iblockaccess.getType(blockposition.east());
+-            block = iblockdata1.getBlock();
+-            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
+-                f2 = 0.5F;
+-                f3 = 1.0F;
+-                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
+-                if (enumdirection1 == EnumDirection.NORTH && !a(iblockaccess, blockposition.north(), iblockdata)) {
+-                    f4 = 0.0F;
+-                    f5 = 0.5F;
+-                    flag1 = true;
+-                } else if (enumdirection1 == EnumDirection.SOUTH && !a(iblockaccess, blockposition.south(), iblockdata)) {
+-                    f4 = 0.5F;
+-                    f5 = 1.0F;
+-                    flag1 = true;
+-                }
++
++        } else if (facing == EnumDirection.WEST || facing == EnumDirection.NORTH) {
++            maxX = 0.5F;
++
++            if (shape == EnumStairShape.OUTER_LEFT) {
++                maxZ = 0.5F;
++            } else if (shape == EnumStairShape.OUTER_RIGHT) {
++                minZ = 0.5F;
+             }
+-        } else if (enumdirection == EnumDirection.SOUTH) {
+-            iblockdata1 = iblockaccess.getType(blockposition.north());
+-            block = iblockdata1.getBlock();
+-            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
+-                f4 = 0.0F;
+-                f5 = 0.5F;
+-                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
+-                if (enumdirection1 == EnumDirection.WEST && !a(iblockaccess, blockposition.west(), iblockdata)) {
+-                    flag1 = true;
+-                } else if (enumdirection1 == EnumDirection.EAST && !a(iblockaccess, blockposition.east(), iblockdata)) {
+-                    f2 = 0.5F;
+-                    f3 = 1.0F;
+-                    flag1 = true;
+-                }
++        }
++
++        if (facing.k() == EnumDirection.EnumAxis.Z) {
++            float min_x = minZ;
++            float max_x = maxZ;
++            minZ = minX;
++            maxZ = maxX;
++            minX = min_x;
++            maxX = max_x;
++        }
++
++        super.a(minX, top ? 0.0F : 0.5F, minZ, maxX, top ? 0.5F : 1.0F, maxZ);
++        return shape == EnumStairShape.INNER_LEFT || shape == EnumStairShape.INNER_RIGHT;
++    }
++
++    public boolean innerColumn(IBlockData iblockdata) {
++        EnumDirection facing = iblockdata.get(FACING);
++        EnumStairShape shape = iblockdata.get(SHAPE);
++        boolean top = iblockdata.get(HALF) == EnumHalf.TOP;
++
++        float minX = 0.0F;
++        float maxX = 1.0F;
++        float minZ = 0.0F;
++        float maxZ = 1.0F;
++
++        if (facing == EnumDirection.EAST || facing == EnumDirection.SOUTH) {
++            minX = 0.5F;
++
++            if (shape == EnumStairShape.INNER_LEFT) {
++                maxZ = 0.5F;
++            } else if (shape == EnumStairShape.INNER_RIGHT) {
++                minZ = 0.5F;
+             }
+-        } else if (enumdirection == EnumDirection.NORTH) {
+-            iblockdata1 = iblockaccess.getType(blockposition.south());
+-            block = iblockdata1.getBlock();
+-            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
+-                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
+-                if (enumdirection1 == EnumDirection.WEST && !a(iblockaccess, blockposition.west(), iblockdata)) {
+-                    flag1 = true;
+-                } else if (enumdirection1 == EnumDirection.EAST && !a(iblockaccess, blockposition.east(), iblockdata)) {
+-                    f2 = 0.5F;
+-                    f3 = 1.0F;
+-                    flag1 = true;
+-                }
++        } else if (facing == EnumDirection.WEST || facing == EnumDirection.NORTH) {
++            maxX = 0.5F;
++
++            if (shape == EnumStairShape.INNER_LEFT) {
++                minZ = 0.5F;
++            } else if (shape == EnumStairShape.INNER_RIGHT) {
++                maxZ = 0.5F;
+             }
+         }
+ 
+-        if (flag1) {
+-            this.a(f2, f, f4, f3, f1, f5);
++        if (facing.k() == EnumDirection.EnumAxis.Z) {
++            float min_x = minZ;
++            float max_x = maxZ;
++            minZ = minX;
++            maxZ = maxX;
++            minX = min_x;
++            maxX = max_x;
+         }
+ 
+-        return flag1;
++        super.a(minX, top ? 0.0F : 0.5F, minZ, maxX, top ? 0.5F : 1.0F, maxZ);
++        return shape == EnumStairShape.INNER_LEFT || shape == EnumStairShape.INNER_RIGHT;
+     }
+ 
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+-        this.e(world, blockposition);
++        this.solidBase(iblockdata);
+         super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+-        boolean flag = this.h(world, blockposition);
++        boolean flag = this.outerRow(iblockdata);
+ 
+         super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+-        if (flag && this.i(world, blockposition)) {
++        if (flag && this.innerColumn(iblockdata)) {
++            // Blossom end
+             super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
+index fda96405b..e7e06f265 100644
+--- a/src/main/java/net/minecraft/server/BlockStateList.java
++++ b/src/main/java/net/minecraft/server/BlockStateList.java
+@@ -122,6 +122,11 @@ public class BlockStateList {
+         private final Map<IBlockState, Comparable> b;
+         private Table<IBlockState, Comparable, IBlockData> c;
+         // TacoSpigot end
++        // Blossom start
++        private static final AxisAlignedBB MASSIVE_BB = new AxisAlignedBB(-100, -100, -100, 100, 100, 100);
++        private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
++        private boolean dynamic;
++        // Blossom end
+ 
+         private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
+             this.a = block;
+@@ -135,6 +140,36 @@ public class BlockStateList {
+             // TacoSpigot end
+         }
+ 
++        // Blossom start
++        public void calculateShape() {
++            try {
++                a.updateShape(null, BlockPosition.ZERO);
++            } catch (Throwable e) {
++                // not a static shape (except for portal frames, why notch?)
++            }
++
++            try {
++                a.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
++            } catch (Throwable e) {
++                dynamic = true;
++            }
++        }
++
++        public void markDynamic() {
++            dynamic = true;
++        }
++
++        @Override
++        public boolean isShapeDynamic() {
++            return dynamic;
++        }
++
++        @Override
++        public List<AxisAlignedBB> shape() {
++            return shape;
++        }
++        // Blossom end
++
+         public Collection<IBlockState> a() {
+             return Collections.unmodifiableCollection(this.b.keySet());
+         }
+diff --git a/src/main/java/net/minecraft/server/BlockStepAbstract.java b/src/main/java/net/minecraft/server/BlockStepAbstract.java
+index 70db05c40..9d93edc43 100644
+--- a/src/main/java/net/minecraft/server/BlockStepAbstract.java
++++ b/src/main/java/net/minecraft/server/BlockStepAbstract.java
+@@ -23,10 +23,15 @@ public abstract class BlockStepAbstract extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++
++    public void updateShape(IBlockData iblockdata) {
+         if (this.l()) {
+             this.a(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+         } else {
+-            IBlockData iblockdata = iblockaccess.getType(blockposition);
++            // Blossom end
+ 
+             if (iblockdata.getBlock() == this) {
+                 if (iblockdata.get(BlockStepAbstract.HALF) == EnumSlabHalf.TOP) {
+@@ -49,7 +54,7 @@ public abstract class BlockStepAbstract extends Block {
+     }
+ 
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+-        this.updateShape(world, blockposition);
++        this.updateShape(iblockdata); // Blossom
+         super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockThin.java b/src/main/java/net/minecraft/server/BlockThin.java
+index 5a89a779c..21bc2baf2 100644
+--- a/src/main/java/net/minecraft/server/BlockThin.java
++++ b/src/main/java/net/minecraft/server/BlockThin.java
+@@ -35,10 +35,12 @@ public class BlockThin extends Block {
+     }
+ 
+     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
+-        boolean flag = this.c(world.getType(blockposition.north()).getBlock());
+-        boolean flag1 = this.c(world.getType(blockposition.south()).getBlock());
+-        boolean flag2 = this.c(world.getType(blockposition.west()).getBlock());
+-        boolean flag3 = this.c(world.getType(blockposition.east()).getBlock());
++        // Blossom start
++        boolean flag = iblockdata.get(NORTH);
++        boolean flag1 = iblockdata.get(SOUTH);
++        boolean flag2 = iblockdata.get(WEST);
++        boolean flag3 = iblockdata.get(EAST);
++        // Blossom end
+ 
+         if ((!flag2 || !flag3) && (flag2 || flag3 || flag || flag1)) {
+             if (flag2) {
+@@ -73,14 +75,20 @@ public class BlockThin extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
+         float f = 0.4375F;
+         float f1 = 0.5625F;
+         float f2 = 0.4375F;
+         float f3 = 0.5625F;
+-        boolean flag = this.c(iblockaccess.getType(blockposition.north()).getBlock());
+-        boolean flag1 = this.c(iblockaccess.getType(blockposition.south()).getBlock());
+-        boolean flag2 = this.c(iblockaccess.getType(blockposition.west()).getBlock());
+-        boolean flag3 = this.c(iblockaccess.getType(blockposition.east()).getBlock());
++
++        boolean flag = iblockdata.get(NORTH);
++        boolean flag1 = iblockdata.get(SOUTH);
++        boolean flag2 = iblockdata.get(WEST);
++        boolean flag3 = iblockdata.get(EAST);
++        // Blossom end
+ 
+         if ((!flag2 || !flag3) && (flag2 || flag3 || flag || flag1)) {
+             if (flag2) {
+diff --git a/src/main/java/net/minecraft/server/BlockTrapdoor.java b/src/main/java/net/minecraft/server/BlockTrapdoor.java
+index 88131b507..5deed1646 100644
+--- a/src/main/java/net/minecraft/server/BlockTrapdoor.java
++++ b/src/main/java/net/minecraft/server/BlockTrapdoor.java
+@@ -33,7 +33,7 @@ public class BlockTrapdoor extends Block {
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        this.updateShape(world, blockposition);
++        this.d(iblockdata); // Blossom
+         return super.a(world, blockposition, iblockdata);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 2f7ccceef..83e8eb1fa 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -663,6 +663,116 @@ public abstract class Entity implements ICommandListener {
+         // Blossom end
+     }
+ 
++    protected void move_cannon(double moveX, double moveY, double moveZ) {
++        if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
++
++        // CraftBukkit start - Don't do anything if we aren't moving
++        // We need to do this regardless of whether or not we are moving thanks to portals
++        this.checkBlockCollisions();
++
++        // Check if we're moving
++        if (moveX == 0 && moveY == 0 && moveZ == 0 && this.vehicle == null && this.passenger == null) {
++            return;
++        }
++        // CraftBukkit end
++
++        if (this.H) {
++            this.H = false;
++            moveX *= 0.25D;
++            moveY *= 0.05000000074505806D;
++            moveZ *= 0.25D;
++            this.motX = 0.0D;
++            this.motY = 0.0D;
++            this.motZ = 0.0D;
++        }
++
++        double old_moveX = moveX;
++        double old_moveY = moveY;
++        double old_moveZ = moveZ;
++
++        boolean patchedEastWest = world.tacoSpigotConfig.fixEastWest && Math.abs(moveX) > Math.abs(moveZ);
++
++        AxisAlignedBB boundingBox = getBoundingBox();
++        List<AxisAlignedBB> shapes = new java.util.ArrayList<>(4);
++
++        if (moveY != 0.0) {
++            world.testShapesOnY(shapes, boundingBox, boundingBox.a(0.0, moveY, 0.0), this, moveY);
++            moveY = collideY(shapes, moveY, true);
++            boundingBox = boundingBox.c(0.0, moveY, 0.0);
++        }
++
++        if (!patchedEastWest && moveX != 0.0) {
++            world.testShapesOnX(shapes, boundingBox, boundingBox.a(moveX, 0.0, 0.0), this, moveX);
++            moveX = collideX(shapes, moveX, true);
++            boundingBox = boundingBox.c(moveX, 0.0, 0.0);
++        }
++
++        if (moveZ != 0.0) {
++            world.testShapesOnZ(shapes, boundingBox, boundingBox.a(0.0, 0.0, moveZ), this, moveZ);
++            moveZ = collideZ(shapes, moveZ, true);
++            boundingBox = boundingBox.c(0.0, 0.0, moveZ);
++        }
++
++        if (patchedEastWest && moveX != 0.0) {
++            world.testShapesOnX(shapes, boundingBox, boundingBox.a(moveX, 0.0, 0.0), this, moveX);
++            moveX = collideX(shapes, moveX, false);
++            boundingBox = boundingBox.c(moveX, 0.0, 0.0);
++        }
++
++        this.boundingBox = boundingBox;
++
++        this.recalcPosition();
++        this.positionChanged = old_moveX != moveX || old_moveZ != moveZ;
++        this.E = old_moveY != moveY;
++        this.onGround = this.E && old_moveY < 0.0D;
++        this.F = this.positionChanged || this.E;
++
++        if (old_moveX != moveX) {
++            this.motX = 0.0D;
++        }
++
++        if (old_moveZ != moveZ) {
++            this.motZ = 0.0D;
++        }
++
++        if (old_moveY != moveY) {
++            int i = MathHelper.floor(this.locX);
++            int j = MathHelper.floor(this.locY - 0.20000000298023224D);
++            int k = MathHelper.floor(this.locZ);
++
++            Chunk chunk = getChunkAtLocation();
++            if (chunk == null) return;
++            Block block = chunk.getBlockData(i, j, k).getBlock();
++
++            if (block.getMaterial() == Material.AIR) {
++                block = chunk.getBlockData(i, j - 1, k).getBlock();
++            }
++
++            block.a(this.world, this);
++        }
++    }
++
++    private double collideX(List<AxisAlignedBB> shapes, double moveX, boolean clear) {
++        for (int i = 0; i < shapes.size(); i++)
++            moveX = shapes.get(i).collideX(boundingBox, moveX);
++        if (clear) shapes.clear();
++        return moveX;
++    }
++
++    private double collideY(List<AxisAlignedBB> shapes, double moveY, boolean clear) {
++        for (int i = 0; i < shapes.size(); i++)
++            moveY = shapes.get(i).collideY(boundingBox, moveY);
++        if (clear) shapes.clear();
++        return moveY;
++    }
++
++    private double collideZ(List<AxisAlignedBB> shapes, double moveZ, boolean clear) {
++        for (int i = 0; i < shapes.size(); i++)
++            moveZ = shapes.get(i).collideZ(boundingBox, moveZ);
++        if (clear) shapes.clear();
++        return moveZ;
++    }
++    // Blossom end
+ 
+     public void move(double d0, double d1, double d2) {
+         if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
+@@ -774,11 +884,11 @@ public abstract class Entity implements ICommandListener {
+             Iterator iterator1;
+ 
+             if(this.world.tacoSpigotConfig.fixEastWest && Math.abs(d0) > Math.abs(d2)) { //TacoSpigot - fix east/west cannoning by calculating the z movement before x if the x velocity is greater
+-            if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(0, 0, d2)); // TacoSpigot - get z axis blocks
++                if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(0, 0, d2)); // TacoSpigot - get z axis blocks
+ 
+-            for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
+-                axisalignedbb2 = (AxisAlignedBB) iterator1.next();
+-            }
++                for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
++                    axisalignedbb2 = (AxisAlignedBB) iterator1.next();
++                }
+ 
+                 this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
+ 
+@@ -791,21 +901,21 @@ public abstract class Entity implements ICommandListener {
+                 this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
+ 
+             } else {
+-            if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(d0, 0, 0)); // TacoSpigot - get x axis blocks
++                if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(d0, 0, 0)); // TacoSpigot - get x axis blocks
+ 
+-            for (iterator1 = list.iterator(); iterator1.hasNext(); d0 = axisalignedbb2.a(this.getBoundingBox(), d0)) {
+-                axisalignedbb2 = (AxisAlignedBB) iterator1.next();
+-            }
++                for (iterator1 = list.iterator(); iterator1.hasNext(); d0 = axisalignedbb2.a(this.getBoundingBox(), d0)) {
++                    axisalignedbb2 = (AxisAlignedBB) iterator1.next();
++                }
+ 
+-            this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
++                this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
+ 
+-            if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(0, 0, d2)); // TacoSpigot - get z axis blocks
++                if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(0, 0, d2)); // TacoSpigot - get z axis blocks
+ 
+-            for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
+-                axisalignedbb2 = (AxisAlignedBB) iterator1.next();
+-            }
++                for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
++                    axisalignedbb2 = (AxisAlignedBB) iterator1.next();
++                }
+ 
+-            this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
++                this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
+             }
+ 
+             if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index f0e3a96e3..0adb22084 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -84,6 +84,12 @@ public class EntityFallingBlock extends Entity {
+         }
+     }
+     // Blossom end
++    // Blossom start
++    @Override
++    public void move(double d0, double d1, double d2) {
++        super.move_cannon(d0, d1, d2);
++    }
++    // Blossom end
+ 
+     public void t_() {
+         Block block = this.block.getBlock();
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 0e1319f47..e9d30e37e 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -100,6 +100,12 @@ public class EntityTNTPrimed extends Entity {
+     }
+     */
+     // Blossom end
++    // Blossom start
++    @Override
++    public void move(double d0, double d1, double d2) {
++        super.move_cannon(d0, d1, d2);
++    }
++    // Blossom end
+ 
+     public void t_() {
+         if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
+diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
+index 3c3ab0c59..795c4cd07 100644
+--- a/src/main/java/net/minecraft/server/IBlockData.java
++++ b/src/main/java/net/minecraft/server/IBlockData.java
+@@ -16,4 +16,7 @@ public interface IBlockData {
+     ImmutableMap<IBlockState, Comparable> b();
+ 
+     Block getBlock();
++
++    java.util.List<AxisAlignedBB> shape(); // Blossom
++    boolean isShapeDynamic(); // Blossom
+ }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 176f63885..2048e7e6b 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
+ import com.google.common.collect.Lists;
+ import com.google.common.collect.Maps;
+ import com.google.common.collect.Sets;
++import me.samsuik.blossom.utils.SectionChunkCache;
+ import org.bukkit.Bukkit;
+ import org.bukkit.block.BlockState;
+ import org.bukkit.craftbukkit.CraftServer;
+@@ -1357,6 +1358,153 @@ public abstract class World implements IBlockAccess {
+         this.u.add(iworldaccess);
+     }
+ 
++    // Blossom start
++    private static final double EPSILON = 1.0e-7;
++
++    public void testShapesOnX(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++        int minY = Math.max(MathHelper.floor(bb.b - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
++        int maxY = Math.min(MathHelper.floor(bb.e), 255) + 1;
++        int minZ = MathHelper.floor(bb.c);
++        int maxZ = MathHelper.floor(bb.f) + 1;
++        SectionChunkCache cache = new SectionChunkCache(this, scan);
++
++        if (dir > 0.0) {
++            int minX = MathHelper.floor(bb.d + EPSILON);
++            int maxX = MathHelper.floor(bb.d + dir) + 1;
++            for (int x = minX; x < maxX; ++x) {
++                if (traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
++                    break;
++                }
++            }
++        } else if (dir < 0.0) {
++            int minX = MathHelper.floor(bb.a + dir);
++            int maxX = MathHelper.floor(bb.a - EPSILON);
++            for (int x = maxX; x >= minX; --x) {
++                if (traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
++                    break;
++                }
++            }
++        }
++    }
++
++    public void testShapesOnY(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++        int minX = MathHelper.floor(bb.a);
++        int maxX = MathHelper.floor(bb.d) + 1;
++        int minZ = MathHelper.floor(bb.c);
++        int maxZ = MathHelper.floor(bb.f) + 1;
++        SectionChunkCache cache = new SectionChunkCache(this, scan);
++
++        if (dir > 0.0) {
++            int minY = Math.max(MathHelper.floor(bb.e + EPSILON), 0);
++            int maxY = Math.min(MathHelper.floor(bb.e + dir), 255) + 1;
++            for (int y = minY; y < maxY; ++y) {
++                if (traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
++                    break;
++                }
++            }
++        } else if (dir < 0.0) {
++            int minY = Math.max(MathHelper.floor(bb.b + dir - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
++            int maxY = Math.min(MathHelper.floor(bb.b - EPSILON), 255);
++            for (int y = maxY; y >= minY; --y) {
++                if (traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
++                    break;
++                }
++            }
++        }
++    }
++
++    public void testShapesOnZ(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++        int minX = MathHelper.floor(bb.a);
++        int maxX = MathHelper.floor(bb.d) + 1;
++        int minY = Math.max(MathHelper.floor(bb.b - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
++        int maxY = Math.min(MathHelper.floor(bb.e), 255) + 1;
++        SectionChunkCache cache = new SectionChunkCache(this, scan);
++
++        if (dir > 0.0) {
++            int minZ = MathHelper.floor(bb.f + EPSILON);
++            int maxZ = MathHelper.floor(bb.f + dir) + 1;
++            for (int z = minZ; z < maxZ; ++z) {
++                if (traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
++                    break;
++                }
++            }
++        } else if (dir < 0.0) {
++            int minZ = MathHelper.floor(bb.c + dir);
++            int maxZ = MathHelper.floor(bb.c - EPSILON);
++            for (int z = maxZ; z >= minZ; --z) {
++                if (traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
++                    break;
++                }
++            }
++        }
++    }
++
++    private boolean traverseChunkX(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int x, int minY, int maxY, int minZ, int maxZ) {
++        for (int z = minZ; z < maxZ; ++z) {
++            for (int y = minY; y < maxY; ++y) {
++                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++            }
++        }
++
++        return !shapes.isEmpty();
++    }
++
++    private boolean traverseChunkY(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int y, int minX, int maxX, int minZ, int maxZ) {
++        for (int x = minX; x < maxX; ++x) {
++            for (int z = minZ; z < maxZ; ++z) {
++                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++            }
++        }
++
++        return !shapes.isEmpty();
++    }
++
++    private boolean traverseChunkZ(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int z, int minX, int maxX, int minY, int maxY) {
++        for (int x = minX; x < maxX; ++x) {
++            for (int y = minY; y < maxY; ++y) {
++                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++            }
++        }
++
++        return !shapes.isEmpty();
++    }
++
++    private void collideWithBlock(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB axisalignedbb, SectionChunkCache cache, int x, int y, int z) {
++        IBlockData iblockdata = cache.getType(x, y, z);
++
++        if (iblockdata != null) {
++            if (paper_isForcedFullBlock(entity, iblockdata)) {
++                // Additional bound check is not required here.
++                shapes.add(AxisAlignedBB.a(x, y, z, x + 1.0, y + 1.0, z + 1.0));
++                return;
++            }
++
++            AxisAlignedBB entityBB = entity.getBoundingBox();
++            if (iblockdata.isShapeDynamic()) {
++                iblockdata.getBlock().a(this, new BlockPosition(x, y, z), iblockdata, axisalignedbb, shapes, entity);
++                // inserted bbs may be inside the entity bb which would cause the collision to fail
++                for (int i = 0; i < shapes.size(); i++) {
++                    AxisAlignedBB bb = shapes.get(i);
++                    if (entityBB.b(bb)) shapes.remove(i--);
++                }
++            } else {
++                List<AxisAlignedBB> shape = iblockdata.shape();
++                //noinspection ForLoopReplaceableByForEach
++                for (int i = 0, shapeSize = shape.size(); i < shapeSize; i++) {
++                    final AxisAlignedBB moved = shape.get(i).c(x, y, z);
++                    if (axisalignedbb.b(moved) && !entityBB.b(moved)) shapes.add(moved);
++                }
++            }
++        }
++    }
++
++    private boolean paper_isForcedFullBlock(Entity entity, IBlockData iblockdata) {
++        // NOTE: fiend begone.
++        // entity.world.paperSpigotConfig.fallingBlocksCollideWithSigns && (entity instanceof EntityTNTPrimed || entity instanceof EntityFallingBlock) && (b instanceof BlockSign || b instanceof BlockFenceGate || b instanceof BlockTorch || b instanceof BlockButtonAbstract || b instanceof BlockLever || b instanceof BlockTripwireHook || b instanceof BlockTripwire || b instanceof BlockChest || b instanceof BlockSlowSand || b instanceof BlockBed || b instanceof BlockEnderChest || b instanceof BlockEnchantmentTable || b instanceof BlockBrewingStand);
++        return entity.world.paperSpigotConfig.fallingBlocksCollideWithSigns && entity.isCannoningEntity && (iblockdata.isShapeDynamic() || !iblockdata.shape().isEmpty()) && Math.pow(entity.motX, 2.0) * Math.pow(entity.motY, 2.0) * Math.pow(entity.motZ, 2.0) >= 48.0 * 48.0;
++    }
++    // Blossom end
++
+     public List<AxisAlignedBB> getCubes(Entity entity, AxisAlignedBB axisalignedbb) {
+         ArrayList arraylist = Lists.newArrayList();
+         int i = MathHelper.floor(axisalignedbb.a);
+@@ -1372,7 +1520,7 @@ public abstract class World implements IBlockAccess {
+         BlockPosition.MutableBlockPosition blockposition_mutableblockposition = new BlockPosition.MutableBlockPosition();
+ 
+         // Spigot start
+-        int ystart = ( ( k - 1 ) < 0 ) ? 0 : ( k - 1 );
++        int ystart = Math.max(k - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 1 : 0), 0); // Blossom
+         for ( int chunkx = ( i >> 4 ); chunkx <= ( ( j - 1 ) >> 4 ); chunkx++ )
+         {
+             int cx = chunkx << 4;
+@@ -1403,7 +1551,7 @@ public abstract class World implements IBlockAccess {
+                     {
+                         for ( int y = ystart; y < l; y++ )
+                         {
+-                            BlockPosition blockposition = new BlockPosition( x, y, z );
++                            blockposition_mutableblockposition.setValues(x, y, z); // Blossom
+ 
+                             if (flag && flag1) {
+                                 entity.h(false);
+@@ -1412,21 +1560,21 @@ public abstract class World implements IBlockAccess {
+                             }
+ 
+                             IBlockData block;
+-                            if (!this.getWorldBorder().a(blockposition) && flag1) {
++                            if (!this.getWorldBorder().a(blockposition_mutableblockposition) && flag1) { // Blossom
+                                 block = Blocks.STONE.getBlockData();
+                             } else
+                             {
+-                                block = chunk.getBlockData( blockposition );
++                                block = chunk.getBlockData( blockposition_mutableblockposition ); // Blossom
+                             }
+                             if ( block != null )
+                             {
+                                 // PaperSpigot start - FallingBlocks and TNT collide with specific non-collidable blocks
+                                 Block b = block.getBlock();
+-                                if (entity.world.paperSpigotConfig.fallingBlocksCollideWithSigns && (entity instanceof EntityTNTPrimed || entity instanceof EntityFallingBlock) && (b instanceof BlockSign || b instanceof BlockFenceGate || b instanceof BlockTorch || b instanceof BlockButtonAbstract || b instanceof BlockLever || b instanceof BlockTripwireHook || b instanceof BlockTripwire || b instanceof BlockChest || b instanceof BlockSlowSand || b instanceof BlockBed || b instanceof BlockEnderChest || b instanceof BlockEnchantmentTable || b instanceof BlockBrewingStand)) {
++                                if (paper_isForcedFullBlock(entity, iblockdata)) { // Blossom
+                                     AxisAlignedBB aabb = AxisAlignedBB.a(x, y, z, x + 1.0, y + 1.0, z + 1.0);
+                                     if (axisalignedbb.b(aabb)) arraylist.add(aabb);
+                                 } else {
+-                                    b.a(this, blockposition, block, axisalignedbb, arraylist, entity);
++                                    b.testShape(this, blockposition_mutableblockposition, block, axisalignedbb, arraylist, entity); // Blossom
+                                 }
+                                 // PaperSpigot end
+                             }
+-- 
+2.40.0.windows.1
+

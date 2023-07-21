@@ -1,0 +1,74 @@
+From 83f1ac9f6561cf64e7ef516898fb92e546d16200 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 19 Jun 2023 17:56:39 +0100
+Subject: [PATCH] Remove BlockDoor internal bitmap
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockDoor.java b/src/main/java/net/minecraft/server/BlockDoor.java
+index 74bc5479f..aa40696df 100644
+--- a/src/main/java/net/minecraft/server/BlockDoor.java
++++ b/src/main/java/net/minecraft/server/BlockDoor.java
+@@ -27,7 +27,7 @@ public class BlockDoor extends Block {
+     }
+ 
+     public boolean b(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        return g(e(iblockaccess, blockposition));
++        return g(iblockaccess.getType(blockposition).legacyData()); // Blossom - mission: nuke the notchian door bitmap
+     }
+ 
+     public boolean d() {
+@@ -216,21 +216,7 @@ public class BlockDoor extends Block {
+         return 1;
+     }
+ 
+-    public static int e(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
+-        int i = iblockdata.getBlock().toLegacyData(iblockdata);
+-        boolean flag = i(i);
+-        IBlockData iblockdata1 = iblockaccess.getType(blockposition.down());
+-        int j = iblockdata1.getBlock().toLegacyData(iblockdata1);
+-        int k = flag ? j : i;
+-        IBlockData iblockdata2 = iblockaccess.getType(blockposition.up());
+-        int l = iblockdata2.getBlock().toLegacyData(iblockdata2);
+-        int i1 = flag ? i : l;
+-        boolean flag1 = (i1 & 1) != 0;
+-        boolean flag2 = (i1 & 2) != 0;
+-
+-        return b(k) | (flag ? 8 : 0) | (flag1 ? 16 : 0) | (flag2 ? 32 : 0);
+-    }
++    // Blossom - toss it into fire never to be seen again.
+ 
+     private Item l() {
+         return this == Blocks.IRON_DOOR ? Items.IRON_DOOR : (this == Blocks.SPRUCE_DOOR ? Items.SPRUCE_DOOR : (this == Blocks.BIRCH_DOOR ? Items.BIRCH_DOOR : (this == Blocks.JUNGLE_DOOR ? Items.JUNGLE_DOOR : (this == Blocks.ACACIA_DOOR ? Items.ACACIA_DOOR : (this == Blocks.DARK_OAK_DOOR ? Items.DARK_OAK_DOOR : Items.WOODEN_DOOR)))));
+@@ -295,11 +281,11 @@ public class BlockDoor extends Block {
+     }
+ 
+     public static boolean f(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        return g(e(iblockaccess, blockposition));
++        return g(iblockaccess.getType(blockposition).legacyData()); // Blossom - mission: nuke the notchian door bitmap
+     }
+ 
+     public static EnumDirection h(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        return f(e(iblockaccess, blockposition));
++        return f(iblockaccess.getType(blockposition).legacyData()); // Blossom - mission: nuke the notchian door bitmap
+     }
+ 
+     public static EnumDirection f(int i) {
+diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
+index 795c4cd07..13fdf744d 100644
+--- a/src/main/java/net/minecraft/server/IBlockData.java
++++ b/src/main/java/net/minecraft/server/IBlockData.java
+@@ -17,6 +17,10 @@ public interface IBlockData {
+ 
+     Block getBlock();
+ 
++    default int legacyData() {
++        return getBlock().toLegacyData(this);
++    }
++
+     java.util.List<AxisAlignedBB> shape(); // Blossom
+     boolean isShapeDynamic(); // Blossom
+ }
+-- 
+2.40.0.windows.1
+

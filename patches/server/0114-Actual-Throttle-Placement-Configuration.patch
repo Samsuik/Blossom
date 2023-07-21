@@ -1,0 +1,40 @@
+From 86a314826d78a87afcbff6470236e6e00e69103b Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 18 Jul 2023 23:32:01 +0100
+Subject: [PATCH] Actual Throttle Placement Configuration
+
+smh, paper
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index be4eb2f5e..3b10b7cc0 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -544,4 +544,9 @@ public class BlossomConfig {
+         chunkLoadingPlayersPerThread = getInt("chunk.loading.players-per-thread", 50);
+     }
+ 
++    public static boolean throttlePlacement;
++    private static void ThrottlePlacement() {
++        throttlePlacement = getBoolean("player.throttle-block-placement", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 5d11191b6..a7eea8175 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -949,6 +949,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             this.lastInteractedSlot = this.player.inventory.itemInHandIndex;
+         }
+         // Blossom end
++        // Blossom start
++        if (!me.samsuik.blossom.configuration.BlossomConfig.throttlePlacement && itemstack != null && !itemstack.hasTag()) {
++            lastPlace = -1;
++        }
++        // Blossom end
+ 
+         boolean flag = false;
+         BlockPosition blockposition = packetplayinblockplace.a();
+-- 
+2.40.0.windows.1
+

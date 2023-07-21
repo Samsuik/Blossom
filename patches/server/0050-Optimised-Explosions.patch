@@ -1,0 +1,943 @@
+From e0243b9dfd5120cf002a659424cd80bed47b7c6f Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 27 May 2023 16:47:19 +0100
+Subject: [PATCH] Optimised Explosions
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 30c3a0900..e72567d93 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -326,4 +326,11 @@ public class BlossomConfig {
+         ironGolemsFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
+     }
+ 
++    public static boolean protectedRegions;
++    public static boolean avoidRedundantBlockSearches;
++    private static void Explosions() {
++        protectedRegions = getBoolean("explosions.protected-regions", true);
++        avoidRedundantBlockSearches = getBoolean("explosions.avoid-redundant-block-searches", true);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
+new file mode 100644
+index 000000000..6f9c07c00
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
+@@ -0,0 +1,149 @@
++package me.samsuik.blossom.explosions;
++
++import me.samsuik.blossom.configuration.BlossomConfig;
++import net.minecraft.server.*;
++
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.List;
++
++public class BlossomExplosion extends Explosion {
++
++    public BlossomExplosion(World world, Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
++        super(world, entity, d0, d1, d2, f, flag, flag1);
++    }
++
++    @Override
++    public void a() {
++        int potential = collectExplosionPotential();
++        List<Vec3D> positions = new ArrayList<>(potential);
++        EntityTNTPrimed etp = new EntityTNTPrimed(world);
++        etp.lastProperties(source);
++        int wrapped = 0;
++        AxisAlignedBB bounds = new AxisAlignedBB(posX, posY, posZ, posX, posY, posZ);
++
++        for (int i = 0; i < potential; ++i) {
++            // next position
++            Vec3D point = new Vec3D(source.locX, source.locY + (double) (source.length / 2.0F), source.locZ);
++            impactEntity(etp, Collections.singletonList(point), size * 2.0f);
++            positions.add(point);
++
++            posX = point.a;
++            posY = point.b;
++            posZ = point.c;
++
++            // affect blocks if necessary
++            if (wrapped < 16) {
++                getBlocks().clear(); // clean slate
++
++                entities = false;
++                super.a();
++                entities = true;
++
++                if (i + 1 < potential) {
++                    super.a(true);
++                }
++            }
++
++            // keep track of bounds for later optimisation
++            bounds = bounds.a(new AxisAlignedBB(point.a, point.b, point.c, point.a, point.b, point.c));
++
++            if (wrapped < 7) {
++                if (etp.motX == source.lastMotX || etp.motX * source.lastMotX < 0) wrapped |= 1 << 0;
++                if (etp.motY == source.lastMotY || etp.motY * source.lastMotY < 0) wrapped |= 1 << 1;
++                if (etp.motZ == source.lastMotZ || etp.motZ * source.lastMotZ < 0) wrapped |= 1 << 2;
++            } else if (getBlocks().isEmpty() && BlossomConfig.avoidRedundantBlockSearches) {
++                // wrapped and no blocks to be found, should be safe to ditch
++                wrapped++;
++            } else {
++                wrapped = 7;
++            }
++
++            // calculate next position
++            if (i + 1 < potential) {
++                world.notifyPlayersOfExplosion(this, posX, posY, posZ, size);
++
++                source.lastProperties(source);
++
++                source.motX = etp.motX;
++                source.motY = etp.motY;
++                source.motZ = etp.motZ;
++
++                source.motY -= 0.04f;
++                source.move(source.motX, source.motY, source.motZ);
++                continue;
++            }
++
++            // affect entities
++            if (potential == 1) {
++                locateAndImpactEntities(positions.get(0), size * 2.0f);
++            } else {
++                locateAndImpactEntities(positions, bounds, size * 2.0f);
++            }
++        }
++    }
++
++    private void locateAndImpactEntities(List<Vec3D> positions, AxisAlignedBB bb, double maxDistance) {
++        int minChunkX = MathHelper.floor(bb.a - maxDistance) >> 4;
++        int minChunkY = MathHelper.clamp(MathHelper.floor(bb.b - maxDistance) >> 4, 0, 15);
++        int minChunkZ = MathHelper.floor(bb.c - maxDistance) >> 4;
++        int maxChunkX = MathHelper.floor(bb.d + maxDistance) >> 4;
++        int maxChunkY = MathHelper.clamp(MathHelper.floor(bb.e + maxDistance) >> 4, 0, 15);
++        int maxChunkZ = MathHelper.floor(bb.f + maxDistance) >> 4;
++        Vec3D centre = new Vec3D((bb.a + bb.d) / 2, (bb.b + bb.e) / 2, (bb.c + bb.f) / 2);
++        double change = Math.max(bb.d - bb.a, Math.max(bb.e - bb.b, bb.f - bb.c));
++        double incDistSqr = Math.pow(maxDistance + change, 2);
++
++        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
++            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
++                locateAndImpactEntitiesInChunk(world.getChunkAt(chunkX, chunkZ), positions, centre, maxDistance, incDistSqr, minChunkY, maxChunkY);
++            }
++        }
++    }
++
++    private void locateAndImpactEntitiesInChunk(Chunk chunk, List<Vec3D> locations, Vec3D centre, double maxDistance, double incDistSqr, int minY, int maxY) {
++        for (int chunkY = minY; chunkY <= maxY; ++chunkY) {
++            impactEntities(chunk.entitySlices[chunkY], locations, centre, maxDistance, incDistSqr);
++        }
++    }
++
++    private void impactEntities(List<Entity> entities, List<Vec3D> locations, Vec3D centre, double maxDistance, double incDistSqr) {
++        //noinspection ForLoopReplaceableByForEach
++        for (int i = 0; i < entities.size(); i++) {
++            Entity entity = entities.get(i);
++
++            if (entity.dead || entity.aW()) {
++                continue;
++            }
++
++            double x = entity.locX - centre.a;
++            double y = entity.locY - centre.b;
++            double z = entity.locZ - centre.c;
++            double s = x * x + y * y + z * z;
++
++            if (s < incDistSqr && !world.densityCache.isObscured(entity, centre)) {
++                impactEntity(entity, locations, maxDistance);
++            }
++        }
++    }
++
++    private int collectExplosionPotential() {
++        List<Entity> entityList = world.entityList;
++        int index = entityList.indexOf(source);
++        int count = 1;
++
++        for (int i = index + 1; i < entityList.size(); ++i) {
++            Entity entity = entityList.get(i);
++
++            if (entity.dead || !(entity instanceof EntityTNTPrimed) || ((EntityTNTPrimed) entity).fuseTicks > 0 || !entity.isLastPosition(source)) {
++                break;
++            }
++
++            count += 1;
++            entity.die();
++        }
++
++        return count;
++    }
++
++}
+diff --git a/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
+new file mode 100644
+index 000000000..00dc1f22a
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
+@@ -0,0 +1,112 @@
++package me.samsuik.blossom.explosions.cache;
++
++import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
++import net.minecraft.server.*;
++
++public class DensityCache {
++
++    private final Int2ObjectMap<Density> densityMap = new Int2ObjectOpenHashMap<>();
++
++    public boolean isObscured(Entity entity, Vec3D vec3d) {
++        return retrieveDensity(entity, vec3d) == 0.0f;
++    }
++
++    public float retrieveDensity(Entity entity, Vec3D vec3d) {
++        int key = createDensityKey(entity, vec3d);
++        Density data = densityMap.get(key);
++
++        if (data != null && data.has(entity.getBoundingBox(), vec3d)) {
++            return data.density;
++        }
++
++        float density = calculateDensity(entity.world, vec3d, data, entity.getBoundingBox());
++
++        if (data == null && (density == 0.0 || density == 1.0f)) {
++            densityMap.put(key, new Density(entity.getBoundingBox(), vec3d, density));
++        } else if (data != null && data.density == density) {
++            data.expand(entity.getBoundingBox(), vec3d);
++        }
++
++        return density;
++    }
++
++    private float calculateDensity(World world, Vec3D vec3d, Density data, AxisAlignedBB bb) {
++        int i = 0;
++        int j = 0;
++
++        for (double[] vector : ExplosionVectors.DENSITY_VECTORS) {
++            double x = bb.a + vector[0];
++            double y = bb.b + vector[1];
++            double z = bb.c + vector[2];
++
++            if (data != null && data.has(x, y, z)) {
++                i += data.density;
++            } else if (world.rayTraceStripped(new Vec3D(x, y, z), vec3d) == null) {
++                ++i;
++            }
++
++            ++j;
++        }
++
++        return (float) i / (float) j;
++    }
++
++    public void clear() {
++        densityMap.clear();
++    }
++
++    private static int createDensityKey(Entity entity, Vec3D vec3d) {
++        int hash         = MathHelper.floor(vec3d.a);
++        hash = 31 * hash ^ MathHelper.floor(vec3d.b);
++        hash = 31 * hash ^ MathHelper.floor(vec3d.c);
++        hash = 31 * hash ^ MathHelper.floor(entity.locX);
++        hash = 31 * hash ^ MathHelper.floor(entity.locY);
++        hash = 31 * hash ^ MathHelper.floor(entity.locZ);
++        return hash;
++    }
++
++    private static class Density {
++        private AxisAlignedBB source;
++        private AxisAlignedBB entity;
++        final float density;
++
++        public Density(AxisAlignedBB bb, Vec3D p, float d) {
++            entity = bb;
++            source = point(p);
++            density = d;
++        }
++
++        void expand(AxisAlignedBB bb, Vec3D p) {
++            entity = entity.a(bb);
++            source = source.a(point(p));
++        }
++
++        boolean has(AxisAlignedBB bb, Vec3D p) {
++            return isBBWithinBounds(bb) && isPointWithinBounds(p);
++        }
++
++        boolean has(double x, double y, double z) {
++            return entity.a <= x && entity.d >= x
++                && entity.b <= y && entity.e >= y
++                && entity.c <= z && entity.f >= z;
++        }
++
++        boolean isBBWithinBounds(AxisAlignedBB bb) {
++            return entity.a <= bb.a && entity.d >= bb.d
++                && entity.b <= bb.b && entity.e >= bb.e
++                && entity.c <= bb.c && entity.f >= bb.f;
++        }
++
++        boolean isPointWithinBounds(Vec3D p) {
++            return source.a <= p.a && source.d >= p.a
++                && source.b <= p.b && source.e >= p.b
++                && source.c <= p.c && source.f >= p.c;
++        }
++
++        private static AxisAlignedBB point(Vec3D p) {
++            return new AxisAlignedBB(p.a, p.b, p.c, p.a, p.b, p.c);
++        }
++    }
++
++}
+diff --git a/src/main/java/me/samsuik/blossom/explosions/cache/ExplosionVectors.java b/src/main/java/me/samsuik/blossom/explosions/cache/ExplosionVectors.java
+new file mode 100644
+index 000000000..c1654b221
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/explosions/cache/ExplosionVectors.java
+@@ -0,0 +1,51 @@
++package me.samsuik.blossom.explosions.cache;
++
++import java.util.Arrays;
++
++public class ExplosionVectors {
++
++    public static double[][] SEARCH_VECTORS = new double[0][];
++    public static double[][] DENSITY_VECTORS = new double[0][];
++
++    static {
++        int itr = 0;
++        for (int k = 0; k < 16; ++k) {
++            for (int i = 0; i < 16; ++i) {
++                for (int j = 0; j < 16; ++j) {
++                    if (k == 0 || k == 15 || i == 0 || i == 15 || j == 0 || j == 15) {
++                        double d0 = (double) ((float) k / 15.0F * 2.0F - 1.0F);
++                        double d1 = (double) ((float) i / 15.0F * 2.0F - 1.0F);
++                        double d2 = (double) ((float) j / 15.0F * 2.0F - 1.0F);
++                        double d3 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
++
++                        d0 /= d3;
++                        d1 /= d3;
++                        d2 /= d3;
++
++                        SEARCH_VECTORS = Arrays.copyOf(SEARCH_VECTORS, itr + 1);
++                        SEARCH_VECTORS[itr++] = new double[] {d0 * 0.30000001192092896D, d1 * 0.30000001192092896D, d2 * 0.30000001192092896D};
++                    }
++                }
++            }
++        }
++
++        itr = 0;
++
++        double d0 = 0.3378378334839559;
++        double d4 = (1.0D - Math.floor(1.0D / d0) * d0) / 2.0D;
++
++        for (float f = 0.0F; f <= 1.0F; f = (float) ((double) f + d0)) {
++            for (float f1 = 0.0F; f1 <= 1.0F; f1 = (float) ((double) f1 + d0)) {
++                for (float f2 = 0.0F; f2 <= 1.0F; f2 = (float) ((double) f2 + d0)) {
++                    double d5 = 0.98f * (double) f;
++                    double d6 = 0.98f * (double) f1;
++                    double d7 = 0.98f * (double) f2;
++
++                    DENSITY_VECTORS = Arrays.copyOf(DENSITY_VECTORS, itr + 1);
++                    DENSITY_VECTORS[itr++] = new double[] {d5 + d4, d6, d7 + d4};
++                }
++            }
++        }
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/AxisAlignedBB.java b/src/main/java/net/minecraft/server/AxisAlignedBB.java
+index 88b6fe532..431097ec3 100644
+--- a/src/main/java/net/minecraft/server/AxisAlignedBB.java
++++ b/src/main/java/net/minecraft/server/AxisAlignedBB.java
+@@ -282,4 +282,40 @@ public class AxisAlignedBB {
+     public String toString() {
+         return "box[" + this.a + ", " + this.b + ", " + this.c + " -> " + this.d + ", " + this.e + ", " + this.f + "]";
+     }
++
++    // Blossom start
++    @Override
++    public boolean equals(Object o) {
++        if (this == o) return true;
++        if (o == null || getClass() != o.getClass()) return false;
++
++        AxisAlignedBB that = (AxisAlignedBB) o;
++
++        if (Double.compare(that.a, a) != 0) return false;
++        if (Double.compare(that.b, b) != 0) return false;
++        if (Double.compare(that.c, c) != 0) return false;
++        if (Double.compare(that.d, d) != 0) return false;
++        if (Double.compare(that.e, e) != 0) return false;
++        return Double.compare(that.f, f) == 0;
++    }
++
++    @Override
++    public int hashCode() {
++        int result;
++        long temp;
++        temp = Double.doubleToLongBits(a);
++        result = (int) (temp ^ (temp >>> 32));
++        temp = Double.doubleToLongBits(b);
++        result = 31 * result + (int) (temp ^ (temp >>> 32));
++        temp = Double.doubleToLongBits(c);
++        result = 31 * result + (int) (temp ^ (temp >>> 32));
++        temp = Double.doubleToLongBits(d);
++        result = 31 * result + (int) (temp ^ (temp >>> 32));
++        temp = Double.doubleToLongBits(e);
++        result = 31 * result + (int) (temp ^ (temp >>> 32));
++        temp = Double.doubleToLongBits(f);
++        result = 31 * result + (int) (temp ^ (temp >>> 32));
++        return result;
++    }
++    // Blossom end
+ }
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 9facefa1f..7233a4939 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -62,6 +62,23 @@ public class Block {
+     protected boolean v;
+     protected float strength;
+     protected float durability;
++    // Blossom start
++    public float getBlastResistance() {
++        return ((durability / 5.0f) + 0.3f) * 0.3f;
++    }
++
++    public boolean isInsideBlock(IBlockAccess world, BlockPosition pos, double x, double y, double z) {
++        updateShape(world, pos);
++
++        double relX = z - pos.getX();
++        double relY = y - pos.getY();
++        double relZ = x - pos.getZ();
++
++        return minX <= relX && maxX >= relX
++            && minY <= relY && maxY >= relY
++            && minZ <= relZ && maxZ >= relZ;
++    }
++    // Blossom end
+     protected boolean y;
+     protected boolean z;
+     protected boolean isTileEntity;
+diff --git a/src/main/java/net/minecraft/server/BlockTNT.java b/src/main/java/net/minecraft/server/BlockTNT.java
+index 3d1e583f3..815ba72d0 100644
+--- a/src/main/java/net/minecraft/server/BlockTNT.java
++++ b/src/main/java/net/minecraft/server/BlockTNT.java
+@@ -35,6 +35,7 @@ public class BlockTNT extends Block {
+             if (!world.paperSpigotConfig.fixCannons) y += 0.5;
+             EntityTNTPrimed entitytntprimed = new EntityTNTPrimed(loc, world, (double) ((float) blockposition.getX() + 0.5F), y, (double) ((float) blockposition.getZ() + 0.5F), explosion.getSource()); // PaperSpigot - add loc
+             // PaperSpigot end
++            entitytntprimed.isRogue = true; // Blossom
+ 
+             entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
+             world.addEntity(entitytntprimed);
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index edd3843f8..575078165 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -132,6 +132,33 @@ public abstract class Entity implements ICommandListener {
+     public boolean inUnloadedChunk = false; // PaperSpigot - Remove entities in unloaded chunks
+     public boolean loadChunks = false; // PaperSpigot - Entities can load chunks they move through and keep them loaded
+     // Blossom start
++    public double lastMotX, lastMotY, lastMotZ;
++    public AxisAlignedBB lastBB;
++
++    public final boolean isLastPosition(Entity entity) {
++        return locX == entity.lastX && locY == entity.lastY && locZ == entity.lastZ
++            && motX == entity.lastMotX && motY == entity.lastMotY && motZ == entity.lastMotZ
++            && boundingBox.equals(entity.lastBB);
++    }
++
++    public final void lastProperties(Entity entity) {
++        locX = entity.lastX;
++        locY = entity.lastY;
++        locZ = entity.lastZ;
++        motX = entity.lastMotX;
++        motY = entity.lastMotY;
++        motZ = entity.lastMotZ;
++        boundingBox = entity.lastBB;
++    }
++
++    public final void storePosition() {
++        lastMotX = motX;
++        lastMotY = motY;
++        lastMotZ = motZ;
++        lastBB = boundingBox;
++    }
++    // Blossom end
++    // Blossom start
+     public BlockPosition blockposition = BlockPosition.ZERO;
+     public BlockPosition lastPosition;
+     public boolean isInLava;
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 44f961d15..2b94efe5c 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -9,6 +9,7 @@ public class EntityTNTPrimed extends Entity {
+     public float yield = 4; // CraftBukkit - add field
+     public boolean isIncendiary = false; // CraftBukkit - add field
+     public org.bukkit.Location sourceLoc; // PaperSpigot
++    public boolean isRogue = false; // Blossom
+ 
+     // PaperSpigot start - TNT source location API
+     public EntityTNTPrimed(World world) {
+diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
+index 4b288ae8b..2fd5ab14b 100644
+--- a/src/main/java/net/minecraft/server/Explosion.java
++++ b/src/main/java/net/minecraft/server/Explosion.java
+@@ -19,16 +19,17 @@ import org.bukkit.event.block.BlockExplodeEvent;
+ public class Explosion {
+ 
+     private final boolean a;
+-    private final boolean b;
++    private final boolean b; public boolean destroyBlocks() { return b; } // Blossom - OBFHELPER
+     private final Random c = new Random();
+-    private final World world;
+-    private final double posX;
+-    private final double posY;
+-    private final double posZ;
++    protected final World world; // Blossom - private -> protected
++    protected double posX; // Blossom private final -> protected
++    protected double posY; // Blossom private final -> protected
++    protected double posZ; // Blossom private final -> protected
+     public final Entity source;
+-    private final float size;
++    protected final float size; // Blossom private -> protected
+     private final List<BlockPosition> blocks = Lists.newArrayList();
+     private final Map<EntityHuman, Vec3D> k = Maps.newHashMap();
++    public boolean entities = true; // Blossom
+     public boolean wasCanceled = false; // CraftBukkit - add field
+ 
+     public Explosion(World world, Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
+@@ -82,124 +83,200 @@ public class Explosion {
+             return;
+         }
+         // CraftBukkit end
+-        HashSet hashset = Sets.newHashSet();
+-        boolean flag = true;
+-
+-        int i;
+-        int j;
+-
+-        Block b = world.getChunkAt((int)posX >> 4, (int)posZ >> 4).getBlockData(new BlockPosition(posX, posY, posZ)).getBlock(); // TacoSpigot - get block of the explosion
+-
+-        if (!this.world.tacoSpigotConfig.optimizeLiquidExplosions || !b.getMaterial().isLiquid()) { //TacoSpigot - skip calculating what blocks to blow up in water/lava
+-        for (int k = 0; k < 16; ++k) {
+-            for (i = 0; i < 16; ++i) {
+-                for (j = 0; j < 16; ++j) {
+-                    if (k == 0 || k == 15 || i == 0 || i == 15 || j == 0 || j == 15) {
+-                        double d0 = (double) ((float) k / 15.0F * 2.0F - 1.0F);
+-                        double d1 = (double) ((float) i / 15.0F * 2.0F - 1.0F);
+-                        double d2 = (double) ((float) j / 15.0F * 2.0F - 1.0F);
+-                        double d3 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
+-
+-                        d0 /= d3;
+-                        d1 /= d3;
+-                        d2 /= d3;
+-                        float f = this.size * (0.7F + this.getExplosionStrength(d0, d1, d2) * 0.6F); // Blossom
+-                        double d4 = this.posX;
+-                        double d5 = this.posY;
+-                        double d6 = this.posZ;
+-
+-                        for (float f1 = 0.3F; f > 0.0F; f -= 0.22500001F) {
+-                            BlockPosition blockposition = new BlockPosition(d4, d5, d6);
+-                            IBlockData iblockdata = this.world.getType(blockposition);
+-
+-                            if (iblockdata.getBlock().getMaterial() != Material.AIR) {
+-                                float f2 = this.source != null ? this.source.a(this, this.world, blockposition, iblockdata) : iblockdata.getBlock().a((Entity) null);
+-
+-                                f -= (f2 + 0.3F) * 0.3F;
+-                            }
+-
+-                            if (f > 0.0F && (this.source == null || this.source.a(this, this.world, blockposition, iblockdata, f)) && blockposition.getY() < 256 && blockposition.getY() >= 0) { // CraftBukkit - don't wrap explosions
+-                                hashset.add(blockposition);
+-                            }
+-
+-                            d4 += d0 * 0.30000001192092896D;
+-                            d5 += d1 * 0.30000001192092896D;
+-                            d6 += d2 * 0.30000001192092896D;
+-                        }
+-                    }
++        // Blossom start
++        double maxDistance = size * 2.0f;
++        BlockPosition blockPos = new BlockPosition(posX, posY, posZ);
++        Chunk chunk = world.getChunkAt(blockPos.getX() >> 4, blockPos.getZ() >> 4);
++        IBlockData state = chunk.getBlockData(blockPos);
++        Block block = state.getBlock();
++
++        // Make sure we can destroy blocks
++        if (destroyBlocks() && !block.getMaterial().isLiquid() && block.getBlastResistance() < 100.0f
++            && !isRegionProtected(chunk) && posY - maxDistance < 256
++        ) {
++            locateBlocksToDestroy();
++        }
++
++        // Special case: explosions inside blocks on legacy versions cannot affect entities.
++        if (!block.isInsideBlock(world, blockPos, posX, posY, posZ) && entities) {
++            locateAndImpactEntities(new Vec3D(posX, posY, posZ), maxDistance);
++        }
++    }
++
++    private boolean isRegionProtected(Chunk chunk) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.protectedRegions && source != null) {
++            Location location = new Location(world.getWorld(), posX, posY, posZ);
++
++            List<org.bukkit.block.Block> list = new java.util.ArrayList<>(1);
++            int x = org.bukkit.util.NumberConversions.floor(posX);
++            int y = org.bukkit.util.NumberConversions.floor(posY);
++            int z = org.bukkit.util.NumberConversions.floor(posZ);
++            list.add(chunk.bukkitChunk.getBlock(x, y, z));
++
++            EntityExplodeEvent event = new EntityExplodeEvent(source.getBukkitEntity(), location, list, 0.3F);
++            world.getServer().getPluginManager().callEvent(event);
++            return event.isCancelled() || event.blockList().isEmpty();
++        }
++
++        return false;
++    }
++
++    private void locateBlocksToDestroy() {
++        it.unimi.dsi.fastutil.longs.LongOpenHashSet found = new it.unimi.dsi.fastutil.longs.LongOpenHashSet(64);
++        java.util.concurrent.locks.StampedLock lock = new java.util.concurrent.locks.StampedLock();
++
++        java.util.stream.IntStream.range(0, me.samsuik.blossom.explosions.cache.ExplosionVectors.SEARCH_VECTORS.length)
++                .parallel()
++                .forEach((index) -> performRayCast(found, lock, me.samsuik.blossom.explosions.cache.ExplosionVectors.SEARCH_VECTORS[index]));
++
++        found.forEach((pack) -> blocks.add(BlockPosition.fromLong(pack)));
++    }
++
++    private void performRayCast(it.unimi.dsi.fastutil.longs.LongOpenHashSet found, java.util.concurrent.locks.StampedLock lock, double[] vector) {
++        float f = size * (0.7F + getExplosionStrength(posX, posY, posZ) * 0.6F); // Blossom
++        double stepX = posX;
++        double stepY = posY;
++        double stepZ = posZ;
++
++        int prevX = Integer.MIN_VALUE;
++        int prevY = Integer.MIN_VALUE;
++        int prevZ = Integer.MIN_VALUE;
++
++        Chunk chunk = null;
++        float resistance = 0.0f;
++
++        for (; f > 0.0F; f -= 0.22500001F) {
++            int blockX = org.bukkit.util.NumberConversions.floor(stepX);
++            int blockY = org.bukkit.util.NumberConversions.floor(stepY);
++            int blockZ = org.bukkit.util.NumberConversions.floor(stepZ);
++
++            if (blockX != prevX || blockY != prevY || blockZ != prevZ) {
++                int chunkX = blockX >> 4;
++                int chunkZ = blockZ >> 4;
++
++                if (chunk == null || !chunk.isWithin(chunkX, chunkZ)) {
++                    chunk = world.getChunkIfLoaded(chunkX, chunkZ);
++                    if (chunk == null) continue;
+                 }
++
++                resistance = traverseBlock(found, lock, f, chunk, blockX, blockY, blockZ);
++                prevX = blockX;
++                prevY = blockY;
++                prevZ = blockZ;
+             }
++
++            f -= resistance;
++            stepX += vector[0];
++            stepY += vector[1];
++            stepZ += vector[2];
+         }
++    }
++
++    private float traverseBlock(it.unimi.dsi.fastutil.longs.LongOpenHashSet found, java.util.concurrent.locks.StampedLock lock, float strength, Chunk chunk, int x, int y, int z) {
++        IBlockData iblockdata = chunk.getBlockData(x, y, z);
++        Block block = iblockdata.getBlock();
++        float resistance = block.getBlastResistance();
++
++        if (block != Blocks.AIR && strength - resistance > 0.0f) {
++            long pack = BlockPosition.asLong(x, y, z);
++
++            // contains:
++            long stamp; boolean contains = false;
++            do {
++                stamp = lock.tryOptimisticRead();
++                try {
++                    contains = found.contains(pack);
++                } catch (Exception ignored) {};
++            } while (!lock.validate(stamp));
++
++            // insert
++            if (!contains) {
++                stamp = lock.writeLock();
++                found.add(pack);
++                lock.unlockWrite(stamp);
++            }
+         }
+ 
+-        this.blocks.addAll(hashset);
+-        float f3 = this.size * 2.0F;
+-
+-        i = MathHelper.floor(this.posX - (double) f3 - 1.0D);
+-        j = MathHelper.floor(this.posX + (double) f3 + 1.0D);
+-        int l = MathHelper.floor(this.posY - (double) f3 - 1.0D);
+-        int i1 = MathHelper.floor(this.posY + (double) f3 + 1.0D);
+-        int j1 = MathHelper.floor(this.posZ - (double) f3 - 1.0D);
+-        int k1 = MathHelper.floor(this.posZ + (double) f3 + 1.0D);
+-        // PaperSpigot start - Fix lag from explosions processing dead entities
+-        List list = this.world.a(this.source, new AxisAlignedBB((double) i, (double) l, (double) j1, (double) j, (double) i1, (double) k1), new com.google.common.base.Predicate<Entity>() {
+-            @Override
+-            public boolean apply(Entity entity) {
+-                return IEntitySelector.d.apply(entity) && !entity.dead;
++        return resistance;
++    }
++
++    protected void locateAndImpactEntities(Vec3D vec3d, double maxDistance) {
++        int minChunkX = MathHelper.floor(vec3d.a - maxDistance) >> 4;
++        int minChunkY = MathHelper.clamp(MathHelper.floor(vec3d.b - maxDistance) >> 4, 0, 15);
++        int minChunkZ = MathHelper.floor(vec3d.c - maxDistance) >> 4;
++        int maxChunkX = MathHelper.floor(vec3d.a + maxDistance) >> 4;
++        int maxChunkY = MathHelper.clamp(MathHelper.floor(vec3d.b + maxDistance) >> 4, 0, 15);
++        int maxChunkZ = MathHelper.floor(vec3d.c + maxDistance) >> 4;
++
++        List<Vec3D> position = java.util.Collections.singletonList(vec3d);
++
++        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
++            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
++                locateAndImpactEntitiesInChunk(world.getChunkAt(chunkX, chunkZ), position, maxDistance, minChunkY, maxChunkY);
+             }
+-        });
+-        // PaperSpigot end
+-        Vec3D vec3d = new Vec3D(this.posX, this.posY, this.posZ);
++        }
++    }
++
++    private void locateAndImpactEntitiesInChunk(Chunk chunk, List<Vec3D> locations, double maxDistance, int minY, int maxY) {
++        for (int chunkY = minY; chunkY <= maxY; ++chunkY) {
++            impactEntities(chunk.entitySlices[chunkY], locations, maxDistance);
++        }
++    }
+ 
+-        for (int l1 = 0; l1 < list.size(); ++l1) {
+-            Entity entity = (Entity) list.get(l1);
++    private void impactEntities(List<Entity> entities, List<Vec3D> locations, double maxDistance) {
++        //noinspection ForLoopReplaceableByForEach
++        for (int i = 0; i < entities.size(); i++) {
++            Entity entity = entities.get(i);
+ 
+             if (!entity.aW()) {
+-                double d7 = entity.f(this.posX, this.posY, this.posZ) / (double) f3;
+-
+-                if (d7 <= 1.0D) {
+-                    double d8 = entity.locX - this.posX;
+-                    double d9 = entity.locY + (double) entity.getHeadHeight() - this.posY;
+-                    double d10 = entity.locZ - this.posZ;
+-                    double d11 = (double) MathHelper.sqrt(d8 * d8 + d9 * d9 + d10 * d10);
+-
+-                    if (d11 != 0.0D) {
+-                        d8 /= d11;
+-                        d9 /= d11;
+-                        d10 /= d11;
+-                        double d12 = this.getBlockDensity(vec3d, entity.getBoundingBox()); // PaperSpigot - Optimize explosions
+-                        double d13 = (1.0D - d7) * d12;
+-
+-                        // entity.damageEntity(DamageSource.explosion(this), (float) ((int) ((d13 * d13 + d13) / 2.0D * 8.0D * (double) f3 + 1.0D)));+                        // CraftBukkit start
+-                        CraftEventFactory.entityDamage = source;
+-                        entity.forceExplosionKnockback = false;
+-                        boolean wasDamaged = entity.damageEntity(DamageSource.explosion(this), (float) ((int) ((d13 * d13 + d13) / 2.0D * 8.0D * (double) f3 + 1.0D)));
+-                        CraftEventFactory.entityDamage = null;
+-                        if (!wasDamaged && !(entity instanceof EntityTNTPrimed || entity instanceof EntityFallingBlock) && !entity.forceExplosionKnockback) {
+-                            continue;
+-                        }
+-                        // CraftBukkit end
+-                        double d14 = entity instanceof EntityHuman && world.paperSpigotConfig.disableExplosionKnockback ? 0 : EnchantmentProtection.a(entity, d13); // PaperSpigot
+-
+-                        // PaperSpigot start - Fix cannons
+-                        /*
+-                        entity.motX += d8 * d14;
+-                        entity.motY += d9 * d14;
+-                        entity.motZ += d10 * d14;
+-                        */
+-                        // This impulse method sets the dirty flag, so clients will get an immediate velocity update
+-                        entity.g(d8 * d14, d9 * d14, d10 * d14);
+-                        // PaperSpigot end
+-
+-                        if (entity instanceof EntityHuman && !((EntityHuman) entity).abilities.isInvulnerable && !world.paperSpigotConfig.disableExplosionKnockback) { // PaperSpigot
+-                            this.k.put((EntityHuman) entity, new Vec3D(d8 * d13, d9 * d13, d10 * d13));
+-                        }
+-                    }
++                impactEntity(entity, locations, maxDistance);
++            }
++        }
++    }
++
++    public void impactEntity(Entity entity, List<Vec3D> locations, double maxDistance) {
++        //noinspection ForLoopReplaceableByForEach
++        for (int i = 0, len = locations.size(); i < len; ++i) {
++            Vec3D vec3d = locations.get(i);
++            double x = entity.locX - vec3d.a;
++            double y = entity.locY + (double) entity.getHeadHeight() - vec3d.b;
++            double z = entity.locZ - vec3d.c;
++            double distanceSqr = x * x + y * y + z * z;
++
++            if (distanceSqr < maxDistance * maxDistance && distanceSqr != 0.0D) {
++                double distance = MathHelper.sqrt(distanceSqr);
++                x /= distance;
++                y /= distance;
++                z /= distance;
++                double density = world.densityCache.retrieveDensity(entity, vec3d);
++                double exposure = (1.0D - (distance / maxDistance)) * density;
++
++                if (!entity.isCannoningEntity) {
++                    impactLivingEntity(entity, x, y, z, exposure, maxDistance);
++                } else {
++                    entity.g(x * exposure, y * exposure, z * exposure);
+                 }
+             }
+         }
++    }
++
++    private void impactLivingEntity(Entity entity, double x, double y, double z, double exp, double maxDistance) {
++        CraftEventFactory.entityDamage = source;
++        entity.forceExplosionKnockback = false;
++        boolean wasDamaged = entity.damageEntity(DamageSource.explosion(this), (float) ((int) ((exp * exp + exp) / 2.0D * 8.0D * maxDistance + 1.0D)));
++        CraftEventFactory.entityDamage = null;
++        if (!wasDamaged && !entity.forceExplosionKnockback) {
++            return;
++        }
++        double d14 = entity instanceof EntityHuman && world.paperSpigotConfig.disableExplosionKnockback ? 0 : EnchantmentProtection.a(entity, exp); // PaperSpigot
++
++        entity.g(x * d14, y * d14, z * d14);
+ 
++        if (entity instanceof EntityHuman && !((EntityHuman) entity).abilities.isInvulnerable && !world.paperSpigotConfig.disableExplosionKnockback) { // PaperSpigot
++            this.k.put((EntityHuman) entity, new Vec3D(x * exp, y * exp, z * exp));
++        }
+     }
++    // Blossom end
+ 
+     public void a(boolean flag) {
+         // PaperSpigot start - Configurable TNT explosion volume.
+@@ -221,7 +298,7 @@ public class Explosion {
+             org.bukkit.entity.Entity explode = this.source == null ? null : this.source.getBukkitEntity();
+             Location location = new Location(bworld, this.posX, this.posY, this.posZ);
+ 
+-            List<org.bukkit.block.Block> blockList = Lists.newArrayList();
++            List<org.bukkit.block.Block> blockList = Lists.newArrayListWithCapacity(this.blocks.size()); // Blossom
+             for (int i1 = this.blocks.size() - 1; i1 >= 0; i1--) {
+                 BlockPosition cpos = (BlockPosition) this.blocks.get(i1);
+                 org.bukkit.block.Block bblock = bworld.getBlockAt(cpos.getX(), cpos.getY(), cpos.getZ());
+@@ -267,27 +344,7 @@ public class Explosion {
+                 Block block = this.world.getType(blockposition).getBlock();
+ 
+                 world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
+-                if (flag) {
+-                    double d0 = (double) ((float) blockposition.getX() + this.world.random.nextFloat());
+-                    double d1 = (double) ((float) blockposition.getY() + this.world.random.nextFloat());
+-                    double d2 = (double) ((float) blockposition.getZ() + this.world.random.nextFloat());
+-                    double d3 = d0 - this.posX;
+-                    double d4 = d1 - this.posY;
+-                    double d5 = d2 - this.posZ;
+-                    double d6 = (double) MathHelper.sqrt(d3 * d3 + d4 * d4 + d5 * d5);
+-
+-                    d3 /= d6;
+-                    d4 /= d6;
+-                    d5 /= d6;
+-                    double d7 = 0.5D / (d6 / (double) this.size + 0.1D);
+-
+-                    d7 *= (double) (this.world.random.nextFloat() * this.world.random.nextFloat() + 0.3F);
+-                    d3 *= d7;
+-                    d4 *= d7;
+-                    d5 *= d7;
+-                    this.world.addParticle(EnumParticle.EXPLOSION_NORMAL, (d0 + this.posX * 1.0D) / 2.0D, (d1 + this.posY * 1.0D) / 2.0D, (d2 + this.posZ * 1.0D) / 2.0D, d3, d4, d5, new int[0]);
+-                    this.world.addParticle(EnumParticle.SMOKE_NORMAL, d0, d1, d2, d3, d4, d5, new int[0]);
+-                }
++                // Blossom - unnecessary
+ 
+                 if (block.getMaterial() != Material.AIR) {
+                     if (block.a(this)) {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 6bfb8b641..5e045faef 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -892,6 +892,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                 this.methodProfiler.b();
+                 worldserver.explosionDensityCache.clear(); // PaperSpigot - Optimize explosions
+                 worldserver.minimal.clear(); // Blossom
++                worldserver.densityCache.clear(); // Blossom
+             // } // CraftBukkit
+ 
+             // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index d4b0f2169..ad3dcf113 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
+         minimal.defaultReturnValue(Integer.MIN_VALUE);
+     }
+     // Blossom end
++    public final me.samsuik.blossom.explosions.cache.DensityCache densityCache = new me.samsuik.blossom.explosions.cache.DensityCache(); // Blossom - optimise explosions
+ 
+     protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
+         this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
+@@ -1858,6 +1859,7 @@ public abstract class World implements IBlockAccess {
+             // PaperSpigot end
+         } else {
+             // CraftBukkit end
++            entity.storePosition(); // Blossom
+             entity.P = entity.locX;
+             entity.Q = entity.locY;
+             entity.R = entity.locZ;
+@@ -2196,12 +2198,21 @@ public abstract class World implements IBlockAccess {
+         return false;
+     }
+ 
++    public void notifyPlayersOfExplosion(Explosion explosion, double d0, double d1, double d2, float f) {}
++
+     public Explosion explode(Entity entity, double d0, double d1, double d2, float f, boolean flag) {
+         return this.createExplosion(entity, d0, d1, d2, f, false, flag);
+     }
+ 
+     public Explosion createExplosion(Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
+-        Explosion explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
++        // Blossom start
++        Explosion explosion;
++        if (entity instanceof EntityTNTPrimed && !((EntityTNTPrimed) entity).isRogue) {
++            explosion = new me.samsuik.blossom.explosions.BlossomExplosion(this, entity, d0, d1, d2, f, flag, flag1);
++        } else {
++            explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
++        }
++        // Blossom end
+ 
+         explosion.a();
+         explosion.a(true);
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index bfd0ff5a7..10cc04fe5 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -1102,6 +1102,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             explosion.clearBlocks();
+         }
+ 
++        // Blossom start
++        notifyPlayersOfExplosion(explosion, d0, d1, d2, f);
++        return explosion;
++    }
++
++    public void notifyPlayersOfExplosion(Explosion explosion, double d0, double d1, double d2, float f) {
++        // Blossom end
+         Iterator iterator = this.players.iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -1112,7 +1119,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             }
+         }
+ 
+-        return explosion;
++        // Blossom - moved up
+     }
+ 
+     public void playBlockAction(BlockPosition blockposition, Block block, int i, int j) {
+-- 
+2.40.0.windows.1
+

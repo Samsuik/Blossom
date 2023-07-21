@@ -1,0 +1,12 @@
+[submodule "Bukkit"]
+	path = work/Bukkit
+	url = https://hub.spigotmc.org/stash/scm/spigot/bukkit.git
+[submodule "CraftBukkit"]
+	path = work/CraftBukkit
+	url = https://hub.spigotmc.org/stash/scm/spigot/craftbukkit.git
+[submodule "BuildData"]
+	path = BuildData
+	url = https://hub.spigotmc.org/stash/scm/spigot/builddata.git
+[submodule "Paperclip"]
+	path = work/Paperclip
+	url = https://github.com/Samsuik/Paperclip.git

@@ -1,0 +1,47 @@
+From 82a88050720c8ae647d449c1e04beec118fd42a9 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 8 Jul 2023 21:58:01 +0100
+Subject: [PATCH] EastWestPatchEvent
+
+
+diff --git a/src/main/java/me/samsuik/blossom/events/entity/EastWestPatchEvent.java b/src/main/java/me/samsuik/blossom/events/entity/EastWestPatchEvent.java
+new file mode 100644
+index 00000000..3dfee1b6
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/events/entity/EastWestPatchEvent.java
+@@ -0,0 +1,32 @@
++package me.samsuik.blossom.events.entity;
++
++import org.bukkit.entity.Entity;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.entity.EntityEvent;
++
++public class EastWestPatchEvent extends EntityEvent {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean eastWest;
++
++    public EastWestPatchEvent(Entity what, boolean eastWest) {
++        super(what);
++        this.eastWest = eastWest;
++    }
++
++    public boolean isEastWestPatched() {
++        return eastWest;
++    }
++
++    public void setEastWestPatched(boolean eastWest) {
++        this.eastWest = eastWest;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+-- 
+2.40.0.windows.1
+

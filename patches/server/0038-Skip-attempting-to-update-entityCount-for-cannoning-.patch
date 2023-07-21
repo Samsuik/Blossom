@@ -1,0 +1,37 @@
+From 1cbe12ba352182ba97fc88657c284f8f16419084 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 28 Jun 2022 20:02:37 +0100
+Subject: [PATCH] Skip attempting to update entityCount for cannoning entities
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 934c3b34f..0e1610710 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -790,6 +790,11 @@ public class Chunk {
+         entity.ag = this.locZ;
+         this.entitySlices[k].add(entity);
+         entity.setCurrentChunk(this); // Paper
++        // Blossom start - entity count is not updated for cannoning entities, so we should skip checking early.
++        if (entity.isCannoningEntity) {
++            return;
++        }
++        // Blossom end
+         // PaperSpigot start - update counts
+         if (entity instanceof EntityItem) {
+             itemCounts[k]++;
+@@ -841,6 +846,11 @@ public class Chunk {
+ 
+         entity.setCurrentChunk(null); // Paper
+         if (!this.entitySlices[i].remove(entity)) return; // TacoSpigot
++        // Blossom start - entity count is not updated for cannoning entities, so we should skip checking early.
++        if (entity.isCannoningEntity) {
++            return;
++        }
++        // Blossom end
+         // PaperSpigot start - update counts
+         if (entity instanceof EntityItem) {
+             itemCounts[i]--;
+-- 
+2.40.0.windows.1
+

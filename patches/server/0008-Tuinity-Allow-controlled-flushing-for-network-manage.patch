@@ -1,0 +1,166 @@
+From b7bdb8af911c7b4d00a257a2f9556f6fbb5823f5 Mon Sep 17 00:00:00 2001
+From: Spottedleaf <spottedleaf@spottedleaf.dev>
+Date: Sat, 4 Apr 2020 15:27:44 -0700
+Subject: [PATCH] Tuinity Allow controlled flushing for network manager
+
+Only make one flush call when emptying the packet queue too
+
+This patch will be used to optimise out flush calls in later
+patches.
+
+diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
+index fb230bac3..4a6d5dc12 100644
+--- a/src/main/java/net/minecraft/server/NetworkManager.java
++++ b/src/main/java/net/minecraft/server/NetworkManager.java
+@@ -76,6 +76,39 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+     private boolean p;
+     private static boolean enableExplicitFlush = Boolean.getBoolean("paper.explicit-flush");
+ 
++    // Tuinity start - allow controlled flushing
++    volatile boolean canFlush = true;
++    private final java.util.concurrent.atomic.AtomicInteger packetWrites = new java.util.concurrent.atomic.AtomicInteger();
++    private int flushPacketsStart;
++    private final Object flushLock = new Object();
++
++    public void disableAutomaticFlush() {
++        synchronized (this.flushLock) {
++            this.flushPacketsStart = this.packetWrites.get(); // must be volatile and before canFlush = false
++            this.canFlush = false;
++        }
++    }
++
++    public void enableAutomaticFlush() {
++        synchronized (this.flushLock) {
++            this.canFlush = true;
++            if (this.packetWrites.get() != this.flushPacketsStart) { // must be after canFlush = true
++                this.flush(); // only make the flush call if we need to
++            }
++        }
++    }
++
++    private final void flush() {
++        if (this.channel.eventLoop().inEventLoop()) {
++            this.channel.flush();
++        } else {
++            this.channel.eventLoop().execute(() -> {
++                this.channel.flush();
++            });
++        }
++    }
++    // Tuinity end - allow controlled flushing
++
+     public NetworkManager(EnumProtocolDirection enumprotocoldirection) {
+         this.h = enumprotocoldirection;
+     }
+@@ -139,7 +172,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+     public void handle(Packet packet) {
+         if (this.g()) {
+             this.m();
+-            this.a(packet, (GenericFutureListener[]) null);
++            this.writePacket(packet, (GenericFutureListener[]) null, null); // Tuinity
+         } else {
+             this.j.writeLock().lock();
+ 
+@@ -155,7 +188,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+     public void a(Packet packet, GenericFutureListener<? extends Future<? super Void>> genericfuturelistener, GenericFutureListener<? extends Future<? super Void>>... agenericfuturelistener) {
+         if (this.g()) {
+             this.m();
+-            this.a(packet, (GenericFutureListener[]) ArrayUtils.add(agenericfuturelistener, 0, genericfuturelistener));
++            this.writePacket(packet, (GenericFutureListener[]) ArrayUtils.add(agenericfuturelistener, 0, genericfuturelistener), null); // Tuinity
+         } else {
+             this.j.writeLock().lock();
+ 
+@@ -169,6 +202,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+     }
+ 
+     private void a(final Packet packet, final GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener) {
++        // Tuinity start - add flush parameter
++        this.writePacket(packet, agenericfuturelistener, Boolean.TRUE);
++    }
++    private void writePacket(Packet<?> packet, final GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener, Boolean flushConditional) {
++        this.packetWrites.getAndIncrement(); // must be befeore using canFlush
++        boolean effectiveFlush = flushConditional == null ? this.canFlush : flushConditional.booleanValue();
++        final boolean flush = effectiveFlush || packet instanceof PacketPlayOutKeepAlive || packet instanceof PacketLoginOutDisconnect; // no delay for certain packets
++        // Tuinity end - add flush parameter
+         final EnumProtocol enumprotocol = EnumProtocol.a(packet);
+         final EnumProtocol enumprotocol1 = (EnumProtocol) this.channel.attr(NetworkManager.c).get();
+ 
+@@ -178,46 +219,53 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+         }
+ 
+         if (this.channel.eventLoop().inEventLoop()) {
+-            if (enumprotocol != enumprotocol1) {
+-                this.a(enumprotocol);
+-            }
+-
+-            ChannelFuture channelfuture = this.channel.writeAndFlush(packet);
+-
+-            if (agenericfuturelistener != null) {
+-                channelfuture.addListeners(agenericfuturelistener);
+-            }
+-
+-            channelfuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
++            // Tuinity start - add flush parameter
++            this.writePacket(packet, agenericfuturelistener, enumprotocol, enumprotocol1, flush);
+         } else {
+             this.channel.eventLoop().execute(new Runnable() {
+                 public void run() {
+-                    if (enumprotocol != enumprotocol1) {
+-                        NetworkManager.this.a(enumprotocol);
+-                    }
++                    NetworkManager.this.writePacket(packet, agenericfuturelistener, enumprotocol, enumprotocol1, flush);
++                }
++            });
++        }
+ 
+-                    ChannelFuture channelfuture = NetworkManager.this.channel.writeAndFlush(packet);
++    }
+ 
+-                    if (agenericfuturelistener != null) {
+-                        channelfuture.addListeners(agenericfuturelistener);
+-                    }
++    private void writePacket(Packet<?> packet, GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener, EnumProtocol enumprotocol, EnumProtocol enumprotocol1, boolean flush) {
++        if (enumprotocol != enumprotocol1) {
++            this.a(enumprotocol);
++        }
+ 
+-                    channelfuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+-                }
+-            });
++        ChannelFuture channelfuture = flush ? this.channel.writeAndFlush(packet) : this.channel.write(packet);
++
++        if (agenericfuturelistener != null) {
++            channelfuture.addListeners(agenericfuturelistener);
+         }
+ 
++        channelfuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+     }
++    // Tuinity end - add flush parameter
+ 
+     private void m() {
+         if (this.channel != null && this.channel.isOpen()) {
+             this.j.readLock().lock();
+ 
++            // Tuinity start - make only one flush call per sendPacketQueue() call
++            final boolean needsFlush = this.canFlush;
++            boolean hasWrotePacket = false;
++            // Tuinity end - make only one flush call per sendPacketQueue() call
+             try {
+                 while (!this.i.isEmpty()) {
+                     NetworkManager.QueuedPacket networkmanager_queuedpacket = (NetworkManager.QueuedPacket) this.i.poll();
+ 
+-                    this.a(networkmanager_queuedpacket.a, networkmanager_queuedpacket.b);
++                    // Tuinity start - make only one flush call per sendPacketQueue() call
++                    if (hasWrotePacket && (needsFlush || this.canFlush)) {
++                        this.flush();
++                    }
++                    // Tuinity end - make only one flush call per sendPacketQueue() call
++
++                    this.writePacket(networkmanager_queuedpacket.a, networkmanager_queuedpacket.b, (this.i.isEmpty() && (needsFlush || this.canFlush)) ? Boolean.TRUE : Boolean.FALSE); // Tuinity - make only one flush call per sendPacketQueue() call
++                    hasWrotePacket = true; // Tuinity - make only one flush call per sendPacketQueue() call
+                 }
+             } finally {
+                 this.j.readLock().unlock();
+-- 
+2.40.0.windows.1
+
