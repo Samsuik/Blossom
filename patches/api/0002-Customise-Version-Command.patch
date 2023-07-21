@@ -1,4 +1,4 @@
-From 25b954caff4a901efdc5f76d74de1cfb300bbf40 Mon Sep 17 00:00:00 2001
+From 9599db6de60886d36ffe8cbecaa6cb680bb4a8b7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:09:29 +0100
 Subject: [PATCH] Customise Version Command
@@ -34,7 +34,7 @@ index 12d9232c..89a8bd29 100644
          register("bukkit", new PluginsCommand("plugins"));
          register("bukkit", new co.aikar.timings.TimingsCommand("timings")); // Spigot
 diff --git a/src/main/java/org/bukkit/command/defaults/VersionCommand.java b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
-index 42da60a8..6e4fb609 100644
+index 42da60a8..78b0ff60 100644
 --- a/src/main/java/org/bukkit/command/defaults/VersionCommand.java
 +++ b/src/main/java/org/bukkit/command/defaults/VersionCommand.java
 @@ -32,6 +32,12 @@ import org.json.simple.parser.ParseException;
@@ -71,7 +71,7 @@ index 42da60a8..6e4fb609 100644
 +            sender.sendMessage(new ComponentBuilder("")
 +                    .append(ChatColor.GRAY + " .\n")
 +                    .append(ChatColor.translateAlternateColorCodes('&', " &7| &fThis server is running &eBlos&csom!\n"))
-+                    .append(ChatColor.translateAlternateColorCodes('&', " &7| &fVersion&8: &e0.1 &7targeting &8(&eMC&8: &71.8.8&8)\n"))
++                    .append(ChatColor.translateAlternateColorCodes('&', " &7| &fCommit&8: &e" + commitHash() + " &7targeting &8(&eMC&8: &71.8.8&8)\n"))
 +                    .append(ChatColor.translateAlternateColorCodes('&', " &7| &fGithub&8: &8<"))
 +                    .append(ChatColor.translateAlternateColorCodes('&', "&e&olink?"))
 +                    .event(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Samsuik/Blossom"))
@@ -95,6 +95,22 @@ index 42da60a8..6e4fb609 100644
              List<String> completions = new ArrayList<String>();
              String toComplete = args[0].toLowerCase();
              for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+@@ -147,6 +166,15 @@ public class VersionCommand extends BukkitCommand {
+         return ImmutableList.of();
+     }
+ 
++    // Blossom start
++    public String commitHash() {
++        String string = Bukkit.getVersion();
++        if (string != null && string.startsWith("git-"))
++            string = string.replaceAll(".+?-(.+?) .+$", "$1");
++        return string == null || string.contains("null") ? "in-dev" : string;
++    }
++    // Blossom end
++
+     private final ReentrantLock versionLock = new ReentrantLock();
+     private boolean hasVersion = false;
+     private String versionMessage = null;
 -- 
 2.40.0.windows.1
 
