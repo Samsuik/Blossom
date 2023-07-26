@@ -1,4 +1,4 @@
-From 30d04fd061ccd1f75ba8e609ecac8fe03dcb20f3 Mon Sep 17 00:00:00 2001
+From 28b9e6feccb5a8e1fe9d22cde929a55a7e7fc1dd Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 9 Jul 2023 23:54:44 +0100
 Subject: [PATCH] Configure Player Knockback
@@ -118,7 +118,7 @@ index e4b863499..3f3c94cbe 100644
                              this.motZ *= 0.6D;
                              this.setSprinting(false);
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 9800dd16f..ad8988bcc 100644
+index 9800dd16f..2f9aab57b 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -910,16 +910,35 @@ public abstract class EntityLiving extends Entity {
@@ -154,8 +154,8 @@ index 9800dd16f..ad8988bcc 100644
 +            this.motY += verticalKnockback;
 +
 +            if (me.samsuik.blossom.configuration.BlossomConfig.altKBCalculation) {
-+                this.motX += -MathHelper.sin(this.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
-+                this.motZ += MathHelper.cos(this.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
++                this.motX += -MathHelper.sin(entity.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
++                this.motZ += MathHelper.cos(entity.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
 +            } else {
 +                this.motX -= d0 / (double) f1 * horizontalKnockback;
 +                this.motZ -= d1 / (double) f1 * horizontalKnockback;
