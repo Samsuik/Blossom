@@ -1,4 +1,4 @@
-From e0c1378c12c44ca2df01684eb6ffbcd842f550c1 Mon Sep 17 00:00:00 2001
+From 157745f545908bad716f199ab1de6da3d3b9d5f4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -19,7 +19,7 @@ index 9ef760e5f..62ecbb65d 100644
 +
  }
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-index 0f6c4871f..a8824df47 100644
+index 0f6c4871f..a94402436 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 @@ -1,8 +1,11 @@
@@ -43,7 +43,7 @@ index 0f6c4871f..a8824df47 100644
 +        durabilityMap = new java.util.HashMap<>();
 +
 +        // init config
-+        if (!config.contains("explosions.durability")) {
++        if (!config.contains("explosions.durability.obsidian")) {
 +            defaultDura("obsidian", 5, 0.0);
 +            defaultDura("enchanting_table", 0, 0.0);
 +            defaultDura("ender_chest", 0, 0.0);
