@@ -1,4 +1,4 @@
-From 515a10768420f7696eda810566af10a659b4e155 Mon Sep 17 00:00:00 2001
+From 918f7dcd2a83f557c2d8387c2010d137b9e8c337 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -53,7 +53,7 @@ index 83e8eb1fa..5b2a31d4d 100644
              moveX *= 0.25D;
              moveY *= 0.05000000074505806D;
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 0adb22084..6cd75692f 100644
+index 0adb22084..39bb76091 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -90,6 +90,21 @@ public class EntityFallingBlock extends Entity {
@@ -67,10 +67,10 @@ index 0adb22084..6cd75692f 100644
 +        double travelX = Math.abs(sourceLoc.getX() - locX);
 +        double travelZ = Math.abs(sourceLoc.getZ() - locZ);
 +
-+        if (changeX > 0.0 && travelX > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
++        if (changeX > 0.0 && travelZ > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
 +            motX = 0.0;
 +        }
-+        if (changeZ > 0.0 && travelZ > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
++        if (changeZ > 0.0 && travelX > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
 +            motZ = 0.0;
 +        }
 +    }
@@ -83,7 +83,7 @@ index 0adb22084..6cd75692f 100644
              BlockPosition blockposition;
  
 +            // Blossom start
-+            if (me.samsuik.blossom.configuration.BlossomConfig.disableLeftShooting && motX != 0.0 && motZ != 0.0) {
++            if (me.samsuik.blossom.configuration.BlossomConfig.disableLeftShooting && (motX != 0.0 || motZ != 0.0)) {
 +                preventLeftShooting();
 +            }
 +            // Blossom end
