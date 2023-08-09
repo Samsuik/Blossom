@@ -1,4 +1,4 @@
-From a9c95ee9297be40c83d9eab66074ecc70e5311d6 Mon Sep 17 00:00:00 2001
+From 8dc77464c0dd5c3c6e0f90b312e3a47dd3e5977e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -100,10 +100,10 @@ index 000000000..96c24e2f0
 +}
 diff --git a/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
 new file mode 100644
-index 000000000..4dadc758f
+index 000000000..98fc07cdf
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,35 @@
 +package me.samsuik.blossom.commands.subcommands;
 +
 +import me.samsuik.blossom.commands.BaseCommand;
@@ -118,10 +118,15 @@ index 000000000..4dadc758f
 +
 +    public ConfigCommand() {
 +        super("config");
++        this.setPermission("blossom.config");
 +    }
 +
 +    @Override
 +    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
++        if (!testPermission(sender)) {
++            return true;
++        }
++
 +        me.samsuik.blossom.configuration.BlossomConfig.init((File) MinecraftServer.getServer().options.valueOf("blossom-settings"));
 +        me.samsuik.blossom.configuration.BlossomConfig.registerCommands();
 +
