@@ -1,4 +1,4 @@
-From 30f65d8e11d0bf1cd7b60d8d3b46c0740c45fa93 Mon Sep 17 00:00:00 2001
+From a243ab17f37761d3ce5a44c933d4a777569d9ad1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 13:26:34 +0100
 Subject: [PATCH] TPS Graph
@@ -6,7 +6,7 @@ Subject: [PATCH] TPS Graph
 
 diff --git a/src/main/java/me/samsuik/blossom/commands/subcommands/TPSCommand.java b/src/main/java/me/samsuik/blossom/commands/subcommands/TPSCommand.java
 new file mode 100644
-index 000000000..867303fd6
+index 000000000..b7d741908
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/subcommands/TPSCommand.java
 @@ -0,0 +1,73 @@
@@ -67,7 +67,7 @@ index 000000000..867303fd6
 +        return TextComponent.fromLegacyText(String.format(ChatColor.translateAlternateColorCodes('&',
 +                        "&7| &8-------------- ( &fNow&8: %s%.1f&8, &fMem&8: %s%.1f &8) ---------------"
 +                ),
-+                TPSGraph.colour(tracking.averageTps(1)),
++                TPSGraph.colour(tracking.averageTps(1) / 20.0),
 +                Math.min(tracking.averageTps(1), 99.9),
 +                TPSGraph.colour(1.0 - memoryUsage()),
 +                memoryUsage() * 100
