@@ -1,4 +1,4 @@
-From e0243b9dfd5120cf002a659424cd80bed47b7c6f Mon Sep 17 00:00:00 2001
+From 88625e67836208671aba9fe1577f74c4b7c49469 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -396,7 +396,7 @@ index 88b6fe532..431097ec3 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 9facefa1f..7233a4939 100644
+index 9facefa1f..6b371c677 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -62,6 +62,23 @@ public class Block {
@@ -411,9 +411,9 @@ index 9facefa1f..7233a4939 100644
 +    public boolean isInsideBlock(IBlockAccess world, BlockPosition pos, double x, double y, double z) {
 +        updateShape(world, pos);
 +
-+        double relX = z - pos.getX();
++        double relX = x - pos.getX();
 +        double relY = y - pos.getY();
-+        double relZ = x - pos.getZ();
++        double relZ = z - pos.getZ();
 +
 +        return minX <= relX && maxX >= relX
 +            && minY <= relY && maxY >= relY
