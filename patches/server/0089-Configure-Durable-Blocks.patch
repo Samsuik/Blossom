@@ -1,4 +1,4 @@
-From 157745f545908bad716f199ab1de6da3d3b9d5f4 Mon Sep 17 00:00:00 2001
+From 765a97aa6f006980d8563aa8304689a753d07d99 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -197,7 +197,7 @@ index 000000000..f1926c262
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index cad645552..0347308c4 100644
+index 5bc81deeb..4cc2132ef 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -61,7 +61,7 @@ public class Block {
@@ -273,10 +273,10 @@ index 3229add95..44ebffffe 100644
              return false;
          } else if (!entityhuman.a(blockposition.shift(enumdirection), enumdirection, itemstack)) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 2eb2a14bf..f1a4f3743 100644
+index d508018a4..e013ab636 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -907,6 +907,11 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+@@ -910,6 +910,11 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
                  worldserver.mergeHistory = null;
                  worldserver.mergingEntity = null;
                  // Blossom end

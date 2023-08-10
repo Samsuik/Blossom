@@ -1,0 +1,41 @@
+From 87077362bd5d46ca955e88762bbc447fb468da57 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 8 Jul 2023 19:08:54 +0100
+Subject: [PATCH] Fix minor tick loop issues
+
+Fixes ticks being lost when the server is idle when the server
+is running less than 2 ms ahead.
+
+Also, makes the sleeping more precise, if the server was due to
+sleep 49.9 ms the precision would be lost causing the server to
+only sleep for 49 ms, slightly faster than intended.
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 3e28eab9d..d508018a4 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -584,7 +584,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                     if (wait > 0) {
+                         // TacoSpigot start - fix the tick loop improvements
+                         if (catchupTime < 2E6) {
+-                            wait += Math.abs(catchupTime);
++                            wait -= catchupTime; // Blossom
+                         } else if (wait < catchupTime) {
+                             catchupTime -= wait;
+                             wait = 0;
+@@ -595,7 +595,11 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                         // TacoSpigot end
+                     }
+                     if (wait > 0) {
+-                        Thread.sleep(wait / 1000000);
++                        // Blossom start - sleep actual wait time
++                        long millis = wait / 1_000_000L;
++                        long nanos = wait - (millis * 1_000_000L);
++                        Thread.sleep((int) millis, (int) nanos);
++                        // Blossom end
+                         curTime = System.nanoTime();
+                         wait = TICK_TIME - (curTime - lastTick);
+                     }
+-- 
+2.40.0.windows.1
+
