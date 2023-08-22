@@ -1,4 +1,4 @@
-From 3f76920bbf1fba0a7872f04f89b1f790806c7fd4 Mon Sep 17 00:00:00 2001
+From a29e543f3e78a2f6d7cc7ffb12e61ed219e41b15 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 15:54:26 +0100
 Subject: [PATCH] Fix player movement issues
@@ -32,7 +32,7 @@ index 1ec034d5b..b968a1913 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 1de413e0b..5d11191b6 100644
+index 354ff7252..87b967807 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -637,7 +637,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -44,7 +44,7 @@ index 1de413e0b..5d11191b6 100644
                          PlayerConnection.c.warn(this.player.getName() + " moved too quickly! " + d11 + "," + d12 + "," + d13 + " (" + d11 + ", " + d12 + ", " + d13 + ")");
                          this.a(this.o, this.p, this.q, this.player.yaw, this.player.pitch);
                          return;
-@@ -650,22 +650,27 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -650,32 +650,50 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                          this.player.bF();
                      }
  
@@ -67,7 +67,7 @@ index 1de413e0b..5d11191b6 100644
  
 +                    // Blossom start
 +                    double desync = d15 + d12 * d12;
-+                    if (me.samsuik.blossom.configuration.BlossomConfig.disallowSuspiciousMovements && desync != 0.0) {
++                    if (me.samsuik.blossom.configuration.BlossomConfig.disallowSuspiciousMovements && this.player.positionChanged && desync != 0.0) {
 +                        flag1 = true;
 +                    }
 +                    // Blossom end
@@ -78,7 +78,22 @@ index 1de413e0b..5d11191b6 100644
                          flag1 = true;
                          PlayerConnection.c.warn(this.player.getName() + " moved wrongly!");
                      }
-@@ -675,7 +680,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
++                    // Blossom start
++                    // Any floating point errors could allow a client to clip inside blocks,
++                    // which would mean all the fixes implemented for clipping hacks would go to waste.
++                    //
++                    // The reason this line of code exists is to keep the server position in sync
++                    // with the client, even if there is a difference between servers approximation
++                    // of the client's movement and what the client provided in this packet.
++                    //
++                    // If you need accurate server-side player positions, for example a plugin that tries
++                    // to verify player movement, disallowSuspiciousMovements should be disabled.
++                    if (!me.samsuik.blossom.configuration.BlossomConfig.disallowSuspiciousMovements) {
+                     this.player.setLocation(d7, d8, d9, f2, f3);
++                    }
++                    // Blossom end
+                     this.player.checkMovement(this.player.locX - d0, this.player.locY - d1, this.player.locZ - d2);
                      if (!this.player.noclip) {
                          boolean flag2 = worldserver.getCubes(this.player, this.player.getBoundingBox().shrink((double) f4, (double) f4, (double) f4)).isEmpty();
  
