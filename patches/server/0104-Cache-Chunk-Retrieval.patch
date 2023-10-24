@@ -1,4 +1,4 @@
-From 92e0f4252737200036a6b18b8202372aad5db461 Mon Sep 17 00:00:00 2001
+From 29ff3a88c6e6b843b8dd10f7754210f4b8cf0496 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -6,7 +6,7 @@ Subject: [PATCH] Cache Chunk Retrieval
 
 diff --git a/src/main/java/me/samsuik/blossom/chunk/ServerChunkMap.java b/src/main/java/me/samsuik/blossom/chunk/ServerChunkMap.java
 new file mode 100644
-index 000000000..a9ad98646
+index 000000000..0199b35c8
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/chunk/ServerChunkMap.java
 @@ -0,0 +1,30 @@
@@ -34,7 +34,7 @@ index 000000000..a9ad98646
 +    public Chunk get(long k) {
 +        int index = (int) (k & mask);
 +        Chunk chunk = recentChunks[index];
-+        if (chunk != null && chunk.chunkKey == k)
++        if (chunk != null && chunk.chunkKey == k && chunk.isLoaded())
 +            return chunk;
 +        return recentChunks[index] = super.get(k);
 +    }
