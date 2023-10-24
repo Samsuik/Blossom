@@ -1,4 +1,4 @@
-From 66ceff11a03fb562ce78511f3ca5f8203284c60d Mon Sep 17 00:00:00 2001
+From 825e5830ed1deae7609afa687322c4be18b054b2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -102,7 +102,7 @@ index 431097ec3..ab5fe46dc 100644
          if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
              double d1;
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 7233a4939..e784aa551 100644
+index 6b371c677..8cc17378e 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -297,6 +297,23 @@ public class Block {
@@ -755,7 +755,7 @@ index 88131b507..5deed1646 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 2f7ccceef..83e8eb1fa 100644
+index 2f7ccceef..0baab1f19 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -663,6 +663,116 @@ public abstract class Entity implements ICommandListener {
@@ -792,7 +792,7 @@ index 2f7ccceef..83e8eb1fa 100644
 +        boolean patchedEastWest = world.tacoSpigotConfig.fixEastWest && Math.abs(moveX) > Math.abs(moveZ);
 +
 +        AxisAlignedBB boundingBox = getBoundingBox();
-+        List<AxisAlignedBB> shapes = new java.util.ArrayList<>(4);
++        List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
 +
 +        if (moveY != 0.0) {
 +            world.testShapesOnY(shapes, boundingBox, boundingBox.a(0.0, moveY, 0.0), this, moveY);

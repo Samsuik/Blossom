@@ -1,11 +1,11 @@
-From 29e8730501f2ed96909951814ca512bbba6e7a3d Mon Sep 17 00:00:00 2001
+From bb3fc2b63ccfef6e353747144a8a972c15a7a47a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 12899a603..c894ffbb2 100644
+index 6599c0142..574de6c75 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {
@@ -39,7 +39,7 @@ index 12899a603..c894ffbb2 100644
 +        boolean patchedEastWest = eastWestPatched && Math.abs(moveX) > Math.abs(moveZ); // Blossom
  
          AxisAlignedBB boundingBox = getBoundingBox();
-         List<AxisAlignedBB> shapes = new java.util.ArrayList<>(4);
+         List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
 @@ -888,7 +897,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
