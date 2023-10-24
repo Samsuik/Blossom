@@ -1,0 +1,117 @@
+From 42fc4cd93c043190c5c5f919717425fa1ebd2b80 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 24 Oct 2023 15:04:04 +0100
+Subject: [PATCH] Customise Sponge Mechanics
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 7d94cb9dd..fa40faf58 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -556,4 +556,11 @@ public class BlossomConfig {
+         pluginCommandLabels = getBoolean("player.commands.plugin-labels", false);
+     }
+ 
++    public static boolean spongeAbsorbWater;
++    public static int spongeRadius;
++    private static void Sponge() {
++        spongeAbsorbWater = getBoolean("fluids.sponge.absorb-water", false);
++        spongeRadius = getInt("fluids.sponge.flow-radius", 2);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
+index 80a583ff1..9da2a0cfe 100644
+--- a/src/main/java/net/minecraft/server/BlockFlowing.java
++++ b/src/main/java/net/minecraft/server/BlockFlowing.java
+@@ -163,9 +163,41 @@ public class BlockFlowing extends BlockFluids {
+         return source.getWorld().isChunkLoaded((source.getX() + face.getModX()) >> 4, (source.getZ() + face.getModZ()) >> 4);
+     }
+     // Paper end
++    // Blossom start
++    private boolean isSpongeInRadius(World world, BlockPosition position, int radius) {
++        int minX = position.getX() - radius;
++        int minY = position.getY() - radius;
++        int minZ = position.getZ() - radius;
++        int maxX = position.getX() + radius;
++        int maxY = position.getY() + radius;
++        int maxZ = position.getZ() + radius;
++
++        for (int x = minX; x <= maxX; ++x) {
++            for (int z = minZ; z <= maxZ; ++z) {
++                Chunk chunk = world.getChunkIfLoaded(x >> 4, z >> 4);
++                if (chunk == null) continue;
++
++                for (int y = minY; y <= maxY; ++y) {
++                    IBlockData data = chunk.getBlockData(x, y, z);
++
++                    if (data.getBlock() == Blocks.SPONGE) {
++                        return true;
++                    }
++                }
++            }
++        }
++
++        return false;
++    }
+ 
+     private void flow(World world, BlockPosition blockposition, IBlockData iblockdata, int i) {
+         if (/*world.isLoaded(blockposition) &&*/ this.h(world, blockposition, iblockdata)) { // CraftBukkit - add isLoaded check // Paper - Already checked before we get here for isLoaded
++            int radius = me.samsuik.blossom.configuration.BlossomConfig.spongeRadius;
++            if (radius > 0 && isSpongeInRadius(world, blockposition, radius)) {
++                return;
++            }
++            // Blossom end
++
+             if (iblockdata.getBlock() != Blocks.AIR) {
+                 if (this.material == Material.LAVA) {
+                     this.fizz(world, blockposition);
+diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
+index 58b7c5b05..db4e9e1b0 100644
+--- a/src/main/java/net/minecraft/server/BlockPosition.java
++++ b/src/main/java/net/minecraft/server/BlockPosition.java
+@@ -39,6 +39,7 @@ public class BlockPosition extends BaseBlockPosition {
+         return d0 == 0.0D && d1 == 0.0D && d2 == 0.0D ? this : new BlockPosition((double) this.getX() + d0, (double) this.getY() + d1, (double) this.getZ() + d2);
+     }
+ 
++    public BlockPosition add(int x, int y, int z) { return a(x, y, z); } // Blossom - OBFHELPER
+     public BlockPosition a(int i, int j, int k) {
+         return i == 0 && j == 0 && k == 0 ? this : new BlockPosition(this.getX() + i, this.getY() + j, this.getZ() + k);
+     }
+diff --git a/src/main/java/net/minecraft/server/BlockSponge.java b/src/main/java/net/minecraft/server/BlockSponge.java
+index de7714ea5..cb9d98250 100644
+--- a/src/main/java/net/minecraft/server/BlockSponge.java
++++ b/src/main/java/net/minecraft/server/BlockSponge.java
+@@ -25,6 +25,21 @@ public class BlockSponge extends Block {
+ 
+     public void onPlace(World world, BlockPosition blockposition, IBlockData iblockdata) {
+         this.e(world, blockposition, iblockdata);
++        // Blossom start
++        int radius = me.samsuik.blossom.configuration.BlossomConfig.spongeRadius;
++        if (radius > 0) {
++            removeFluids(world, blockposition, radius);
++        }
++    }
++    private void removeFluids(World world, BlockPosition position, int r) {
++        BlockPosition.b(position.add(-r,-r,-r), position.add(r,r,r)).forEach(next -> {
++            IBlockData type = world.getType(next);
++
++            if (type.getBlock() instanceof BlockFluids) {
++                world.setTypeAndData(next, type, 2);
++            }
++        });
++        // Blossom end
+     }
+ 
+     public void doPhysics(World world, BlockPosition blockposition, IBlockData iblockdata, Block block) {
+@@ -33,6 +48,7 @@ public class BlockSponge extends Block {
+     }
+ 
+     protected void e(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        if (!me.samsuik.blossom.configuration.BlossomConfig.spongeAbsorbWater) return; // Blossom
+         if (!((Boolean) iblockdata.get(BlockSponge.WET)).booleanValue() && this.e(world, blockposition)) {
+             world.setTypeAndData(blockposition, iblockdata.set(BlockSponge.WET, Boolean.valueOf(true)), 2);
+             world.triggerEffect(2001, blockposition, Block.getId(Blocks.WATER));
+-- 
+2.40.0.windows.1
+
