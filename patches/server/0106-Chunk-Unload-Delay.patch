@@ -1,4 +1,4 @@
-From 0a2d2eba276b3d064935f7334c26f705d4eb072a Mon Sep 17 00:00:00 2001
+From f648cbeae99dcf349d3fd3c623b230084ef5a444 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
@@ -19,26 +19,26 @@ index 203fb4395..1ec034d5b 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 5af16974b..ab32d72a4 100644
+index 5af16974b..99187971c 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -153,6 +153,7 @@ public class Chunk {
      }
      // CraftBukkit end
      public final long chunkKey;
-+    public long unloadScheduled; // Blossom
++    public long loadedTick; // Blossom
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index 3821a9cf7..3507985fe 100644
+index 3821a9cf7..1701ea0e6 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
 @@ -148,6 +148,7 @@ public class ChunkProviderServer implements IChunkProvider {
              runnable.run();
          }
  
-+        chunk.unloadScheduled = MinecraftServer.currentTick; // Blossom
++        chunk.loadedTick = MinecraftServer.currentTick; // Blossom
          return chunk;
      }
      public Chunk originalGetChunkAt(int i, int j) {
@@ -50,7 +50,7 @@ index 3821a9cf7..3507985fe 100644
 +                // Blossom start
                  // TacoSpigot end
                  Chunk chunk = this.chunks.get(chunkcoordinates);
-+                if (chunk != null && MinecraftServer.currentTick - chunk.unloadScheduled < me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads) {
++                if (chunk != null && MinecraftServer.currentTick - chunk.loadedTick < me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads) {
 +                    i--;
 +                    continue;
 +                }
