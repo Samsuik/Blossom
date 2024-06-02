@@ -1,4 +1,4 @@
-From 01f20d8ec42578b1a0f796c8eaafbb0375fb1861 Mon Sep 17 00:00:00 2001
+From 239c0602e232709abc6c88e495447b6d5020084f Mon Sep 17 00:00:00 2001
 From: egg82 <phantom_zero@ymail.com>
 Date: Tue, 7 Aug 2018 01:24:23 -0600
 Subject: [PATCH] Use ConcurrentHashMap in JsonList
@@ -25,18 +25,10 @@ The point of this is readability, but does have a side-benefit of a small microp
 Finally, added a couple obfhelpers for the modified code
 
 diff --git a/src/main/java/net/minecraft/server/JsonList.java b/src/main/java/net/minecraft/server/JsonList.java
-index 8e4ecfd64..44a94f7e5 100644
+index 8e4ecfd64..715bbe377 100644
 --- a/src/main/java/net/minecraft/server/JsonList.java
 +++ b/src/main/java/net/minecraft/server/JsonList.java
-@@ -25,6 +25,7 @@ import java.util.Collection;
- import java.util.Iterator;
- import java.util.List;
- import java.util.Map;
-+
- import org.apache.commons.io.IOUtils;
- import org.apache.logging.log4j.LogManager;
- import org.apache.logging.log4j.Logger;
-@@ -34,7 +35,8 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -34,7 +34,8 @@ public class JsonList<K, V extends JsonListEntry<K>> {
      protected static final Logger a = LogManager.getLogger();
      protected final Gson b;
      private final File c;
@@ -46,7 +38,7 @@ index 8e4ecfd64..44a94f7e5 100644
      private boolean e = true;
      private static final ParameterizedType f = new ParameterizedType() {
          public Type[] getActualTypeArguments() {
-@@ -82,8 +84,13 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -82,8 +83,13 @@ public class JsonList<K, V extends JsonListEntry<K>> {
      }
  
      public V get(K k0) {
@@ -62,7 +54,7 @@ index 8e4ecfd64..44a94f7e5 100644
      }
  
      public void remove(K k0) {
-@@ -108,9 +115,11 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -108,9 +114,11 @@ public class JsonList<K, V extends JsonListEntry<K>> {
      // CraftBukkit end
  
      public boolean isEmpty() {
@@ -75,7 +67,7 @@ index 8e4ecfd64..44a94f7e5 100644
      protected String a(K k0) {
          return k0.toString();
      }
-@@ -119,8 +128,10 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -119,8 +127,10 @@ public class JsonList<K, V extends JsonListEntry<K>> {
          return this.d.containsKey(this.a(k0));
      }
  
@@ -87,7 +79,7 @@ index 8e4ecfd64..44a94f7e5 100644
          Iterator iterator = this.d.values().iterator();
  
          while (iterator.hasNext()) {
-@@ -137,8 +148,10 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -137,8 +147,10 @@ public class JsonList<K, V extends JsonListEntry<K>> {
              Object object = iterator.next();
  
              this.d.remove(object);
@@ -100,7 +92,7 @@ index 8e4ecfd64..44a94f7e5 100644
      }
  
      protected JsonListEntry<K> a(JsonObject jsonobject) {
-@@ -150,6 +163,8 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+@@ -150,6 +162,8 @@ public class JsonList<K, V extends JsonListEntry<K>> {
      }
  
      public void save() throws IOException {
