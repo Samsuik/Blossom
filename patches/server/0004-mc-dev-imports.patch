@@ -1,4 +1,4 @@
-From 0fcae61702e187698c7ed971e6f46a5bccd6a2d1 Mon Sep 17 00:00:00 2001
+From 2b95e40a883b305e569238322099dcdf1dc0de84 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:10:11 +0100
 Subject: [PATCH] mc dev imports
@@ -5398,6 +5398,72 @@ index 000000000..22d7c2ab3
 +            }
 +        }
 +
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/OpList.java b/src/main/java/net/minecraft/server/OpList.java
+new file mode 100644
+index 000000000..26b4e44b0
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/OpList.java
+@@ -0,0 +1,60 @@
++package net.minecraft.server;
++
++import com.google.gson.JsonObject;
++import com.mojang.authlib.GameProfile;
++import java.io.File;
++import java.util.Iterator;
++
++public class OpList extends JsonList<GameProfile, OpListEntry> {
++
++    public OpList(File file) {
++        super(file);
++    }
++
++    protected JsonListEntry<GameProfile> a(JsonObject jsonobject) {
++        return new OpListEntry(jsonobject);
++    }
++
++    public String[] getEntries() {
++        String[] astring = new String[this.e().size()];
++        int i = 0;
++
++        OpListEntry oplistentry;
++
++        for (Iterator iterator = this.e().values().iterator(); iterator.hasNext(); astring[i++] = ((GameProfile) oplistentry.getKey()).getName()) {
++            oplistentry = (OpListEntry) iterator.next();
++        }
++
++        return astring;
++    }
++
++    public boolean b(GameProfile gameprofile) {
++        OpListEntry oplistentry = (OpListEntry) this.get(gameprofile);
++
++        return oplistentry != null ? oplistentry.b() : false;
++    }
++
++    protected String c(GameProfile gameprofile) {
++        return gameprofile.getId().toString();
++    }
++
++    public GameProfile a(String s) {
++        Iterator iterator = this.e().values().iterator();
++
++        OpListEntry oplistentry;
++
++        do {
++            if (!iterator.hasNext()) {
++                return null;
++            }
++
++            oplistentry = (OpListEntry) iterator.next();
++        } while (!s.equalsIgnoreCase(((GameProfile) oplistentry.getKey()).getName()));
++
++        return (GameProfile) oplistentry.getKey();
++    }
++
++    protected String a(GameProfile object) { // Blossom - decompile fix
++        return this.c((GameProfile) object);
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/PacketPlayOutBlockAction.java b/src/main/java/net/minecraft/server/PacketPlayOutBlockAction.java
