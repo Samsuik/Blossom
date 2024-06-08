@@ -1,11 +1,11 @@
-From bb3fc2b63ccfef6e353747144a8a972c15a7a47a Mon Sep 17 00:00:00 2001
+From 5cab65fc56ea166eaf6795e896590ccb6c66e9ed Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 6599c0142..574de6c75 100644
+index 6599c0142..15b2f4306 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {
@@ -22,7 +22,7 @@ index 6599c0142..574de6c75 100644
          // Blossom end
 +        // Blossom start
 +        this.eastWestPatched = world != null && world.tacoSpigotConfig.fixEastWest;
-+        if (world != null && me.samsuik.blossom.events.entity.EastWestPatchEvent.getHandlerList().getRegisteredListeners().length != 0) {
++        if (world != null && this.isCannoningEntity && me.samsuik.blossom.events.entity.EastWestPatchEvent.getHandlerList().getRegisteredListeners().length != 0) {
 +            me.samsuik.blossom.events.entity.EastWestPatchEvent event = new me.samsuik.blossom.events.entity.EastWestPatchEvent(getBukkitEntity(), eastWestPatched);
 +            org.bukkit.Bukkit.getPluginManager().callEvent(event);
 +            this.eastWestPatched = event.isEastWestPatched();
