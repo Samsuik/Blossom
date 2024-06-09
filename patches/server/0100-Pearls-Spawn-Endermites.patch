@@ -1,14 +1,14 @@
-From 413757039884eb563e730c7de30159937e7c1f00 Mon Sep 17 00:00:00 2001
+From d9370dbdbf436a7df44ad3c66a63734f2f694db5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 21:56:38 +0100
 Subject: [PATCH] Pearls Spawn Endermites
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 577cc4ab4..a8b7c7665 100644
+index 15d9853d9..0b22db615 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -478,5 +478,10 @@ public class BlossomConfig {
+@@ -480,5 +480,10 @@ public class BlossomConfig {
      private static void PearlInsideBlocks() {
          pearlInsideBlocks = getBoolean("projectiles.pearl.teleport-inside-blocks", false);
      }

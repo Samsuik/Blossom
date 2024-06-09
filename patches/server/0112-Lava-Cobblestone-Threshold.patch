@@ -1,4 +1,4 @@
-From 17fab12d7019fd6fb8f60d8d3f25fb2ad38009b7 Mon Sep 17 00:00:00 2001
+From 0f23adba3f23db153e2fb029bf932b4e1cf804c6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:42:28 +0100
 Subject: [PATCH] Lava Cobblestone Threshold
@@ -8,10 +8,10 @@ Subject: [PATCH] Lava Cobblestone Threshold
 8 = cosmic
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index be173787b..ce40e3c80 100644
+index 4e6c3a171..f363ee9f5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -530,4 +530,11 @@ public class BlossomConfig {
+@@ -532,4 +532,11 @@ public class BlossomConfig {
          waterProofRedstone = getBoolean("fluids.water-proof-redstone", true);
      }
  

@@ -1,14 +1,14 @@
-From e3da8706c18bbd0446000cc51a85e8c091262f88 Mon Sep 17 00:00:00 2001
+From 11030797b7d2cd8a6f2646bfdf62e1c190e8d3a5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 4 Jul 2023 00:40:02 +0100
 Subject: [PATCH] Cache Sand Layer Movement
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e4912b41c..a3b6cfef4 100644
+index 343d94c58..bebf86cc9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -389,4 +389,9 @@ public class BlossomConfig {
+@@ -391,4 +391,9 @@ public class BlossomConfig {
          farmlandOnlyCheckWaterWhenUnused = getBoolean("crops.farmland-only-look-for-water-when-unused", false);
      }
  
@@ -19,7 +19,7 @@ index e4912b41c..a3b6cfef4 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index b99db7de2..12899a603 100644
+index aee4cec57..6599c0142 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -68,7 +68,7 @@ public abstract class Entity implements ICommandListener {
@@ -49,7 +49,7 @@ index b99db7de2..12899a603 100644
          return new Vec3D(this.locX, this.locY, this.locZ);
      }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index c09c71d68..7d92fcd34 100644
+index 63e50ed4d..b9ce5d0c9 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -87,6 +87,7 @@ public class EntityFallingBlock extends Entity {
@@ -57,10 +57,10 @@ index c09c71d68..7d92fcd34 100644
      @Override
      public void move(double d0, double d1, double d2) {
 +        if (me.samsuik.blossom.configuration.BlossomConfig.groupedSandMovement && mimic()) return; // Blossom
-         super.move_cannon(d0, d1, d2);
-     }
-     // Blossom end
-@@ -105,6 +106,54 @@ public class EntityFallingBlock extends Entity {
+         if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
+             super.move_cannon(d0, d1, d2);
+         }
+@@ -107,6 +108,54 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end

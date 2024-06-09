@@ -1,14 +1,14 @@
-From 828f0dc688ffa330f1e3bfc15f61111108477b99 Mon Sep 17 00:00:00 2001
+From 63dd71ec906baa5a578be3f231fbdd104a23ae35 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 17:05:57 +0100
 Subject: [PATCH] Configure Player Hit Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 087477102..090b2ca17 100644
+index f2e884d45..5e0c2448f 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -459,5 +459,14 @@ public class BlossomConfig {
+@@ -461,5 +461,14 @@ public class BlossomConfig {
      private static void MonsterEggsChangeSpawners() {
          monsterEggsChangeSpawners = getBoolean("player.monster-eggs-change-spawners", false);
      }
@@ -24,7 +24,7 @@ index 087477102..090b2ca17 100644
      
  }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 1c1439c2c..35b97c02b 100644
+index 518869f4e..fa30106f1 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -118,6 +118,13 @@ public abstract class EntityLiving extends Entity {

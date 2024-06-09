@@ -1,20 +1,22 @@
-From 825e5830ed1deae7609afa687322c4be18b054b2 Mon Sep 17 00:00:00 2001
+From 6c73bfce363fd21231c5db80f93cbfbab3080852 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ab9adf86f..872867ee4 100644
+index ab9adf86f..802cc1bfa 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -357,4 +357,9 @@ public class BlossomConfig {
+@@ -357,4 +357,11 @@ public class BlossomConfig {
          activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
      }
  
 +    public static boolean extendedCollisionSearch;
-+    private static void ExtendedCollisionSearch() {
++    public static boolean useFastBlockCollisions;
++    private static void RewriteBlockCollisions() {
 +        extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
++        useFastBlockCollisions = getBoolean("tnt.use-fast-block-collisions", true);
 +    }
 +
  }
@@ -924,34 +926,38 @@ index 2f7ccceef..0baab1f19 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index f0e3a96e3..0adb22084 100644
+index f0e3a96e3..d5e7555b7 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -84,6 +84,12 @@ public class EntityFallingBlock extends Entity {
+@@ -84,6 +84,14 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end
 +    // Blossom start
 +    @Override
 +    public void move(double d0, double d1, double d2) {
-+        super.move_cannon(d0, d1, d2);
++        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
++            super.move_cannon(d0, d1, d2);
++        }
 +    }
 +    // Blossom end
  
      public void t_() {
          Block block = this.block.getBlock();
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 0e1319f47..e9d30e37e 100644
+index 0e1319f47..be9bbbe3c 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -100,6 +100,12 @@ public class EntityTNTPrimed extends Entity {
+@@ -100,6 +100,14 @@ public class EntityTNTPrimed extends Entity {
      }
      */
      // Blossom end
 +    // Blossom start
 +    @Override
 +    public void move(double d0, double d1, double d2) {
-+        super.move_cannon(d0, d1, d2);
++        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
++            super.move_cannon(d0, d1, d2);
++        }
 +    }
 +    // Blossom end
  
