@@ -1,4 +1,4 @@
-From 5ec628435fabd1cee76f95ee26504e514528041d Mon Sep 17 00:00:00 2001
+From f4b7be94061d9af0900a198f614d15973e7698ee Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -339,10 +339,10 @@ index 60dc31dd7..c77a46cf1 100644
                  }
              }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index dca1cf232..359a00e60 100644
+index 4412f3acf..1a88ba48a 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -129,7 +129,7 @@ public class EntityFallingBlock extends Entity {
+@@ -131,7 +131,7 @@ public class EntityFallingBlock extends Entity {
                  blockposition = new BlockPosition(this);
                  if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
                      this.world.setAir(blockposition);
@@ -351,7 +351,7 @@ index dca1cf232..359a00e60 100644
                  } else if (!this.world.isClientSide) {
                      this.die();
                      return;
-@@ -172,7 +172,7 @@ public class EntityFallingBlock extends Entity {
+@@ -174,7 +174,7 @@ public class EntityFallingBlock extends Entity {
                                      return;
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);

@@ -1,4 +1,4 @@
-From 6c73bfce363fd21231c5db80f93cbfbab3080852 Mon Sep 17 00:00:00 2001
+From b561c862269ebe05c78f568cef92b739c3ca11e6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -926,10 +926,10 @@ index 2f7ccceef..0baab1f19 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index f0e3a96e3..d5e7555b7 100644
+index f0e3a96e3..c1dde1c8c 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -84,6 +84,14 @@ public class EntityFallingBlock extends Entity {
+@@ -84,6 +84,16 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end
@@ -938,6 +938,8 @@ index f0e3a96e3..d5e7555b7 100644
 +    public void move(double d0, double d1, double d2) {
 +        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
 +            super.move_cannon(d0, d1, d2);
++        } else {
++            super.move(d0, d1, d2);
 +        }
 +    }
 +    // Blossom end
@@ -945,10 +947,10 @@ index f0e3a96e3..d5e7555b7 100644
      public void t_() {
          Block block = this.block.getBlock();
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 0e1319f47..be9bbbe3c 100644
+index 0e1319f47..4745113cf 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -100,6 +100,14 @@ public class EntityTNTPrimed extends Entity {
+@@ -100,6 +100,16 @@ public class EntityTNTPrimed extends Entity {
      }
      */
      // Blossom end
@@ -957,6 +959,8 @@ index 0e1319f47..be9bbbe3c 100644
 +    public void move(double d0, double d1, double d2) {
 +        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
 +            super.move_cannon(d0, d1, d2);
++        } else {
++            super.move(d0, d1, d2);
 +        }
 +    }
 +    // Blossom end

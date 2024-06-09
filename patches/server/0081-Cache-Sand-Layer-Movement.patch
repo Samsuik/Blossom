@@ -1,4 +1,4 @@
-From 11030797b7d2cd8a6f2646bfdf62e1c190e8d3a5 Mon Sep 17 00:00:00 2001
+From 0e623e970beefaf713d49ebf954a68e8243fe485 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 4 Jul 2023 00:40:02 +0100
 Subject: [PATCH] Cache Sand Layer Movement
@@ -49,7 +49,7 @@ index aee4cec57..6599c0142 100644
          return new Vec3D(this.locX, this.locY, this.locZ);
      }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 63e50ed4d..b9ce5d0c9 100644
+index e6563adeb..b8e8b3983 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -87,6 +87,7 @@ public class EntityFallingBlock extends Entity {
@@ -59,8 +59,8 @@ index 63e50ed4d..b9ce5d0c9 100644
 +        if (me.samsuik.blossom.configuration.BlossomConfig.groupedSandMovement && mimic()) return; // Blossom
          if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
              super.move_cannon(d0, d1, d2);
-         }
-@@ -107,6 +108,54 @@ public class EntityFallingBlock extends Entity {
+         } else {
+@@ -109,6 +110,54 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end
