@@ -1,14 +1,14 @@
-From 98bdaacffba433678108f91b1f17415865be0e72 Mon Sep 17 00:00:00 2001
+From 59f98b122492f57576f9fea8f9b89122052c14ae Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 17:24:45 +0100
 Subject: [PATCH] Dispenser Item Selection Randomness
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5e0c2448f..f63e2cbae 100644
+index 864e826b7..e5a90a7dd 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -470,5 +470,10 @@ public class BlossomConfig {
+@@ -468,5 +468,10 @@ public class BlossomConfig {
          mobHitDelay = getInt("mobs.hit-delay", 10);
          playerHitDifference = getBoolean("player.allow-hit-difference", true);
      }

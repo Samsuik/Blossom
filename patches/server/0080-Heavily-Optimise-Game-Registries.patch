@@ -1,11 +1,11 @@
-From 57ddfc10e199ec2e3ae2e1f030edcfca178e078e Mon Sep 17 00:00:00 2001
+From e1bdb4a1511f5c478a2814c1e3e44685db695ca8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
 
 
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index e784aa551..cad645552 100644
+index de6414c7c..d7ed06825 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -106,6 +106,23 @@ public class Block {
@@ -32,7 +32,7 @@ index e784aa551..cad645552 100644
  
      public static int getId(Block block) {
          return Block.REGISTRY.b(block);
-@@ -1102,6 +1119,7 @@ public class Block {
+@@ -1109,6 +1126,7 @@ public class Block {
      }
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {
@@ -41,7 +41,7 @@ index e784aa551..cad645552 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index e7e06f265..62ca35ec9 100644
+index cd2993500..6f82a63be 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -116,6 +116,7 @@ public class BlockStateList {
@@ -60,7 +60,7 @@ index e7e06f265..62ca35ec9 100644
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -210,7 +212,7 @@ public class BlockStateList {
+@@ -213,7 +215,7 @@ public class BlockStateList {
          }
  
          public int hashCode() {

@@ -1,14 +1,14 @@
-From fa40dfa22e0992c09493672e2510fada841ec317 Mon Sep 17 00:00:00 2001
+From 4a2e2fe48baf45ab9050130643d5688ef35691ce Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 19:04:35 +0100
 Subject: [PATCH] Allow Disabling Light Updates
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fa29797bc..2739a57e1 100644
+index 6063f75ba..4246c6b7c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -377,4 +377,11 @@ public class BlossomConfig {
+@@ -375,4 +375,11 @@ public class BlossomConfig {
          leftShootingThreshold = getDouble("tnt.left-shooting-threshold", 80.0);
      }
  

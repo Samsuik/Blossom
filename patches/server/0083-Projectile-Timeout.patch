@@ -1,14 +1,14 @@
-From 89cb08e61803e4b016d97414c667f8dc3cfa52d5 Mon Sep 17 00:00:00 2001
+From 452438148fbd46f8653b71355c318a963cad3010 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 6 Jul 2023 23:04:57 +0100
 Subject: [PATCH] Projectile Timeout
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index bebf86cc9..52ab6bb08 100644
+index d21f875c1..f0228d123 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -396,4 +396,9 @@ public class BlossomConfig {
+@@ -394,4 +394,9 @@ public class BlossomConfig {
          groupedSandMovement = getBoolean("sand.group-sand-layer-movement", false);
      }
  

@@ -1,14 +1,14 @@
-From d571039e0fb196b3607a65fb3f81feaef73ca8bf Mon Sep 17 00:00:00 2001
+From c9070e6f03d958eb2e96c1306db3926d3ae3b5ff Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 9 Jul 2023 23:54:44 +0100
 Subject: [PATCH] Configure Player Knockback
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 200e44895..578c64a8c 100644
+index 7292f6956..d8a3a6fb1 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -408,4 +408,44 @@ public class BlossomConfig {
+@@ -406,4 +406,44 @@ public class BlossomConfig {
          requireTNTToBlowUpDurableBlocks = getBoolean("explosions.durability.require-tnt-to-blow-up-durable-blocks", true);
      }
  

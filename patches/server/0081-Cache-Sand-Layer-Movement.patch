@@ -1,14 +1,14 @@
-From 0e623e970beefaf713d49ebf954a68e8243fe485 Mon Sep 17 00:00:00 2001
+From f0010b1194b5dba0c7171307d7774cf99bb0d62c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 4 Jul 2023 00:40:02 +0100
 Subject: [PATCH] Cache Sand Layer Movement
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 343d94c58..bebf86cc9 100644
+index d119302c5..d21f875c1 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -391,4 +391,9 @@ public class BlossomConfig {
+@@ -389,4 +389,9 @@ public class BlossomConfig {
          farmlandOnlyCheckWaterWhenUnused = getBoolean("crops.farmland-only-look-for-water-when-unused", false);
      }
  
@@ -49,7 +49,7 @@ index aee4cec57..6599c0142 100644
          return new Vec3D(this.locX, this.locY, this.locZ);
      }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index e6563adeb..b8e8b3983 100644
+index 7778d3b82..b60113deb 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -87,6 +87,7 @@ public class EntityFallingBlock extends Entity {
@@ -57,10 +57,10 @@ index e6563adeb..b8e8b3983 100644
      @Override
      public void move(double d0, double d1, double d2) {
 +        if (me.samsuik.blossom.configuration.BlossomConfig.groupedSandMovement && mimic()) return; // Blossom
-         if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
-             super.move_cannon(d0, d1, d2);
-         } else {
-@@ -109,6 +110,54 @@ public class EntityFallingBlock extends Entity {
+         super.move_cannon(d0, d1, d2);
+     }
+     // Blossom end
+@@ -105,6 +106,54 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end

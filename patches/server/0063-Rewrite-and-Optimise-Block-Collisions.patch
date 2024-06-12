@@ -1,22 +1,20 @@
-From b561c862269ebe05c78f568cef92b739c3ca11e6 Mon Sep 17 00:00:00 2001
+From 1b0146841889bdfe7cc083505fc1945e8641de86 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ab9adf86f..802cc1bfa 100644
+index ab9adf86f..7376dd6d4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -357,4 +357,11 @@ public class BlossomConfig {
+@@ -357,4 +357,9 @@ public class BlossomConfig {
          activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
      }
  
 +    public static boolean extendedCollisionSearch;
-+    public static boolean useFastBlockCollisions;
 +    private static void RewriteBlockCollisions() {
 +        extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
-+        useFastBlockCollisions = getBoolean("tnt.use-fast-block-collisions", true);
 +    }
 +
  }
@@ -104,10 +102,18 @@ index 431097ec3..ab5fe46dc 100644
          if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
              double d1;
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 6b371c677..8cc17378e 100644
+index 6b371c677..de6414c7c 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -297,6 +297,23 @@ public class Block {
+@@ -284,6 +284,7 @@ public class Block {
+         return this.isTileEntity;
+     }
+ 
++    public final void setBounds(float f, float f1, float f2, float f3, float f4, float f5) { this.a(f, f1, f2, f3, f4, f5); } // Blossom - OBFHELPER
+     protected final void a(float f, float f1, float f2, float f3, float f4, float f5) {
+         this.minX = (double) f;
+         this.minY = (double) f1;
+@@ -297,6 +298,23 @@ public class Block {
          return iblockaccess.getType(blockposition).getBlock().getMaterial().isBuildable();
      }
  
@@ -131,7 +137,20 @@ index 6b371c677..8cc17378e 100644
      public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
          AxisAlignedBB axisalignedbb1 = this.a(world, blockposition, iblockdata);
  
-@@ -618,6 +635,14 @@ public class Block {
+@@ -306,6 +324,12 @@ public class Block {
+ 
+     }
+ 
++    // Blossom start
++    public final AxisAlignedBB getBounds() {
++        return new AxisAlignedBB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ);
++    }
++    // Blossom end
++
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
+         return new AxisAlignedBB((double) blockposition.getX() + this.minX, (double) blockposition.getY() + this.minY, (double) blockposition.getZ() + this.minZ, (double) blockposition.getX() + this.maxX, (double) blockposition.getY() + this.maxY, (double) blockposition.getZ() + this.maxZ);
+     }
+@@ -618,6 +642,14 @@ public class Block {
          return vec3d;
      }
  
@@ -146,7 +165,7 @@ index 6b371c677..8cc17378e 100644
      public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {}
  
      public final double B() {
-@@ -1063,10 +1088,17 @@ public class Block {
+@@ -1063,10 +1095,17 @@ public class Block {
                  int i = Block.REGISTRY.b(block13) << 4 | block13.toLegacyData(iblockdata);
                  // TacoSpigot start
  
@@ -165,6 +184,43 @@ index 6b371c677..8cc17378e 100644
      }
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {
+diff --git a/src/main/java/net/minecraft/server/BlockAnvil.java b/src/main/java/net/minecraft/server/BlockAnvil.java
+index 4707dcc1c..6c45336a4 100644
+--- a/src/main/java/net/minecraft/server/BlockAnvil.java
++++ b/src/main/java/net/minecraft/server/BlockAnvil.java
+@@ -41,7 +41,12 @@ public class BlockAnvil extends BlockFalling {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        EnumDirection enumdirection = (EnumDirection) iblockaccess.getType(blockposition).get(BlockAnvil.FACING);
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockAnvil.FACING);
++        // Blossom end
+ 
+         if (enumdirection.k() == EnumDirection.EnumAxis.X) {
+             this.a(0.0F, 0.0F, 0.125F, 1.0F, 1.0F, 0.875F);
+diff --git a/src/main/java/net/minecraft/server/BlockCake.java b/src/main/java/net/minecraft/server/BlockCake.java
+index 4918483ad..4b0382a60 100644
+--- a/src/main/java/net/minecraft/server/BlockCake.java
++++ b/src/main/java/net/minecraft/server/BlockCake.java
+@@ -13,8 +13,13 @@ public class BlockCake extends Block {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        // Blossom end
+         float f = 0.0625F;
+-        float f1 = (float) (1 + ((Integer) iblockaccess.getType(blockposition).get(BlockCake.BITES)).intValue() * 2) / 16.0F;
++        float f1 = (float) (1 + ((Integer) iblockdata.get(BlockCake.BITES)).intValue() * 2) / 16.0F; // Blossom
+         float f2 = 0.5F;
+ 
+         this.a(f1, 0.0F, f, 1.0F - f, f2, 1.0F - f);
 diff --git a/src/main/java/net/minecraft/server/BlockCobbleWall.java b/src/main/java/net/minecraft/server/BlockCobbleWall.java
 index 08f8b5e29..3eb088845 100644
 --- a/src/main/java/net/minecraft/server/BlockCobbleWall.java
@@ -312,6 +368,24 @@ index 1d500553b..3e673d59c 100644
          float f = 0.375F;
          float f1 = 0.625F;
          float f2 = 0.375F;
+diff --git a/src/main/java/net/minecraft/server/BlockFenceGate.java b/src/main/java/net/minecraft/server/BlockFenceGate.java
+index c02281293..6e0335ffd 100644
+--- a/src/main/java/net/minecraft/server/BlockFenceGate.java
++++ b/src/main/java/net/minecraft/server/BlockFenceGate.java
+@@ -37,7 +37,12 @@ public class BlockFenceGate extends BlockDirectional {
+     }
+ 
+     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
+-        EnumDirection.EnumAxis enumdirection_enumaxis = ((EnumDirection) iblockaccess.getType(blockposition).get(BlockFenceGate.FACING)).k();
++        // Blossom start
++        updateShape(iblockaccess.getType(blockposition));
++    }
++    public void updateShape(IBlockData iblockdata) {
++        EnumDirection.EnumAxis enumdirection_enumaxis = ((EnumDirection) iblockdata.get(BlockFenceGate.FACING)).k();
++        // Blossom end
+ 
+         if (enumdirection_enumaxis == EnumDirection.EnumAxis.Z) {
+             this.a(0.0F, 0.0F, 0.375F, 1.0F, 1.0F, 0.625F);
 diff --git a/src/main/java/net/minecraft/server/BlockLadder.java b/src/main/java/net/minecraft/server/BlockLadder.java
 index c12c43bb1..0b452b01f 100644
 --- a/src/main/java/net/minecraft/server/BlockLadder.java
@@ -615,7 +689,7 @@ index 0a60daeb2..5301abb60 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index fda96405b..e7e06f265 100644
+index fda96405b..cd2993500 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -122,6 +122,11 @@ public class BlockStateList {
@@ -630,7 +704,7 @@ index fda96405b..e7e06f265 100644
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -135,6 +140,36 @@ public class BlockStateList {
+@@ -135,6 +140,39 @@ public class BlockStateList {
              // TacoSpigot end
          }
  
@@ -639,14 +713,17 @@ index fda96405b..e7e06f265 100644
 +            try {
 +                a.updateShape(null, BlockPosition.ZERO);
 +            } catch (Throwable e) {
-+                // not a static shape (except for portal frames, why notch?)
++                a.updateShape(this); // recalculate shape using block state if possible
 +            }
 +
 +            try {
 +                a.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
 +            } catch (Throwable e) {
++                shape.clear();
 +                dynamic = true;
 +            }
++
++            //MinecraftServer.LOGGER.info(dynamic ? "dynamic: {}" : "static: {} {}", this, shape);
 +        }
 +
 +        public void markDynamic() {
@@ -926,42 +1003,34 @@ index 2f7ccceef..0baab1f19 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index f0e3a96e3..c1dde1c8c 100644
+index f0e3a96e3..0adb22084 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -84,6 +84,16 @@ public class EntityFallingBlock extends Entity {
+@@ -84,6 +84,12 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end
 +    // Blossom start
 +    @Override
 +    public void move(double d0, double d1, double d2) {
-+        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
-+            super.move_cannon(d0, d1, d2);
-+        } else {
-+            super.move(d0, d1, d2);
-+        }
++        super.move_cannon(d0, d1, d2);
 +    }
 +    // Blossom end
  
      public void t_() {
          Block block = this.block.getBlock();
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 0e1319f47..4745113cf 100644
+index 0e1319f47..e9d30e37e 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -100,6 +100,16 @@ public class EntityTNTPrimed extends Entity {
+@@ -100,6 +100,12 @@ public class EntityTNTPrimed extends Entity {
      }
      */
      // Blossom end
 +    // Blossom start
 +    @Override
 +    public void move(double d0, double d1, double d2) {
-+        if (me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
-+            super.move_cannon(d0, d1, d2);
-+        } else {
-+            super.move(d0, d1, d2);
-+        }
++        super.move_cannon(d0, d1, d2);
 +    }
 +    // Blossom end
  

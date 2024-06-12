@@ -1,15 +1,15 @@
-From 1d2a02bc9af71e522d785076d84b6d347b66c84b Mon Sep 17 00:00:00 2001
+From cdc3014e21bee2042ba62489779d60f21525ffb0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 802cc1bfa..fa29797bc 100644
+index 7376dd6d4..6063f75ba 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -364,4 +364,17 @@ public class BlossomConfig {
-         useFastBlockCollisions = getBoolean("tnt.use-fast-block-collisions", true);
+@@ -362,4 +362,17 @@ public class BlossomConfig {
+         extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
      }
  
 +    public static boolean fixSlimeBlockDefence;
@@ -53,11 +53,11 @@ index 0baab1f19..55556b235 100644
              moveX *= 0.25D;
              moveY *= 0.05000000074505806D;
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index c1dde1c8c..264be6256 100644
+index 0adb22084..39bb76091 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -94,6 +94,21 @@ public class EntityFallingBlock extends Entity {
-         }
+@@ -90,6 +90,21 @@ public class EntityFallingBlock extends Entity {
+         super.move_cannon(d0, d1, d2);
      }
      // Blossom end
 +    // Blossom start
@@ -78,7 +78,7 @@ index c1dde1c8c..264be6256 100644
  
      public void t_() {
          Block block = this.block.getBlock();
-@@ -106,6 +121,12 @@ public class EntityFallingBlock extends Entity {
+@@ -102,6 +117,12 @@ public class EntityFallingBlock extends Entity {
              this.lastZ = this.locZ;
              BlockPosition blockposition;
  
@@ -91,7 +91,7 @@ index c1dde1c8c..264be6256 100644
              if (this.ticksLived++ == 0) {
                  blockposition = new BlockPosition(this);
                  if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
-@@ -148,7 +169,7 @@ public class EntityFallingBlock extends Entity {
+@@ -144,7 +165,7 @@ public class EntityFallingBlock extends Entity {
                      if (this.world.getType(blockposition).getBlock() != Blocks.PISTON_EXTENSION) {
                          this.die();
                          if (!this.e) {

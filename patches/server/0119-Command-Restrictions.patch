@@ -1,14 +1,14 @@
-From 446af2492b461bc103f94d23f93076775d50c6f0 Mon Sep 17 00:00:00 2001
+From 652df8444a96e6ad127ba835f5c87640288f3845 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 27 Jul 2023 20:03:36 +0100
 Subject: [PATCH] Command Restrictions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ae68eb032..742046fa1 100644
+index 6961098ed..e848764ea 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -551,4 +551,11 @@ public class BlossomConfig {
+@@ -549,4 +549,11 @@ public class BlossomConfig {
          throttlePlacement = getBoolean("player.throttle-block-placement", false);
      }
  

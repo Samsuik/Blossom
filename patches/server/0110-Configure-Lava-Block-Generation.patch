@@ -1,14 +1,14 @@
-From a3586b90c14dd4d92af0dc7046046ea16013cf84 Mon Sep 17 00:00:00 2001
+From a8eccf019eb3a73c7e4b2efaca353b39839f3ea1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:13:30 +0100
 Subject: [PATCH] Configure Lava Block Generation
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index b82d68b71..1ca1862d9 100644
+index 7d2f801d5..a6a1d6fe9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -518,4 +518,13 @@ public class BlossomConfig {
+@@ -516,4 +516,13 @@ public class BlossomConfig {
          disallowSuspiciousMovements = getBoolean("player.disallow-suspicious-movement", true);
      }
  
