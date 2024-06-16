@@ -1,9 +1,22 @@
-From ca8af7beb511dcf73446c919cc162dcb6d64ea24 Mon Sep 17 00:00:00 2001
+From fe48f51c288d3e3b248041a4062507f06360ebf5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 7 Jul 2023 00:14:09 +0100
 Subject: [PATCH] Optimise Projectile Logic
 
 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index aee4cec57..a826a8311 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -1166,7 +1166,7 @@ public abstract class Entity implements ICommandListener {
+         }
+     }
+ 
+-    private void recalcPosition() {
++    public final void recalcPosition() { // Blossom
+         this.locX = (this.getBoundingBox().a + this.getBoundingBox().d) / 2.0D;
+         this.locY = this.getBoundingBox().b;
+         this.locZ = (this.getBoundingBox().c + this.getBoundingBox().f) / 2.0D;
 diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
 index 5b5c9b1a1..9fc6d2777 100644
 --- a/src/main/java/net/minecraft/server/EntityArrow.java
