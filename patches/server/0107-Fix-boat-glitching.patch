@@ -1,0 +1,30 @@
+From ed8bf17e8870ea12469bee9b0a81f7b8f5f6a346 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 18 Jul 2023 19:49:06 +0100
+Subject: [PATCH] Fix boat glitching
+
+Prevent players mounting boats they cannot see:
+- above nether roof
+- inside someones base
+
+Prevent mounting boats they would not be able to dismount:
+- placing a boat below a base
+
+diff --git a/src/main/java/net/minecraft/server/EntityBoat.java b/src/main/java/net/minecraft/server/EntityBoat.java
+index b55bd20f1..2321b29c4 100644
+--- a/src/main/java/net/minecraft/server/EntityBoat.java
++++ b/src/main/java/net/minecraft/server/EntityBoat.java
+@@ -460,6 +460,10 @@ public class EntityBoat extends Entity {
+     public boolean e(EntityHuman entityhuman) {
+         if (this.passenger != null && this.passenger instanceof EntityHuman && this.passenger != entityhuman) {
+             return true;
++            // Blossom start - prevent mounting if the player cannot see the entity and would not fit when dismounting
++        } else if (!entityhuman.hasLineOfSight(this) || !world.a(getBoundingBox().a(0, entityhuman.length + 1.0e-5, 0)).isEmpty()) {
++            return false;
++            // Blossom end
+         } else {
+             if (!this.world.isClientSide) {
+                 entityhuman.mount(this);
+-- 
+2.40.0.windows.1
+

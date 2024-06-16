@@ -1,0 +1,22 @@
+From f027a67412ae6e0d04a22dc459d2e74ed23083e9 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 19 Jul 2023 00:58:01 +0100
+Subject: [PATCH] Modify slot to remove negative items as well
+
+
+diff --git a/src/main/java/net/minecraft/server/Slot.java b/src/main/java/net/minecraft/server/Slot.java
+index 3e8e7af9b..0c1a37690 100644
+--- a/src/main/java/net/minecraft/server/Slot.java
++++ b/src/main/java/net/minecraft/server/Slot.java
+@@ -45,7 +45,7 @@ public class Slot {
+     }
+ 
+     public boolean hasItem() {
+-        if (getItem() != null && getItem().count == 0) {
++        if (getItem() != null && getItem().count <= 0) { // Blossom
+             set(null);
+         }
+         return this.getItem() != null;
+-- 
+2.40.0.windows.1
+

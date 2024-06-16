@@ -1,0 +1,36 @@
+From de9ff2571cf65f973d50c5a09372b1b6e57879fd Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 10 Jul 2023 13:53:53 +0100
+Subject: [PATCH] Monster Eggs Change Spawners
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 563120f5b..29d51a157 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -450,4 +450,9 @@ public class BlossomConfig {
+         itemArmourDamage = getDouble("player.armour.other-damage-limit", 1.0);
+     }
+     
++    public static boolean monsterEggsChangeSpawners;
++    private static void MonsterEggsChangeSpawners() {
++        monsterEggsChangeSpawners = getBoolean("player.monster-eggs-change-spawners", false);
++    }
++    
+ }
+diff --git a/src/main/java/net/minecraft/server/ItemMonsterEgg.java b/src/main/java/net/minecraft/server/ItemMonsterEgg.java
+index 84f5da5bf..26667abf8 100644
+--- a/src/main/java/net/minecraft/server/ItemMonsterEgg.java
++++ b/src/main/java/net/minecraft/server/ItemMonsterEgg.java
+@@ -26,7 +26,7 @@ public class ItemMonsterEgg extends Item {
+         } else {
+             IBlockData iblockdata = world.getType(blockposition);
+ 
+-            if (iblockdata.getBlock() == Blocks.MOB_SPAWNER) {
++            if (iblockdata.getBlock() == Blocks.MOB_SPAWNER && me.samsuik.blossom.configuration.BlossomConfig.monsterEggsChangeSpawners) {
+                 TileEntity tileentity = world.getTileEntity(blockposition);
+ 
+                 if (tileentity instanceof TileEntityMobSpawner) {
+-- 
+2.40.0.windows.1
+

@@ -1,0 +1,307 @@
+From ca8af7beb511dcf73446c919cc162dcb6d64ea24 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 7 Jul 2023 00:14:09 +0100
+Subject: [PATCH] Optimise Projectile Logic
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
+index 5b5c9b1a1..9fc6d2777 100644
+--- a/src/main/java/net/minecraft/server/EntityArrow.java
++++ b/src/main/java/net/minecraft/server/EntityArrow.java
+@@ -184,18 +184,19 @@ public class EntityArrow extends Entity implements IProjectile {
+             Vec3D vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
+             MovingObjectPosition movingobjectposition = this.world.rayTrace(vec3d, vec3d1, false, true, false);
+ 
+-            vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+-            vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
++            // Blossom - avoid allocating vec twice
+             if (movingobjectposition != null) {
+                 vec3d1 = new Vec3D(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
+             }
+ 
+             Entity entity = null;
++            float f1; // Blossom - move up
++            if (!inGround) { // Blossom - avoid searching for entities when we're inside a block
+             List list = this.world.getEntities(this, this.getBoundingBox().a(this.motX, this.motY, this.motZ).grow(1.0D, 1.0D, 1.0D));
+             double d0 = 0.0D;
+ 
+             int j;
+-            float f1;
++            // Blossom - move up
+ 
+             for (j = 0; j < list.size(); ++j) {
+                 Entity entity1 = (Entity) list.get(j);
+@@ -228,8 +229,7 @@ public class EntityArrow extends Entity implements IProjectile {
+                 }
+             }
+ 
+-            float f2;
+-            float f3;
++            // Blossom - move down
+ 
+             // PaperSpigot start - Allow arrows to fly through vanished players the shooter can't see
+             if (movingobjectposition != null && movingobjectposition.entity instanceof EntityPlayer && shooter != null && shooter instanceof EntityPlayer) {
+@@ -245,6 +245,9 @@ public class EntityArrow extends Entity implements IProjectile {
+                 if (collideEvent.isCancelled()) movingobjectposition = null;
+             }
+             // TacoSpigot end
++            } // Blossom
++            float f2; // Blossom - move down
++            float f3; // Blossom - move down
+             if (movingobjectposition != null) {
+                 org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this); // CraftBukkit - Call event
+                 if (movingobjectposition.entity != null) {
+diff --git a/src/main/java/net/minecraft/server/EntityFireball.java b/src/main/java/net/minecraft/server/EntityFireball.java
+index 7076df012..f346b255b 100644
+--- a/src/main/java/net/minecraft/server/EntityFireball.java
++++ b/src/main/java/net/minecraft/server/EntityFireball.java
+@@ -99,8 +99,7 @@ public abstract class EntityFireball extends Entity {
+             Vec3D vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
+             MovingObjectPosition movingobjectposition = this.world.rayTrace(vec3d, vec3d1);
+ 
+-            vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+-            vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
++            // Blossom - avoid allocating vec twice
+             if (movingobjectposition != null) {
+                 vec3d1 = new Vec3D(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
+             }
+@@ -145,28 +144,7 @@ public abstract class EntityFireball extends Entity {
+             this.locX += this.motX;
+             this.locY += this.motY;
+             this.locZ += this.motZ;
+-            float f1 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
+-
+-            this.yaw = (float) (MathHelper.b(this.motZ, this.motX) * 180.0D / 3.1415927410125732D) + 90.0F;
+-
+-            for (this.pitch = (float) (MathHelper.b((double) f1, this.motY) * 180.0D / 3.1415927410125732D) - 90.0F; this.pitch - this.lastPitch < -180.0F; this.lastPitch -= 360.0F) {
+-                ;
+-            }
+-
+-            while (this.pitch - this.lastPitch >= 180.0F) {
+-                this.lastPitch += 360.0F;
+-            }
+-
+-            while (this.yaw - this.lastYaw < -180.0F) {
+-                this.lastYaw -= 360.0F;
+-            }
+-
+-            while (this.yaw - this.lastYaw >= 180.0F) {
+-                this.lastYaw += 360.0F;
+-            }
+-
+-            this.pitch = this.lastPitch + (this.pitch - this.lastPitch) * 0.2F;
+-            this.yaw = this.lastYaw + (this.yaw - this.lastYaw) * 0.2F;
++            // Blossom - unnecessary
+             float f2 = this.j();
+ 
+             if (this.V()) {
+diff --git a/src/main/java/net/minecraft/server/EntityFireworks.java b/src/main/java/net/minecraft/server/EntityFireworks.java
+index f08c8a2f8..e4f6ee750 100644
+--- a/src/main/java/net/minecraft/server/EntityFireworks.java
++++ b/src/main/java/net/minecraft/server/EntityFireworks.java
+@@ -67,33 +67,13 @@ public class EntityFireworks extends Entity {
+         this.P = this.locX;
+         this.Q = this.locY;
+         this.R = this.locZ;
+-        super.t_();
++        this.W(); // Blossom - only need to tick water
+         this.motX *= 1.15D;
+         this.motZ *= 1.15D;
+         this.motY += 0.04D;
+         this.move(this.motX, this.motY, this.motZ);
+-        float f = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
++        // Blossom - unnecessary
+ 
+-        this.yaw = (float) (MathHelper.b(this.motX, this.motZ) * 180.0D / 3.1415927410125732D);
+-
+-        for (this.pitch = (float) (MathHelper.b(this.motY, (double) f) * 180.0D / 3.1415927410125732D); this.pitch - this.lastPitch < -180.0F; this.lastPitch -= 360.0F) {
+-            ;
+-        }
+-
+-        while (this.pitch - this.lastPitch >= 180.0F) {
+-            this.lastPitch += 360.0F;
+-        }
+-
+-        while (this.yaw - this.lastYaw < -180.0F) {
+-            this.lastYaw -= 360.0F;
+-        }
+-
+-        while (this.yaw - this.lastYaw >= 180.0F) {
+-            this.lastYaw += 360.0F;
+-        }
+-
+-        this.pitch = this.lastPitch + (this.pitch - this.lastPitch) * 0.2F;
+-        this.yaw = this.lastYaw + (this.yaw - this.lastYaw) * 0.2F;
+         if (this.ticksFlown == 0 && !this.R()) {
+             this.world.makeSound(this, "fireworks.launch", 3.0F, 1.0F);
+         }
+diff --git a/src/main/java/net/minecraft/server/EntityFishingHook.java b/src/main/java/net/minecraft/server/EntityFishingHook.java
+index 12a8cd668..9da2fef17 100644
+--- a/src/main/java/net/minecraft/server/EntityFishingHook.java
++++ b/src/main/java/net/minecraft/server/EntityFishingHook.java
+@@ -81,10 +81,7 @@ public class EntityFishingHook extends Entity {
+         this.motX = d0;
+         this.motY = d1;
+         this.motZ = d2;
+-        float f3 = MathHelper.sqrt(d0 * d0 + d2 * d2);
+-
+-        this.lastYaw = this.yaw = (float) (MathHelper.b(d0, d2) * 180.0D / 3.1415927410125732D);
+-        this.lastPitch = this.pitch = (float) (MathHelper.b(d1, (double) f3) * 180.0D / 3.1415927410125732D);
++        // Blossom - unnecessary
+         this.at = 0;
+     }
+ 
+@@ -95,16 +92,13 @@ public class EntityFishingHook extends Entity {
+             return;
+         }
+         // Blossom end
+-        super.t_();
++        super.W(); // Blossom - only need to tick water
+         if (this.az > 0) {
+             double d0 = this.locX + (this.aA - this.locX) / (double) this.az;
+             double d1 = this.locY + (this.aB - this.locY) / (double) this.az;
+             double d2 = this.locZ + (this.aC - this.locZ) / (double) this.az;
+-            double d3 = MathHelper.g(this.aD - (double) this.yaw);
+ 
+-            this.yaw = (float) ((double) this.yaw + d3 / (double) this.az);
+-            this.pitch = (float) ((double) this.pitch + (this.aE - (double) this.pitch) / (double) this.az);
+-            --this.az;
++            // Blossom - fishing hooks are 2d sprites, pitch and yaw are not used.
+             this.setPosition(d0, d1, d2);
+             this.setYawPitch(this.yaw, this.pitch);
+         } else {
+@@ -155,21 +149,24 @@ public class EntityFishingHook extends Entity {
+                 ++this.au;
+             }
+ 
++            boolean oldHit = this.as; // Blossom
++
+             Vec3D vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+             Vec3D vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
+             MovingObjectPosition movingobjectposition = this.world.rayTrace(vec3d, vec3d1);
+ 
+-            vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+-            vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
++            // Blossom - avoid allocating vec twice
+             if (movingobjectposition != null) {
+                 vec3d1 = new Vec3D(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
+             }
+ 
++            double d6; // Blossom - moved up
++            if (as && !inWater && hooked == null) { // Blossom - avoid searching for entities when we're inside a block, attached to an entity or floating in water.
+             Entity entity = null;
+             List list = this.world.getEntities(this, this.getBoundingBox().a(this.motX, this.motY, this.motZ).grow(1.0D, 1.0D, 1.0D));
+             double d5 = 0.0D;
+ 
+-            double d6;
++            // Blossom - move up
+ 
+             for (int i = 0; i < list.size(); ++i) {
+                 Entity entity1 = (Entity) list.get(i);
+@@ -192,6 +189,7 @@ public class EntityFishingHook extends Entity {
+             if (entity != null) {
+                 movingobjectposition = new MovingObjectPosition(entity);
+             }
++            } // Blossom
+ 
+             // PaperSpigot start - Allow fishing hooks to fly through vanished players the shooter can't see
+             if (movingobjectposition != null && movingobjectposition.entity instanceof EntityPlayer && owner != null && owner instanceof EntityPlayer) {
+@@ -212,30 +210,17 @@ public class EntityFishingHook extends Entity {
+                 }
+             }
+ 
+-            if (!this.as) {
+-                this.move(this.motX, this.motY, this.motZ);
+-                float f1 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
+-
+-                this.yaw = (float) (MathHelper.b(this.motX, this.motZ) * 180.0D / 3.1415927410125732D);
+-
+-                for (this.pitch = (float) (MathHelper.b(this.motY, (double) f1) * 180.0D / 3.1415927410125732D); this.pitch - this.lastPitch < -180.0F; this.lastPitch -= 360.0F) {
+-                    ;
+-                }
+-
+-                while (this.pitch - this.lastPitch >= 180.0F) {
+-                    this.lastPitch += 360.0F;
+-                }
+-
+-                while (this.yaw - this.lastYaw < -180.0F) {
+-                    this.lastYaw -= 360.0F;
+-                }
++            // Blossom start
++            if (!oldHit && as) {
++                move(motX, motY, motZ);
++            }
+ 
+-                while (this.yaw - this.lastYaw >= 180.0F) {
+-                    this.lastYaw += 360.0F;
+-                }
++            if (!this.as) {
++                a(getBoundingBox().c(motX, motY, motZ));
++                recalcPosition();
++                // Blossom end
+ 
+-                this.pitch = this.lastPitch + (this.pitch - this.lastPitch) * 0.2F;
+-                this.yaw = this.lastYaw + (this.yaw - this.lastYaw) * 0.2F;
++                // Blossom - unnecessary
+                 float f2 = 0.92F;
+ 
+                 if (this.onGround || this.positionChanged) {
+diff --git a/src/main/java/net/minecraft/server/EntityProjectile.java b/src/main/java/net/minecraft/server/EntityProjectile.java
+index 0b36daf67..fac8f1094 100644
+--- a/src/main/java/net/minecraft/server/EntityProjectile.java
++++ b/src/main/java/net/minecraft/server/EntityProjectile.java
+@@ -71,10 +71,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+         this.motX = d0;
+         this.motY = d1;
+         this.motZ = d2;
+-        float f3 = MathHelper.sqrt(d0 * d0 + d2 * d2);
+-
+-        this.lastYaw = this.yaw = (float) (MathHelper.b(d0, d2) * 180.0D / 3.1415927410125732D);
+-        this.lastPitch = this.pitch = (float) (MathHelper.b(d1, (double) f3) * 180.0D / 3.1415927410125732D);
++        // Blossom - unnecessary
+         this.i = 0;
+     }
+ 
+@@ -117,8 +114,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+         Vec3D vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
+         MovingObjectPosition movingobjectposition = this.world.rayTrace(vec3d, vec3d1);
+ 
+-        vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+-        vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
++        // Blossom - avoid allocating vec twice
+         if (movingobjectposition != null) {
+             vec3d1 = new Vec3D(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
+         }
+@@ -200,28 +196,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+         this.locX += this.motX;
+         this.locY += this.motY;
+         this.locZ += this.motZ;
+-        float f1 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
+-
+-        this.yaw = (float) (MathHelper.b(this.motX, this.motZ) * 180.0D / 3.1415927410125732D);
+-
+-        for (this.pitch = (float) (MathHelper.b(this.motY, (double) f1) * 180.0D / 3.1415927410125732D); this.pitch - this.lastPitch < -180.0F; this.lastPitch -= 360.0F) {
+-            ;
+-        }
+-
+-        while (this.pitch - this.lastPitch >= 180.0F) {
+-            this.lastPitch += 360.0F;
+-        }
+-
+-        while (this.yaw - this.lastYaw < -180.0F) {
+-            this.lastYaw -= 360.0F;
+-        }
+-
+-        while (this.yaw - this.lastYaw >= 180.0F) {
+-            this.lastYaw += 360.0F;
+-        }
+-
+-        this.pitch = this.lastPitch + (this.pitch - this.lastPitch) * 0.2F;
+-        this.yaw = this.lastYaw + (this.yaw - this.lastYaw) * 0.2F;
++        // Blossom - unnecessary
+         float f2 = 0.99F;
+         float f3 = this.m();
+ 
+-- 
+2.40.0.windows.1
+
