@@ -1,4 +1,4 @@
-From fb2331b7344790567affe374945977767c96b2e0 Mon Sep 17 00:00:00 2001
+From a27eebc2fa6d493b1844b4d114bf0d5eee62f155 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 15:54:26 +0100
 Subject: [PATCH] Fix player movement issues
@@ -32,10 +32,18 @@ index de8e02f04..ded79b7b6 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 354ff7252..87b967807 100644
+index 354ff7252..190c29c69 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -637,7 +637,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -149,6 +149,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+     private float lastYaw = Float.MAX_VALUE;
+     private boolean justTeleported = false;
+     private boolean hasMoved; // Spigot
++    private boolean playerMoved; // Blossom
+ 
+     public CraftPlayer getPlayer() {
+         return (this.player == null) ? null : (CraftPlayer) this.player.getBukkitEntity();
+@@ -637,7 +638,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      double d15 = d11 * d11 + d12 * d12 + d13 * d13;
  
                      // Spigot: make "moved too quickly" limit configurable
@@ -44,7 +52,7 @@ index 354ff7252..87b967807 100644
                          PlayerConnection.c.warn(this.player.getName() + " moved too quickly! " + d11 + "," + d12 + "," + d13 + " (" + d11 + ", " + d12 + ", " + d13 + ")");
                          this.a(this.o, this.p, this.q, this.player.yaw, this.player.pitch);
                          return;
-@@ -650,32 +650,50 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -650,32 +651,50 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                          this.player.bF();
                      }
  
@@ -67,7 +75,7 @@ index 354ff7252..87b967807 100644
  
 +                    // Blossom start
 +                    double desync = d15 + d12 * d12;
-+                    if (me.samsuik.blossom.configuration.BlossomConfig.disallowSuspiciousMovements && this.player.positionChanged && desync != 0.0) {
++                    if (me.samsuik.blossom.configuration.BlossomConfig.disallowSuspiciousMovements && (!this.playerMoved || this.player.positionChanged) && desync != 0.0) {
 +                        flag1 = true;
 +                    }
 +                    // Blossom end
@@ -102,6 +110,22 @@ index 354ff7252..87b967807 100644
                              this.a(this.o, this.p, this.q, f2, f3);
                              return;
                          }
+@@ -696,6 +715,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+                         this.g = 0;
+                     }
+ 
++                    this.playerMoved |= this.o != d7 || this.q != d9; // Blossom
+                     this.player.onGround = packetplayinflying.f();
+                     this.minecraftServer.getPlayerList().d(this.player);
+                     this.player.a(this.player.locY - d10, packetplayinflying.f());
+@@ -804,6 +824,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+         this.lastPitch = f3;
+         // CraftBukkit end
+ 
++        this.playerMoved = false; // Blossom
+         this.player.setLocation(this.o, this.p, this.q, f2, f3);
+         this.player.playerConnection.sendPacket(new PacketPlayOutPosition(d0, d1, d2, f, f1, set));
+     }
 -- 
 2.40.0.windows.1
 

@@ -1,4 +1,4 @@
-From 58dd8206efd8973ad7f51e8aafdb1192e4fd2206 Mon Sep 17 00:00:00 2001
+From 2e4881c7da7ec711c617c71f080522c1dfcd7de5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 23:32:01 +0100
 Subject: [PATCH] Actual Throttle Placement Configuration
@@ -20,10 +20,10 @@ index 59c669c99..8b102b9bd 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 87b967807..d5c94d4d2 100644
+index 190c29c69..64c1a0d0e 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -962,6 +962,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -965,6 +965,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              this.lastInteractedSlot = this.player.inventory.itemInHandIndex;
          }
          // Blossom end
