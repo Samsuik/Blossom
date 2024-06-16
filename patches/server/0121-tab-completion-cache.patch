@@ -1,4 +1,4 @@
-From 6ce68469a9741a484b180a05eb82266958fbd900 Mon Sep 17 00:00:00 2001
+From 28d21515812e5bc2cb4c241913ce46831cfb8fc8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 May 2024 13:15:59 +0100
 Subject: [PATCH] tab completion cache
@@ -81,7 +81,7 @@ index 000000000..c0b238a68
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index f30dd60ea..ee060a8e7 100644
+index c827a7b97..b8d685d7d 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -154,6 +154,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -92,7 +92,7 @@ index f30dd60ea..ee060a8e7 100644
  
      public PlayerConnection(MinecraftServer minecraftserver, NetworkManager networkmanager, EntityPlayer entityplayer) {
          this.minecraftServer = minecraftserver;
-@@ -2337,15 +2338,22 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2320,15 +2321,22 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
      public void a(PacketPlayInTabComplete packetplayintabcomplete) {
          if (ensureMainThread(packetplayintabcomplete)) return; // Blossom
@@ -117,7 +117,7 @@ index f30dd60ea..ee060a8e7 100644
          }
          // Blossom end
          ArrayList arraylist = Lists.newArrayList();
-@@ -2356,8 +2364,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2339,8 +2347,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              arraylist.add(s);
          }

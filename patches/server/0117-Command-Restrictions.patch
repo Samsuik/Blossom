@@ -1,4 +1,4 @@
-From 2688849c401592ff19532023a15e81c638982a99 Mon Sep 17 00:00:00 2001
+From 0ad700f2e42fd3e0cac61a546209d1dbfa5de976 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 27 Jul 2023 20:03:36 +0100
 Subject: [PATCH] Command Restrictions
@@ -155,7 +155,7 @@ index 000000000..bcf95ff21
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 6db4b6628..629e6ace1 100644
+index 5215e7594..226fb7c71 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -122,6 +122,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -166,7 +166,7 @@ index 6db4b6628..629e6ace1 100644
  
      public PlayerConnection(MinecraftServer minecraftserver, NetworkManager networkmanager, EntityPlayer entityplayer) {
          this.minecraftServer = minecraftserver;
-@@ -1482,6 +1483,19 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1465,6 +1466,19 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
         // CraftBukkit start - whole method
          if ( org.spigotmc.SpigotConfig.logCommands ) // Spigot
          this.c.info(this.player.getName() + " issued server command: " + s);

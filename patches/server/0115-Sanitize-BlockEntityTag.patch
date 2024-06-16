@@ -1,14 +1,14 @@
-From 7ef15db340243f0c3ae4154f3031d95b3336229e Mon Sep 17 00:00:00 2001
+From 67bc914f919a790861d3b6e6a1198f647169d5af Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 20 Jul 2023 20:58:17 +0100
 Subject: [PATCH] Sanitize BlockEntityTag
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 64c1a0d0e..6db4b6628 100644
+index b470c709a..5215e7594 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -2093,9 +2093,24 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2076,9 +2076,24 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
                  if (nbttagcompound.hasKey("x") && nbttagcompound.hasKey("y") && nbttagcompound.hasKey("z")) {
                      BlockPosition blockposition = new BlockPosition(nbttagcompound.getInt("x"), nbttagcompound.getInt("y"), nbttagcompound.getInt("z"));

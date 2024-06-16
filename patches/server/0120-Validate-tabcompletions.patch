@@ -1,4 +1,4 @@
-From 73e4ec632ec73ceeedb9b216ac690f479b49e391 Mon Sep 17 00:00:00 2001
+From db7dfcb7fb2e0ec3fa29a0c8f1d813499ea7a4a4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 May 2024 12:57:56 +0100
 Subject: [PATCH] Validate tabcompletions
@@ -17,7 +17,7 @@ index bdc1759d0..17612a8bb 100644
          return this.c((double) baseblockposition.getX(), (double) baseblockposition.getY(), (double) baseblockposition.getZ());
      }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 629e6ace1..f30dd60ea 100644
+index 226fb7c71..c827a7b97 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -123,6 +123,37 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -58,7 +58,7 @@ index 629e6ace1..f30dd60ea 100644
  
      public PlayerConnection(MinecraftServer minecraftserver, NetworkManager networkmanager, EntityPlayer entityplayer) {
          this.minecraftServer = minecraftserver;
-@@ -2312,6 +2343,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2295,6 +2326,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              return;
          }
          // CraftBukkit end
