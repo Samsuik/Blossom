@@ -1,20 +1,24 @@
-From 1b0146841889bdfe7cc083505fc1945e8641de86 Mon Sep 17 00:00:00 2001
+From ef02201d947aa5a3b251b5e3cb396983432ebbc8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ab9adf86f..7376dd6d4 100644
+index ab9adf86f..de86adcbe 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -357,4 +357,9 @@ public class BlossomConfig {
+@@ -357,4 +357,13 @@ public class BlossomConfig {
          activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
      }
  
 +    public static boolean extendedCollisionSearch;
++    public static boolean useFastBlockCollisions;
++    public static boolean optimisedMovement;
 +    private static void RewriteBlockCollisions() {
 +        extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
++        useFastBlockCollisions = getBoolean("tnt.use-fast-block-collisions", true);
++        optimisedMovement = getBoolean("tnt.optimised-movement", true);
 +    }
 +
  }
@@ -102,7 +106,7 @@ index 431097ec3..ab5fe46dc 100644
          if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
              double d1;
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 6b371c677..de6414c7c 100644
+index 6b371c677..9ca105afa 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -284,6 +284,7 @@ public class Block {
@@ -119,10 +123,10 @@ index 6b371c677..de6414c7c 100644
  
 +    // Blossom start
 +    public void testShape(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
-+        if (iblockdata.isShapeDynamic()) {
-+            a(world, blockposition, iblockdata, axisalignedbb, list, entity);
++        if (iblockdata.isShapeDynamic() || !me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
++            a(world, blockposition, iblockdata, axisalignedbb, list, entity); // fallback
 +        } else {
-+            List<AxisAlignedBB> shape = iblockdata.shape();
++            List<AxisAlignedBB> shape = iblockdata.shape(); // cached shape
 +            //noinspection ForLoopReplaceableByForEach
 +            for (int i = 0, len = shape.size(); i < len; i++) {
 +                final AxisAlignedBB moved = shape.get(i).c(blockposition.getX(), blockposition.getY(), blockposition.getZ());
@@ -278,44 +282,23 @@ index c77b648ae..8455d8465 100644
          int i = ((Integer) iblockdata.get(BlockCocoa.AGE)).intValue();
          int j = 4 + i * 2;
 diff --git a/src/main/java/net/minecraft/server/BlockDoor.java b/src/main/java/net/minecraft/server/BlockDoor.java
-index d33d59bb7..74bc5479f 100644
+index d33d59bb7..4d5e9b593 100644
 --- a/src/main/java/net/minecraft/server/BlockDoor.java
 +++ b/src/main/java/net/minecraft/server/BlockDoor.java
-@@ -35,12 +35,23 @@ public class BlockDoor extends Block {
+@@ -22,6 +22,13 @@ public class BlockDoor extends Block {
+         return LocaleI18n.get((this.a() + ".name").replaceAll("tile", "item"));
      }
  
-     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
--        this.updateShape(world, blockposition);
-+        // Blossom start - the best notchian code
-+        // 1) make a giant bitmap of everything that is already accessible in blockstates
-+        // 2) make your get AABB code do THREE world lookups while creating the mentioned bitmap
-+        // 3) only use a small portion of that bitmap
-+        // 4) refuse to elaborate
-+        this.updateShape(iblockdata);
-         return super.a(world, blockposition, iblockdata);
-     }
- 
-     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
--        this.k(e(iblockaccess, blockposition));
-+        updateShape(iblockaccess.getType(blockposition));
++    // Blossom start
++    @Override
++    protected boolean dynamicShape() {
++        return true;
 +    }
++    // Blossom end
 +
-+    public void updateShape(IBlockData iblockdata) {
-+        Block block = iblockdata.getBlock();
-+        this.k(block.toLegacyData(iblockdata));
-+        // Blossom end
+     public boolean c() {
+         return false;
      }
- 
-     private void k(int i) {
-@@ -49,7 +60,7 @@ public class BlockDoor extends Block {
-         this.a(0.0F, 0.0F, 0.0F, 1.0F, 2.0F, 1.0F);
-         EnumDirection enumdirection = f(i);
-         boolean flag = g(i);
--        boolean flag1 = j(i);
-+        boolean flag1 = (i & 1) != 0; // Blossom
- 
-         if (flag) {
-             if (enumdirection == EnumDirection.EAST) {
 diff --git a/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java b/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java
 index 43e1da0ee..1f49d5c17 100644
 --- a/src/main/java/net/minecraft/server/BlockEnderPortalFrame.java
@@ -477,7 +460,7 @@ index 03b1a8bc8..2624876ec 100644
          return new AxisAlignedBB((double) blockposition.getX() + this.minX, (double) blockposition.getY() + this.minY, (double) blockposition.getZ() + this.minZ, (double) blockposition.getX() + this.maxX, (double) ((float) blockposition.getY() + (float) i * f), (double) blockposition.getZ() + this.maxZ);
      }
 diff --git a/src/main/java/net/minecraft/server/BlockStairs.java b/src/main/java/net/minecraft/server/BlockStairs.java
-index 0a60daeb2..5301abb60 100644
+index 0a60daeb2..99dadd748 100644
 --- a/src/main/java/net/minecraft/server/BlockStairs.java
 +++ b/src/main/java/net/minecraft/server/BlockStairs.java
 @@ -37,6 +37,13 @@ public class BlockStairs extends Block {
@@ -494,198 +477,58 @@ index 0a60daeb2..5301abb60 100644
      public boolean c() {
          return false;
      }
-@@ -46,7 +53,12 @@ public class BlockStairs extends Block {
-     }
- 
-     public void e(IBlockAccess iblockaccess, BlockPosition blockposition) {
--        if (iblockaccess.getType(blockposition).get(BlockStairs.HALF) == EnumHalf.TOP) {
-+        // Blossom start
-+        solidBase(iblockaccess.getType(blockposition));
-+    }
-+    public void solidBase(IBlockData iblockdata) {
-+        if (iblockdata.get(BlockStairs.HALF) == EnumHalf.TOP) {
-+            // Blossom end
-             this.a(0.0F, 0.5F, 0.0F, 1.0F, 1.0F, 1.0F);
-         } else {
-             this.a(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F);
-@@ -283,104 +295,98 @@ public class BlockStairs extends Block {
+@@ -374,6 +381,7 @@ public class BlockStairs extends Block {
          return flag1;
      }
  
--    public boolean i(IBlockAccess iblockaccess, BlockPosition blockposition) {
--        IBlockData iblockdata = iblockaccess.getType(blockposition);
--        EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockStairs.FACING);
--        EnumHalf blockstairs_enumhalf = (EnumHalf) iblockdata.get(BlockStairs.HALF);
--        boolean flag = blockstairs_enumhalf == EnumHalf.TOP;
--        float f = 0.5F;
--        float f1 = 1.0F;
-+    // Blossom start
-+    public boolean outerRow(IBlockData iblockdata) {
-+        EnumDirection facing = iblockdata.get(FACING);
-+        EnumStairShape shape = iblockdata.get(SHAPE);
-+        boolean top = iblockdata.get(HALF) == EnumHalf.TOP;
- 
--        if (flag) {
--            f = 0.0F;
--            f1 = 0.5F;
--        }
-+        float minX = 0.0F;
-+        float maxX = 1.0F;
-+        float minZ = 0.0F;
-+        float maxZ = 1.0F;
- 
--        float f2 = 0.0F;
--        float f3 = 0.5F;
--        float f4 = 0.5F;
--        float f5 = 1.0F;
--        boolean flag1 = false;
--        IBlockData iblockdata1;
--        Block block;
--        EnumDirection enumdirection1;
-+        if (facing == EnumDirection.EAST || facing == EnumDirection.SOUTH) {
-+            minX = 0.5F;
- 
--        if (enumdirection == EnumDirection.EAST) {
--            iblockdata1 = iblockaccess.getType(blockposition.west());
--            block = iblockdata1.getBlock();
--            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
--                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
--                if (enumdirection1 == EnumDirection.NORTH && !a(iblockaccess, blockposition.north(), iblockdata)) {
--                    f4 = 0.0F;
--                    f5 = 0.5F;
--                    flag1 = true;
--                } else if (enumdirection1 == EnumDirection.SOUTH && !a(iblockaccess, blockposition.south(), iblockdata)) {
--                    f4 = 0.5F;
--                    f5 = 1.0F;
--                    flag1 = true;
--                }
-+            if (shape == EnumStairShape.OUTER_LEFT) {
-+                minZ = 0.5F;
-+            } else if (shape == EnumStairShape.OUTER_RIGHT) {
-+                maxZ = 0.5F;
-             }
--        } else if (enumdirection == EnumDirection.WEST) {
--            iblockdata1 = iblockaccess.getType(blockposition.east());
--            block = iblockdata1.getBlock();
--            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
--                f2 = 0.5F;
--                f3 = 1.0F;
--                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
--                if (enumdirection1 == EnumDirection.NORTH && !a(iblockaccess, blockposition.north(), iblockdata)) {
--                    f4 = 0.0F;
--                    f5 = 0.5F;
--                    flag1 = true;
--                } else if (enumdirection1 == EnumDirection.SOUTH && !a(iblockaccess, blockposition.south(), iblockdata)) {
--                    f4 = 0.5F;
--                    f5 = 1.0F;
--                    flag1 = true;
--                }
-+
-+        } else if (facing == EnumDirection.WEST || facing == EnumDirection.NORTH) {
-+            maxX = 0.5F;
-+
-+            if (shape == EnumStairShape.OUTER_LEFT) {
-+                maxZ = 0.5F;
-+            } else if (shape == EnumStairShape.OUTER_RIGHT) {
-+                minZ = 0.5F;
-             }
--        } else if (enumdirection == EnumDirection.SOUTH) {
--            iblockdata1 = iblockaccess.getType(blockposition.north());
--            block = iblockdata1.getBlock();
--            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
--                f4 = 0.0F;
--                f5 = 0.5F;
--                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
--                if (enumdirection1 == EnumDirection.WEST && !a(iblockaccess, blockposition.west(), iblockdata)) {
--                    flag1 = true;
--                } else if (enumdirection1 == EnumDirection.EAST && !a(iblockaccess, blockposition.east(), iblockdata)) {
--                    f2 = 0.5F;
--                    f3 = 1.0F;
--                    flag1 = true;
--                }
-+        }
-+
-+        if (facing.k() == EnumDirection.EnumAxis.Z) {
-+            float min_x = minZ;
-+            float max_x = maxZ;
-+            minZ = minX;
-+            maxZ = maxX;
-+            minX = min_x;
-+            maxX = max_x;
-+        }
-+
-+        super.a(minX, top ? 0.0F : 0.5F, minZ, maxX, top ? 0.5F : 1.0F, maxZ);
-+        return shape == EnumStairShape.INNER_LEFT || shape == EnumStairShape.INNER_RIGHT;
-+    }
-+
-+    public boolean innerColumn(IBlockData iblockdata) {
-+        EnumDirection facing = iblockdata.get(FACING);
-+        EnumStairShape shape = iblockdata.get(SHAPE);
-+        boolean top = iblockdata.get(HALF) == EnumHalf.TOP;
-+
-+        float minX = 0.0F;
-+        float maxX = 1.0F;
-+        float minZ = 0.0F;
-+        float maxZ = 1.0F;
-+
-+        if (facing == EnumDirection.EAST || facing == EnumDirection.SOUTH) {
-+            minX = 0.5F;
-+
-+            if (shape == EnumStairShape.INNER_LEFT) {
-+                maxZ = 0.5F;
-+            } else if (shape == EnumStairShape.INNER_RIGHT) {
-+                minZ = 0.5F;
-             }
--        } else if (enumdirection == EnumDirection.NORTH) {
--            iblockdata1 = iblockaccess.getType(blockposition.south());
--            block = iblockdata1.getBlock();
--            if (c(block) && blockstairs_enumhalf == iblockdata1.get(BlockStairs.HALF)) {
--                enumdirection1 = (EnumDirection) iblockdata1.get(BlockStairs.FACING);
--                if (enumdirection1 == EnumDirection.WEST && !a(iblockaccess, blockposition.west(), iblockdata)) {
--                    flag1 = true;
--                } else if (enumdirection1 == EnumDirection.EAST && !a(iblockaccess, blockposition.east(), iblockdata)) {
--                    f2 = 0.5F;
--                    f3 = 1.0F;
--                    flag1 = true;
--                }
-+        } else if (facing == EnumDirection.WEST || facing == EnumDirection.NORTH) {
-+            maxX = 0.5F;
-+
-+            if (shape == EnumStairShape.INNER_LEFT) {
-+                minZ = 0.5F;
-+            } else if (shape == EnumStairShape.INNER_RIGHT) {
-+                maxZ = 0.5F;
-             }
-         }
- 
--        if (flag1) {
--            this.a(f2, f, f4, f3, f1, f5);
-+        if (facing.k() == EnumDirection.EnumAxis.Z) {
-+            float min_x = minZ;
-+            float max_x = maxZ;
-+            minZ = minX;
-+            maxZ = maxX;
-+            minX = min_x;
-+            maxX = max_x;
-         }
- 
--        return flag1;
-+        super.a(minX, top ? 0.0F : 0.5F, minZ, maxX, top ? 0.5F : 1.0F, maxZ);
-+        return shape == EnumStairShape.INNER_LEFT || shape == EnumStairShape.INNER_RIGHT;
-     }
- 
++    // collect collisions
      public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
--        this.e(world, blockposition);
-+        this.solidBase(iblockdata);
+         this.e(world, blockposition);
          super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
--        boolean flag = this.h(world, blockposition);
-+        boolean flag = this.outerRow(iblockdata);
+@@ -543,29 +551,29 @@ public class BlockStairs extends Block {
+     public IBlockData updateState(IBlockData iblockdata, IBlockAccess iblockaccess, BlockPosition blockposition) {
+         if (this.h(iblockaccess, blockposition)) {
+             switch (this.g(iblockaccess, blockposition)) {
+-            case 0:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.STRAIGHT);
+-                break;
++                case 0:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.STRAIGHT);
++                    break;
  
-         super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
--        if (flag && this.i(world, blockposition)) {
-+        if (flag && this.innerColumn(iblockdata)) {
-+            // Blossom end
-             super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
+-            case 1:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.INNER_RIGHT);
+-                break;
++                case 1:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.INNER_RIGHT);
++                    break;
+ 
+-            case 2:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.INNER_LEFT);
++                case 2:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.INNER_LEFT);
+             }
+         } else {
+             switch (this.f(iblockaccess, blockposition)) {
+-            case 0:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.STRAIGHT);
+-                break;
++                case 0:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.STRAIGHT);
++                    break;
+ 
+-            case 1:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.OUTER_RIGHT);
+-                break;
++                case 1:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.OUTER_RIGHT);
++                    break;
+ 
+-            case 2:
+-                iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.OUTER_LEFT);
++                case 2:
++                    iblockdata = iblockdata.set(BlockStairs.SHAPE, EnumStairShape.OUTER_LEFT);
+             }
          }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
@@ -834,14 +677,18 @@ index 88131b507..5deed1646 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 2f7ccceef..0baab1f19 100644
+index 2f7ccceef..1674bbb04 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -663,6 +663,116 @@ public abstract class Entity implements ICommandListener {
+@@ -663,6 +663,120 @@ public abstract class Entity implements ICommandListener {
          // Blossom end
      }
  
 +    protected void move_cannon(double moveX, double moveY, double moveZ) {
++        if (!me.samsuik.blossom.configuration.BlossomConfig.optimisedMovement) {
++            move(moveX, moveY, moveZ);
++            return;
++        }
 +        if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
 +
 +        // CraftBukkit start - Don't do anything if we aren't moving
@@ -954,7 +801,7 @@ index 2f7ccceef..0baab1f19 100644
  
      public void move(double d0, double d1, double d2) {
          if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
-@@ -774,11 +884,11 @@ public abstract class Entity implements ICommandListener {
+@@ -774,11 +888,11 @@ public abstract class Entity implements ICommandListener {
              Iterator iterator1;
  
              if(this.world.tacoSpigotConfig.fixEastWest && Math.abs(d0) > Math.abs(d2)) { //TacoSpigot - fix east/west cannoning by calculating the z movement before x if the x velocity is greater
@@ -970,7 +817,7 @@ index 2f7ccceef..0baab1f19 100644
  
                  this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
  
-@@ -791,21 +901,21 @@ public abstract class Entity implements ICommandListener {
+@@ -791,21 +905,21 @@ public abstract class Entity implements ICommandListener {
                  this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
  
              } else {
@@ -1003,39 +850,31 @@ index 2f7ccceef..0baab1f19 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index f0e3a96e3..0adb22084 100644
+index f0e3a96e3..34b6f6bd3 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -84,6 +84,12 @@ public class EntityFallingBlock extends Entity {
-         }
-     }
-     // Blossom end
-+    // Blossom start
-+    @Override
-+    public void move(double d0, double d1, double d2) {
-+        super.move_cannon(d0, d1, d2);
-+    }
-+    // Blossom end
+@@ -108,7 +108,7 @@ public class EntityFallingBlock extends Entity {
+             }
  
-     public void t_() {
-         Block block = this.block.getBlock();
+             this.motY -= 0.03999999910593033D;
+-            this.move(this.motX, this.motY, this.motZ);
++            this.move_cannon(this.motX, this.motY, this.motZ); // Blossom
+ 
+             // PaperSpigot start - Remove entities in unloaded chunks
+             if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedFallingBlocks) {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 0e1319f47..e9d30e37e 100644
+index 0e1319f47..307b337be 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -100,6 +100,12 @@ public class EntityTNTPrimed extends Entity {
-     }
-     */
-     // Blossom end
-+    // Blossom start
-+    @Override
-+    public void move(double d0, double d1, double d2) {
-+        super.move_cannon(d0, d1, d2);
-+    }
-+    // Blossom end
+@@ -107,7 +107,7 @@ public class EntityTNTPrimed extends Entity {
+         this.lastY = this.locY;
+         this.lastZ = this.locZ;
+         this.motY -= 0.03999999910593033D;
+-        this.move(this.motX, this.motY, this.motZ);
++        this.move_cannon(this.motX, this.motY, this.motZ); // Blossom
  
-     public void t_() {
-         if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
+         // PaperSpigot start - Drop TNT entities above the specified height
+         if (this.world.paperSpigotConfig.tntEntityHeightNerf != 0 && this.locY > this.world.paperSpigotConfig.tntEntityHeightNerf) {
 diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
 index 3c3ab0c59..795c4cd07 100644
 --- a/src/main/java/net/minecraft/server/IBlockData.java

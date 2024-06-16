@@ -1,15 +1,15 @@
-From cdc3014e21bee2042ba62489779d60f21525ffb0 Mon Sep 17 00:00:00 2001
+From fa0cdc533336eb400be15353a5e437f0de7c8eda Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7376dd6d4..6063f75ba 100644
+index de86adcbe..6784ed9fd 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -362,4 +362,17 @@ public class BlossomConfig {
-         extendedCollisionSearch = getBoolean("tnt.extended-collision-search", false);
+@@ -366,4 +366,17 @@ public class BlossomConfig {
+         optimisedMovement = getBoolean("tnt.optimised-movement", true);
      }
  
 +    public static boolean fixSlimeBlockDefence;
@@ -40,10 +40,10 @@ index 331bafa03..9b418ac91 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 0baab1f19..55556b235 100644
+index 1674bbb04..6c06a8e35 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -676,7 +676,7 @@ public abstract class Entity implements ICommandListener {
+@@ -680,7 +680,7 @@ public abstract class Entity implements ICommandListener {
          }
          // CraftBukkit end
  
@@ -53,11 +53,11 @@ index 0baab1f19..55556b235 100644
              moveX *= 0.25D;
              moveY *= 0.05000000074505806D;
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 0adb22084..39bb76091 100644
+index 34b6f6bd3..66f541c27 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -90,6 +90,21 @@ public class EntityFallingBlock extends Entity {
-         super.move_cannon(d0, d1, d2);
+@@ -84,6 +84,21 @@ public class EntityFallingBlock extends Entity {
+         }
      }
      // Blossom end
 +    // Blossom start
@@ -78,7 +78,7 @@ index 0adb22084..39bb76091 100644
  
      public void t_() {
          Block block = this.block.getBlock();
-@@ -102,6 +117,12 @@ public class EntityFallingBlock extends Entity {
+@@ -96,6 +111,12 @@ public class EntityFallingBlock extends Entity {
              this.lastZ = this.locZ;
              BlockPosition blockposition;
  
@@ -91,7 +91,7 @@ index 0adb22084..39bb76091 100644
              if (this.ticksLived++ == 0) {
                  blockposition = new BlockPosition(this);
                  if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
-@@ -144,7 +165,7 @@ public class EntityFallingBlock extends Entity {
+@@ -138,7 +159,7 @@ public class EntityFallingBlock extends Entity {
                      if (this.world.getType(blockposition).getBlock() != Blocks.PISTON_EXTENSION) {
                          this.die();
                          if (!this.e) {

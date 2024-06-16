@@ -1,14 +1,14 @@
-From cdbb3551b45da98a96fc496fd32f92e29db55b0d Mon Sep 17 00:00:00 2001
+From d595531b98caf2fa9c4d884eb32468cba0eaf9ca Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ab2c11559..f9beb75c1 100644
+index 167336438..009f84e64 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -396,4 +396,9 @@ public class BlossomConfig {
+@@ -400,4 +400,9 @@ public class BlossomConfig {
          projectileTimeout = getInt("projectiles.time-out", 1200);
      }
  
@@ -197,7 +197,7 @@ index 000000000..f1926c262
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index d7ed06825..9bb0af39b 100644
+index f035df0cb..a886c8937 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -61,7 +61,7 @@ public class Block {

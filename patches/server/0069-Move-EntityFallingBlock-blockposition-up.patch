@@ -1,14 +1,14 @@
-From 7b8966e5676f4a05150cbc4a3357ce4e2a057846 Mon Sep 17 00:00:00 2001
+From 71e6aa09331647c5cf6c99b75d318e07b77c5cf9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 21 Jun 2023 15:46:57 +0100
 Subject: [PATCH] Move EntityFallingBlock blockposition up
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 39bb76091..ce4724f5b 100644
+index 66f541c27..3fe08391b 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -157,8 +157,8 @@ public class EntityFallingBlock extends Entity {
+@@ -151,8 +151,8 @@ public class EntityFallingBlock extends Entity {
              this.motY *= 0.9800000190734863D;
              this.motZ *= 0.9800000190734863D;
              if (!this.world.isClientSide) {
@@ -18,7 +18,7 @@ index 39bb76091..ce4724f5b 100644
                      this.motX *= 0.699999988079071D;
                      this.motZ *= 0.699999988079071D;
                      this.motY *= -0.5D;
-@@ -204,7 +204,7 @@ public class EntityFallingBlock extends Entity {
+@@ -198,7 +198,7 @@ public class EntityFallingBlock extends Entity {
                              }
                          }
                      }
