@@ -1,0 +1,88 @@
+From 173d8d464c996c83b9512303b868751acf12ef1f Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 21 Jun 2023 19:33:11 +0100
+Subject: [PATCH] Discard entity metadata on removal
+
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 6c06a8e35..2800c9835 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -412,6 +412,11 @@ public abstract class Entity implements ICommandListener {
+             storeMergeHistoryInWorld();
+         }
+         // Blossom end
++        // Blossom start - remove all entity metadata on removal
++        if (bukkitEntity != null) {
++            bukkitEntity.removeAllMetaData();
++        }
++        // Blossom end
+         this.dead = true;
+     }
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+index b0156abf8..75a947475 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -427,6 +427,12 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+         server.getEntityMetadata().removeMetadata(this, metadataKey, owningPlugin);
+     }
+ 
++    // Blossom start
++    public void removeAllMetaData() {
++        server.getEntityMetadata().remove(this);
++    }
++    // Blossom end
++
+     public boolean isInsideVehicle() {
+         return getHandle().vehicle != null;
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java b/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
+index 35c484f46..d269de6d2 100644
+--- a/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
++++ b/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
+@@ -3,11 +3,41 @@ package org.bukkit.craftbukkit.metadata;
+ import org.bukkit.entity.Entity;
+ import org.bukkit.metadata.MetadataStore;
+ import org.bukkit.metadata.MetadataStoreBase;
++import org.bukkit.metadata.MetadataValue;
++import org.bukkit.plugin.Plugin;
+ 
+ /**
+  * An EntityMetadataStore stores metadata values for all {@link Entity} classes an their descendants.
+  */
+ public class EntityMetadataStore extends MetadataStoreBase<Entity> implements MetadataStore<Entity> {
++    // Blossom start - clear entity metadata on removal
++    private final java.util.Map<Entity, java.util.Set<String>> entityToKeyMap = new java.util.HashMap<>(); // Blossom
++
++    @Override
++    public synchronized void setMetadata(Entity subject, String metadataKey, MetadataValue newMetadataValue) {
++        super.setMetadata(subject, metadataKey, newMetadataValue);
++        entityToKeyMap.computeIfAbsent(subject, (nani) -> new java.util.HashSet<>()).add(metadataKey);
++    }
++
++    @Override
++    public synchronized void removeMetadata(Entity subject, String metadataKey, Plugin owningPlugin) {
++        super.removeMetadata(subject, metadataKey, owningPlugin);
++        java.util.Set<String> keys = entityToKeyMap.get(subject);
++        if (keys != null) {
++            keys.remove(metadataKey);
++        }
++    }
++
++    public void remove(Entity entity) {
++        java.util.Set<String> keys = entityToKeyMap.remove(entity);
++        if (keys != null && !keys.isEmpty()) {
++            for (String k : keys) {
++                super.remove(entity, k);
++            }
++        }
++    }
++    // Blossom end
++
+     /**
+      * Generates a unique metadata key for an {@link Entity} UUID.
+      *
+-- 
+2.40.0.windows.1
+

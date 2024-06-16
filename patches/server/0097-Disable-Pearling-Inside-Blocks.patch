@@ -1,0 +1,69 @@
+From f08b2ed42741c1c57e830d9e7e1d2af0eb2a2795 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 14 Jul 2023 18:18:33 +0100
+Subject: [PATCH] Disable Pearling Inside Blocks
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 6fe410b92..20e5e41d2 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -472,5 +472,10 @@ public class BlossomConfig {
+     private static void DispenserRandomness() {
+         dispenserRandomness = getBoolean("dispensers.items-selection-randomness", true);
+     }
++
++    public static boolean pearlInsideBlocks;
++    private static void PearlInsideBlocks() {
++        pearlInsideBlocks = getBoolean("projectiles.pearl.teleport-inside-blocks", false);
++    }
+     
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityEnderPearl.java b/src/main/java/net/minecraft/server/EntityEnderPearl.java
+index 319c0bc6f..714908b8e 100644
+--- a/src/main/java/net/minecraft/server/EntityEnderPearl.java
++++ b/src/main/java/net/minecraft/server/EntityEnderPearl.java
+@@ -21,6 +21,26 @@ public class EntityEnderPearl extends EntityProjectile {
+         this.loadChunks = world.paperSpigotConfig.loadUnloadedEnderPearls; // PaperSpigot
+     }
+ 
++    // Blossom start
++    private boolean isInsideBlocks(EntityLiving player) {
++        // check if player is inside blocks
++        if (!world.a(player.getBoundingBox()).isEmpty()) {
++            return true;
++        }
++
++        float f = this.width / 2.0F;
++        float f1 = this.length;
++
++        AxisAlignedBB teleportBB = new AxisAlignedBB(
++                locX - (double) f, locY, locZ - (double) f,
++                locX + (double) f, locY + (double) f1, locZ + (double) f
++        );
++
++        // check if the teleport location is inside blocks
++        return !world.a(teleportBB).isEmpty();
++    }
++    // Blossom end
++
+     protected void a(MovingObjectPosition movingobjectposition) {
+         EntityLiving entityliving = this.getShooter();
+ 
+@@ -32,6 +52,13 @@ public class EntityEnderPearl extends EntityProjectile {
+             movingobjectposition.entity.damageEntity(DamageSource.projectile(this, entityliving), 0.0F);
+         }
+ 
++        // Blossom start
++        if (!me.samsuik.blossom.configuration.BlossomConfig.pearlInsideBlocks && isInsideBlocks(entityliving)) {
++            this.die();
++            return;
++        }
++        // Blossom end
++
+         // PaperSpigot start - Remove entities in unloaded chunks
+         if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedEnderPearls) {
+             this.die();
+-- 
+2.40.0.windows.1
+

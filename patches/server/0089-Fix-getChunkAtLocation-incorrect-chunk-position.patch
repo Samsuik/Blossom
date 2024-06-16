@@ -1,0 +1,22 @@
+From 7c0d3e448643b1eca93ac0d07759b13a7daa23a4 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 9 Jul 2023 20:54:30 +0100
+Subject: [PATCH] Fix getChunkAtLocation incorrect chunk position
+
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 5ef363a3b..bb4f92238 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -328,7 +328,7 @@ public abstract class Entity implements ICommandListener {
+      * Will only return null if the location specified is not loaded
+      */
+     public Chunk getChunkAtLocation() {
+-        return getCurrentChunkAt((int)Math.floor(locX) >> 4, (int)Math.floor(locZ) >> 4);
++        return getCurrentChunkAt(MathHelper.floor(locX) >> 4, MathHelper.floor(locZ) >> 4); // Blossom - incorrect chunk position
+     }
+     // Paper end
+     // Paper start - make end portalling safe
+-- 
+2.40.0.windows.1
+

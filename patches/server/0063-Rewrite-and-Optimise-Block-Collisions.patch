@@ -1,4 +1,4 @@
-From ef02201d947aa5a3b251b5e3cb396983432ebbc8 Mon Sep 17 00:00:00 2001
+From 9a1012b84dfe2907caf03936b2accb5f06df07b3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -876,16 +876,21 @@ index 0e1319f47..307b337be 100644
          // PaperSpigot start - Drop TNT entities above the specified height
          if (this.world.paperSpigotConfig.tntEntityHeightNerf != 0 && this.locY > this.world.paperSpigotConfig.tntEntityHeightNerf) {
 diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
-index 3c3ab0c59..795c4cd07 100644
+index 3c3ab0c59..1468694aa 100644
 --- a/src/main/java/net/minecraft/server/IBlockData.java
 +++ b/src/main/java/net/minecraft/server/IBlockData.java
-@@ -16,4 +16,7 @@ public interface IBlockData {
+@@ -16,4 +16,12 @@ public interface IBlockData {
      ImmutableMap<IBlockState, Comparable> b();
  
      Block getBlock();
 +
-+    java.util.List<AxisAlignedBB> shape(); // Blossom
-+    boolean isShapeDynamic(); // Blossom
++    // Blossom start
++    default int legacyData() {
++        return getBlock().toLegacyData(this);
++    }
++    java.util.List<AxisAlignedBB> shape();
++    boolean isShapeDynamic();
++    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
 index 176f63885..2048e7e6b 100644

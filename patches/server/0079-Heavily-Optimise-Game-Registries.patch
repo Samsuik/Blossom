@@ -1,0 +1,194 @@
+From 1d24232bc866b6c5850ad16c301f1cd8cfe05598 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 2 Jul 2023 00:34:24 +0100
+Subject: [PATCH] Heavily Optimise Game Registries
+
+
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 9ca105afa..f035df0cb 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -106,6 +106,23 @@ public class Block {
+     protected final BlockStateList blockStateList;
+     private IBlockData blockData;
+     private String name;
++    // Blossom start
++    private int id = -1;
++
++    public final int getId() {
++        return id;
++    }
++
++    @Override
++    public final int hashCode() {
++        return id;
++    }
++
++    @Override
++    public final boolean equals(Object object) {
++        return this == object;
++    }
++    // Blossom end
+ 
+     public static int getId(Block block) {
+         return Block.REGISTRY.b(block);
+@@ -1109,6 +1126,7 @@ public class Block {
+     }
+ 
+     private static void a(int i, MinecraftKey minecraftkey, Block block) {
++        block.id = i; // Blossom
+         Block.REGISTRY.a(i, minecraftkey, block);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
+index cd2993500..6f82a63be 100644
+--- a/src/main/java/net/minecraft/server/BlockStateList.java
++++ b/src/main/java/net/minecraft/server/BlockStateList.java
+@@ -116,6 +116,7 @@ public class BlockStateList {
+ 
+     static class BlockData extends BlockDataAbstract {
+ 
++        private static int UNIQUE_COUNTER = 0; // Blossom
+         private final Block a;
+         // TacoSpigot start
+         private final ImmutableMap<IBlockState, Comparable> bAsImmutableMap;
+@@ -127,6 +128,7 @@ public class BlockStateList {
+         private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
+         private boolean dynamic;
+         // Blossom end
++        private final int id = UNIQUE_COUNTER++; // Blossom
+ 
+         private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
+             this.a = block;
+@@ -213,7 +215,7 @@ public class BlockStateList {
+         }
+ 
+         public int hashCode() {
+-            return this.b.hashCode();
++            return id; // Blossom
+         }
+ 
+         public void a(Map<Map<IBlockState, Comparable>, BlockStateList.BlockData> map) {
+diff --git a/src/main/java/net/minecraft/server/Item.java b/src/main/java/net/minecraft/server/Item.java
+index 87a2d7b90..8ee5e4b10 100644
+--- a/src/main/java/net/minecraft/server/Item.java
++++ b/src/main/java/net/minecraft/server/Item.java
+@@ -11,7 +11,7 @@ import java.util.UUID;
+ public class Item {
+ 
+     public static final RegistryMaterials<MinecraftKey, Item> REGISTRY = new RegistryMaterials();
+-    private static final Map<Block, Item> a = Maps.newHashMap();
++    private static final Map<Block, Item> a = new it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap<>(); // Blossom
+     protected static final UUID f = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
+     private CreativeModeTab b;
+     protected static Random g = new Random();
+@@ -22,6 +22,23 @@ public class Item {
+     private Item craftingResult;
+     private String k;
+     private String name;
++    // Blossom start
++    private int id = -1;
++
++    public final int getId() {
++        return id;
++    }
++
++    @Override
++    public final int hashCode() {
++        return id;
++    }
++
++    @Override
++    public final boolean equals(Object object) {
++        return this == object;
++    }
++    // Blossom end
+ 
+     public Item() {}
+ 
+@@ -738,6 +755,7 @@ public class Item {
+     }
+ 
+     private static void a(int i, MinecraftKey minecraftkey, Item item) {
++        item.id = i; // Blossom
+         Item.REGISTRY.a(i, minecraftkey, item);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/RegistryID.java b/src/main/java/net/minecraft/server/RegistryID.java
+index d9d458239..8615bf01b 100644
+--- a/src/main/java/net/minecraft/server/RegistryID.java
++++ b/src/main/java/net/minecraft/server/RegistryID.java
+@@ -9,32 +9,59 @@ import java.util.List;
+ 
+ public class RegistryID<T> implements Registry<T> {
+ 
+-    private final IdentityHashMap<T, Integer> a = new IdentityHashMap(512);
+-    private final List<T> b = Lists.newArrayList();
++    // Blossom start
++    private short[] indexes = new short[0];
++    private T[] storage = (T[]) new Object[0];
+ 
+     public RegistryID() {}
+ 
+     public void a(T t0, int i) {
+-        this.a.put(t0, Integer.valueOf(i));
++        // Eh- huh... what even is this?!
++        if (i >= storage.length) {
++            storage = java.util.Arrays.copyOf(storage, i + 1);
++        }
++
++        storage[i] = t0;
+ 
+-        while (this.b.size() <= i) {
+-            this.b.add(null);
++        int hash = t0.hashCode();
++        if (hash >= indexes.length) {
++            assert hash < Short.MAX_VALUE : String.format("(%d->%s->%d) index too high", hash, t0, i);
++            indexes = java.util.Arrays.copyOf(indexes, hash + 1);
+         }
+ 
+-        this.b.set(i, t0);
++        indexes[hash] = (short) i;
+     }
+ 
+     public int b(T t0) {
+-        Integer integer = (Integer) this.a.get(t0);
+-
+-        return integer == null ? -1 : integer.intValue();
++        // todo: merge into return below, git didn't want to update the patch for some reason
++        if (t0 == null) return -1;
++        return indexes[t0.hashCode()];
+     }
+ 
+     public final T a(int i) {
+-        return i >= 0 && i < this.b.size() ? this.b.get(i) : null;
++        return i >= 0 && i < storage.length ? storage[i] : null;
+     }
+ 
+     public Iterator<T> iterator() {
+-        return Iterators.filter(this.b.iterator(), Predicates.notNull());
++        return new Iterator<T>() {
++            private int index = -1;
++
++            @Override
++            public boolean hasNext() {
++                while (++index < storage.length) {
++                    if (storage[index] != null) {
++                        return true;
++                    }
++                }
++
++                return false;
++            }
++
++            @Override
++            public T next() {
++                return storage[index];
++            }
++        };
++        // Blossom end
+     }
+ }
+-- 
+2.40.0.windows.1
+

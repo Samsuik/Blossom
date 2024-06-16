@@ -1,0 +1,45 @@
+From 7c57d75c06723340cfbb87df3f29463188f07981 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 7 Jul 2023 17:32:00 +0100
+Subject: [PATCH] Cache BlockPosition hashcode
+
+
+diff --git a/src/main/java/net/minecraft/server/BaseBlockPosition.java b/src/main/java/net/minecraft/server/BaseBlockPosition.java
+index a685e0812..bdc1759d0 100644
+--- a/src/main/java/net/minecraft/server/BaseBlockPosition.java
++++ b/src/main/java/net/minecraft/server/BaseBlockPosition.java
+@@ -33,8 +33,13 @@ public class BaseBlockPosition implements Comparable<BaseBlockPosition> {
+         }
+     }
+ 
++    // Blossom start - cache blockpos hashcode
++    protected int hash = Integer.MAX_VALUE; // Blossom
+     public int hashCode() {
+-        return (this.getY() + this.getZ() * 31) * 31 + this.getX();
++        if (hash == Integer.MAX_VALUE)
++            hash = (this.getY() + this.getZ() * 31) * 31 + this.getX();
++        return hash;
++        // Blossom end
+     }
+ 
+     public int g(BaseBlockPosition baseblockposition) {
+diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
+index 04766afdf..58b7c5b05 100644
+--- a/src/main/java/net/minecraft/server/BlockPosition.java
++++ b/src/main/java/net/minecraft/server/BlockPosition.java
+@@ -372,6 +372,12 @@ public class BlockPosition extends BaseBlockPosition {
+             return this;
+         }
+ 
++        // Blossom start - if this is ever used it should be considered a bug
++        public int hashCode() {
++            return (this.getY() + this.getZ() * 31) * 31 + this.getX();
++        }
++        // Blossom end
++
+         public BaseBlockPosition d(BaseBlockPosition baseblockposition) {
+             return super.c(baseblockposition);
+         }
+-- 
+2.40.0.windows.1
+

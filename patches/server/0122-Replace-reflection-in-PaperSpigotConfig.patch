@@ -1,0 +1,50 @@
+From 941360937bb31c66c045d4e2fc0f33c2267a8a7d Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 16 Jun 2024 11:57:51 +0100
+Subject: [PATCH] Replace reflection in PaperSpigotConfig
+
+
+diff --git a/src/main/java/org/github/paperspigot/PaperSpigotConfig.java b/src/main/java/org/github/paperspigot/PaperSpigotConfig.java
+index 1de9b2fe2..c73981411 100644
+--- a/src/main/java/org/github/paperspigot/PaperSpigotConfig.java
++++ b/src/main/java/org/github/paperspigot/PaperSpigotConfig.java
+@@ -183,33 +183,19 @@ public class PaperSpigotConfig
+         stackableWaterBuckets = getBoolean( "stackable-buckets.water", false );
+         stackableMilkBuckets = getBoolean( "stackable-buckets.milk", false );
+ 
+-        Field maxStack;
+-
+-        try {
+-            maxStack = Material.class.getDeclaredField("maxStack");
+-            maxStack.setAccessible(true);
+-
+-            Field modifiers = Field.class.getDeclaredField("modifiers");
+-            modifiers.setAccessible(true);
+-            modifiers.setInt(maxStack, maxStack.getModifiers() & ~Modifier.FINAL);
+-        } catch (Exception e) {
+-            e.printStackTrace();
+-            return;
+-        }
+-
+         try {
+             if (stackableLavaBuckets) {
+-                maxStack.set(Material.LAVA_BUCKET, Material.BUCKET.getMaxStackSize());
++                Material.LAVA_BUCKET.setMaxStackSize(Material.BUCKET.getMaxStackSize());
+                 Items.LAVA_BUCKET.c(Material.BUCKET.getMaxStackSize());
+             }
+ 
+             if (stackableWaterBuckets) {
+-                maxStack.set(Material.WATER_BUCKET, Material.BUCKET.getMaxStackSize());
++                Material.WATER_BUCKET.setMaxStackSize(Material.BUCKET.getMaxStackSize());
+                 Items.WATER_BUCKET.c(Material.BUCKET.getMaxStackSize());
+             }
+ 
+             if (stackableMilkBuckets) {
+-                maxStack.set(Material.MILK_BUCKET, Material.BUCKET.getMaxStackSize());
++                Material.MILK_BUCKET.setMaxStackSize(Material.BUCKET.getMaxStackSize());
+                 Items.MILK_BUCKET.c(Material.BUCKET.getMaxStackSize());
+             }
+         } catch (Exception e) {
+-- 
+2.40.0.windows.1
+
