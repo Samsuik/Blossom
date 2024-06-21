@@ -1,14 +1,14 @@
-From c63f93617960462a5ac97bc8a90c3aa2ae092fc0 Mon Sep 17 00:00:00 2001
+From 978d2fddd538e862dc88622262f3b954862da5b1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a3cb9fbc4..25a60efb5 100644
+index 5da9a6957..e0a4326c3 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -345,4 +345,11 @@ public class BlossomConfig {
+@@ -351,4 +351,11 @@ public class BlossomConfig {
          hopperOnlyPushIntoEmptyContainer = getBoolean("hoppers.only-push-into-empty-containers", false);
      }
  

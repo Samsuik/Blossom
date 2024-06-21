@@ -1,4 +1,4 @@
-From 8dc77464c0dd5c3c6e0f90b312e3a47dd3e5977e Mon Sep 17 00:00:00 2001
+From dacb4c73cf1263cd0de0164f176dfcd2cf56278a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -141,7 +141,7 @@ index 000000000..98fc07cdf
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 new file mode 100644
-index 000000000..9dd3e3273
+index 000000000..a14d8e115
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -0,0 +1,122 @@
@@ -198,8 +198,8 @@ index 000000000..9dd3e3273
 +        commands.put("blossom", new BlossomCommand());
 +        commands.put("config", new ConfigCommand());
 +
-+        version = getInt("config-version", 1);
-+        set("config-version", 1);
++        version = getInt("config-version", 2);
++        set("config-version", 2);
 +        readConfig(BlossomConfig.class, null);
 +    }
 +

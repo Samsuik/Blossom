@@ -1,14 +1,14 @@
-From 1d0b6e99a2c06507db9aba27a350c259863d03bc Mon Sep 17 00:00:00 2001
+From de73e6cf99c522456f2000d1737e20e10fc02d78 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index da6d162a1..99141db24 100644
+index b51178485..b22353d24 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -555,4 +555,11 @@ public class BlossomConfig {
+@@ -561,4 +561,11 @@ public class BlossomConfig {
          pluginCommandLabels = getBoolean("player.commands.plugin-labels", false);
      }
  

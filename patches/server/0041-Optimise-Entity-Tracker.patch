@@ -1,29 +1,35 @@
-From 9694e9eaad136a0ca02810558369978ebe2efb3e Mon Sep 17 00:00:00 2001
+From a072c0fa119cb1f3da0bea8ebe7b1c4e51830240 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 30 Jun 2022 23:06:01 +0100
 Subject: [PATCH] Optimise Entity Tracker
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e6f564318..b63dc7dbf 100644
+index 859701db6..b7dc604d6 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -280,4 +280,13 @@ public class BlossomConfig {
+@@ -280,4 +280,19 @@ public class BlossomConfig {
          consistentExplosionSeed = getBoolean("explosions.consistent-explosion-seed", false);
      }
  
 +    public static boolean trackerWorkInParallel;
 +    public static boolean trackerUseChunkMap;
-+    public static boolean trackerVerticalDistance;
++    public static double trackVerticalDistance;
 +    private static void EntityTracker() {
++        double defaultVerticalDistanceMod = -1.0;
++        if (version < 2 && config.contains("entity-tracker.check-vertical-distance")) {
++            defaultVerticalDistanceMod = config.getBoolean("entity-tracker.check-vertical-distance") ? 1.0 : defaultVerticalDistanceMod;
++            set("entity-tracker.check-vertical-distance", null);
++        }
++
 +        trackerUseChunkMap = getBoolean("entity-tracker.use-chunk-map-for-players", true);
 +        trackerWorkInParallel = getBoolean("entity-tracker.work-in-parallel", false);
-+        trackerVerticalDistance = getBoolean("entity-tracker.check-vertical-distance", true);
++        trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
 +    }
 +
  }
 diff --git a/src/main/java/net/minecraft/server/EntityTracker.java b/src/main/java/net/minecraft/server/EntityTracker.java
-index cb72b3672..819ea9d61 100644
+index cb72b3672..dcaa22361 100644
 --- a/src/main/java/net/minecraft/server/EntityTracker.java
 +++ b/src/main/java/net/minecraft/server/EntityTracker.java
 @@ -109,7 +109,7 @@ public class EntityTracker {
@@ -35,16 +41,12 @@ index cb72b3672..819ea9d61 100644
          } catch (Throwable throwable) {
              CrashReport crashreport = CrashReport.a(throwable, "Adding entity to track");
              CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Entity To Track");
-@@ -168,13 +168,109 @@ public class EntityTracker {
+@@ -168,6 +168,90 @@ public class EntityTracker {
      }
  
      public void updatePlayers() {
 +        // Blossom start - optimise entity tracker
-+        if (me.samsuik.blossom.configuration.BlossomConfig.trackerWorkInParallel) {
-+            updatePlayersInParallel();
-+        } else {
-+            updatePlayersOld();
-+        }
++        blossom_updatePlayers();
 +    }
 +
 +    private static final java.util.List<EntityHuman> EMPTY_HUMAN_LIST = java.util.Collections.emptyList();
@@ -66,87 +68,71 @@ index cb72b3672..819ea9d61 100644
 +        return java.util.Collections.unmodifiableList(chunk.getPlayersInDistance());
 +    }
 +
-+    private void updatePlayersInParallel() {
-+        boolean catcher = org.spigotmc.AsyncCatcher.enabled;
-+        try {
-+            org.spigotmc.AsyncCatcher.enabled = false;
-+            Set<EntityPlayer> movedPlayers = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
++    private void blossom_updatePlayers() {
++        Set<EntityPlayer> movedPlayers = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
 +
-+            // This is slightly different from the vanilla implementation.
-+            // We're collecting all the movedPlayers first then processing the other entities,
-+            // and moved the logic that would have been in the second for loop into the entity loop.
-+            // This allows us to avoid iterating over all movedPlayers within the world.
++        // This is slightly different from the vanilla implementation.
++        // We're collecting all the movedPlayers first then processing the other entities,
++        // and moved the logic that would have been in the second for loop into the entity loop.
++        // This allows us to avoid iterating over all movedPlayers within the world.
 +
-+            // iterate over players first, this is to gather the movedPlayers
-+            world.players.parallelStream().forEach((humanEntity) -> {
-+                EntityTrackerEntry entitytrackerentry = trackedEntities.get(humanEntity.getId());
++        // iterate over players first, this is to gather the movedPlayers
++        for (EntityHuman humanEntity : world.players) {
++            EntityTrackerEntry entitytrackerentry = trackedEntities.get(humanEntity.getId());
 +
-+                if (entitytrackerentry == null) {
-+                    return;
++            if (entitytrackerentry == null) {
++                continue;
++            }
++
++            java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
++
++            // if there's no players nearby, and we do not have any tracked any players
++            // don't attempt to track or update new players
++            if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
++                continue;
++            }
++
++            entitytrackerentry.track(humans);
++
++            // Check if the tracker has moved
++            if (entitytrackerentry.n && entitytrackerentry.tracker instanceof EntityPlayer) {
++                movedPlayers.add((EntityPlayer) entitytrackerentry.tracker);
++            }
++        }
++
++        // Now, we go over all the tracked entities (excluding players!)
++        for (EntityTrackerEntry entitytrackerentry : this.c) {
++            Entity tracker = entitytrackerentry.tracker;
++
++            if (tracker instanceof EntityPlayer) {
++                continue; // done above
++            }
++
++            java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
++
++            // if there's no players nearby, and we do not have any tracked any players
++            // don't attempt to track or update new players
++            if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
++                continue;
++            }
++
++            entitytrackerentry.track(humans);
++
++            // Update humans that have moved
++            for (EntityHuman human : humans) {
++                if (human != entitytrackerentry.tracker && human instanceof EntityPlayer && movedPlayers.contains(human)) {
++                    entitytrackerentry.updatePlayer((EntityPlayer) human);
 +                }
-+
-+                java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
-+
-+                // if there's no players nearby, and we do not have any tracked any players
-+                // don't attempt to track or update new players
-+                if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
-+                    return;
-+                }
-+
-+                entitytrackerentry.track(humans);
-+
-+                // Check if the tracker has moved
-+                if (entitytrackerentry.n && entitytrackerentry.tracker instanceof EntityPlayer) {
-+                    synchronized (movedPlayers) {
-+                        movedPlayers.add((EntityPlayer) entitytrackerentry.tracker);
-+                    }
-+                }
-+            });
-+
-+            // Now, we go over all the tracked entities (excluding players!)
-+            this.c.parallelStream().forEach(entitytrackerentry -> {
-+                Entity tracker = entitytrackerentry.tracker;
-+
-+                if (tracker instanceof EntityPlayer) {
-+                    return; // likely done above
-+                }
-+
-+                java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
-+
-+                // if there's no players nearby, and we do not have any tracked any players
-+                // don't attempt to track or update new players
-+                if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
-+                    return;
-+                }
-+
-+                entitytrackerentry.track(humans);
-+
-+                // Update humans
-+                for (EntityHuman human : humans) {
-+                    if (human != entitytrackerentry.tracker && human instanceof EntityPlayer && movedPlayers.contains(human)) {
-+                        entitytrackerentry.updatePlayer((EntityPlayer) human);
-+                    }
-+                }
-+            });
-+        } finally {
-+            org.spigotmc.AsyncCatcher.enabled = catcher;
++            }
 +        }
 +    }
 +
-+    private void updatePlayersOld() {
++    private void unused_updatePlayers() {
 +        // Blossom end
          ArrayList arraylist = Lists.newArrayList();
          Iterator iterator = this.c.iterator();
  
-         while (iterator.hasNext()) {
-             EntityTrackerEntry entitytrackerentry = (EntityTrackerEntry) iterator.next();
- 
--            entitytrackerentry.track(this.world.players);
-+            entitytrackerentry.track(getPlayersNearby(entitytrackerentry)); // Blossom
-             if (entitytrackerentry.n && entitytrackerentry.tracker instanceof EntityPlayer) {
-                 arraylist.add((EntityPlayer) entitytrackerentry.tracker);
-             }
-@@ -202,7 +298,7 @@ public class EntityTracker {
+@@ -202,7 +286,7 @@ public class EntityTracker {
              EntityTrackerEntry entitytrackerentry = (EntityTrackerEntry) iterator.next();
  
              if (entitytrackerentry.tracker == entityplayer) {
@@ -155,7 +141,7 @@ index cb72b3672..819ea9d61 100644
              } else {
                  entitytrackerentry.updatePlayer(entityplayer);
              }
-@@ -240,10 +336,16 @@ public class EntityTracker {
+@@ -240,10 +324,16 @@ public class EntityTracker {
      }
  
      public void a(EntityPlayer entityplayer, Chunk chunk) {
@@ -177,7 +163,7 @@ index cb72b3672..819ea9d61 100644
              if (entitytrackerentry.tracker != entityplayer && entitytrackerentry.tracker.ae == chunk.locX && entitytrackerentry.tracker.ag == chunk.locZ) {
                  entitytrackerentry.updatePlayer(entityplayer);
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index af2285e78..e3b85c70d 100644
+index af2285e78..e785350f7 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 @@ -59,6 +59,7 @@ public class EntityTrackerEntry {
@@ -220,12 +206,13 @@ index af2285e78..e3b85c70d 100644
              }
  
          }
-@@ -465,6 +475,11 @@ public class EntityTrackerEntry {
+@@ -465,6 +475,12 @@ public class EntityTrackerEntry {
          double d0 = entityplayer.locX - this.tracker.locX;
          double d1 = entityplayer.locZ - this.tracker.locZ;
          // CraftBukkit end
-+        // Blossom start - also check vertically
-+        if (me.samsuik.blossom.configuration.BlossomConfig.trackerVerticalDistance && Math.abs(entityplayer.locY - this.tracker.locY) > this.b) {
++        // Blossom start - vertical tracking distance
++        double verticalDistance = (double) this.b * me.samsuik.blossom.configuration.BlossomConfig.trackVerticalDistance;
++        if (verticalDistance > 0.0 && Math.abs(entityplayer.locY - this.tracker.locY) > verticalDistance) {
 +            return false;
 +        }
 +        // Blossom end

@@ -1,15 +1,15 @@
-From 36177722d66acdd9c320acc3f161e28da0f87559 Mon Sep 17 00:00:00 2001
+From b15f9b25ece1588274059b2ad35dfbc87bbc6859 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index b63dc7dbf..d957fc334 100644
+index b7dc604d6..5a7b6aee7 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -289,4 +289,13 @@ public class BlossomConfig {
-         trackerVerticalDistance = getBoolean("entity-tracker.check-vertical-distance", true);
+@@ -295,4 +295,13 @@ public class BlossomConfig {
+         trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
      }
  
 +    public static boolean mobAi;

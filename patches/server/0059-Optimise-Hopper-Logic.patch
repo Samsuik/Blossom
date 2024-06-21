@@ -1,14 +1,14 @@
-From b69b59af2cdb9885eca144cb0c6271b86fbc6657 Mon Sep 17 00:00:00 2001
+From e9784f71790538eea65369585ea223437d17cf20 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f9f5bb5e8..a3cb9fbc4 100644
+index 4cb0e2362..5da9a6957 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -338,4 +338,11 @@ public class BlossomConfig {
+@@ -344,4 +344,11 @@ public class BlossomConfig {
          playerObjectiveUpdates = getBoolean("player.scoreboard-objective-updates", true);
      }
  
