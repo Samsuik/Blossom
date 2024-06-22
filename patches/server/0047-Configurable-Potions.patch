@@ -1,4 +1,4 @@
-From 9ee44406cb09d1fce444586e6a43ba4619c130c6 Mon Sep 17 00:00:00 2001
+From 188ef852a60995e8ab7e0b1debdf37e425ca952a Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 18 Dec 2020 20:58:59 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Configurable Potions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f4ccf68af..7db0171a4 100644
+index 8922bd9da..57e46cf51 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -314,4 +314,15 @@ public class BlossomConfig {
+@@ -313,4 +313,15 @@ public class BlossomConfig {
          rewrittenDataWatcher = getBoolean("mobs.rewritten-data-watcher", true);
      }
  

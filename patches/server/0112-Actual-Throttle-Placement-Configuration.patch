@@ -1,4 +1,4 @@
-From e8a70ec52233fcb15b80c545f12d671283fcfd96 Mon Sep 17 00:00:00 2001
+From 2f871c5109e45a1407267004f542c4570f59078c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 23:32:01 +0100
 Subject: [PATCH] Actual Throttle Placement Configuration
@@ -6,10 +6,10 @@ Subject: [PATCH] Actual Throttle Placement Configuration
 smh, paper
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5ba7df3b2..a91d50884 100644
+index 57a3cbc2e..5aaea888d 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -549,4 +549,9 @@ public class BlossomConfig {
+@@ -548,4 +548,9 @@ public class BlossomConfig {
          chunkLoadingPlayersPerThread = getInt("chunk.loading.players-per-thread", 50);
      }
  

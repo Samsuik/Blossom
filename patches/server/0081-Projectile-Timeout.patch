@@ -1,14 +1,14 @@
-From 5f0feff1febe53514868307bececc728b4ea06db Mon Sep 17 00:00:00 2001
+From 317b1de51b8fa6533e43dfcc475813abb7c97141 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 6 Jul 2023 23:04:57 +0100
 Subject: [PATCH] Projectile Timeout
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 1e15e31f3..615fc5584 100644
+index 1e0003c32..05b8a5157 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -399,4 +399,9 @@ public class BlossomConfig {
+@@ -398,4 +398,9 @@ public class BlossomConfig {
          farmlandOnlyCheckWaterWhenUnused = getBoolean("crops.farmland-only-look-for-water-when-unused", false);
      }
  

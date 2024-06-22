@@ -1,18 +1,17 @@
-From a072c0fa119cb1f3da0bea8ebe7b1c4e51830240 Mon Sep 17 00:00:00 2001
+From c20c9c7fd50e86113d4925e6af03c4c3a8542111 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 30 Jun 2022 23:06:01 +0100
 Subject: [PATCH] Optimise Entity Tracker
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 859701db6..b7dc604d6 100644
+index 859701db6..1518b1def 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -280,4 +280,19 @@ public class BlossomConfig {
+@@ -280,4 +280,18 @@ public class BlossomConfig {
          consistentExplosionSeed = getBoolean("explosions.consistent-explosion-seed", false);
      }
  
-+    public static boolean trackerWorkInParallel;
 +    public static boolean trackerUseChunkMap;
 +    public static double trackVerticalDistance;
 +    private static void EntityTracker() {
@@ -20,10 +19,10 @@ index 859701db6..b7dc604d6 100644
 +        if (version < 2 && config.contains("entity-tracker.check-vertical-distance")) {
 +            defaultVerticalDistanceMod = config.getBoolean("entity-tracker.check-vertical-distance") ? 1.0 : defaultVerticalDistanceMod;
 +            set("entity-tracker.check-vertical-distance", null);
++            set("entity-tracker.work-in-parallel", null);
 +        }
 +
 +        trackerUseChunkMap = getBoolean("entity-tracker.use-chunk-map-for-players", true);
-+        trackerWorkInParallel = getBoolean("entity-tracker.work-in-parallel", false);
 +        trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
 +    }
 +

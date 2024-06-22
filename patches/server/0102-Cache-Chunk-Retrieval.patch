@@ -1,4 +1,4 @@
-From 4db69bc6877266ea5811f710d84af2ec30950fef Mon Sep 17 00:00:00 2001
+From fc818f6491b80d298dadd03ff8aa2f61ee9b5a6d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -41,10 +41,10 @@ index 000000000..0199b35c8
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 50ffe3e1a..bc41f1ad9 100644
+index 0b9aac748..bae934ee5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -503,5 +503,10 @@ public class BlossomConfig {
+@@ -502,5 +502,10 @@ public class BlossomConfig {
      private static void EnsureInteractedBlockIsVisible() {
          ensureInteractedBlockIsVisible = getBoolean("player.ensure-interacted-block-is-visible", true);
      }

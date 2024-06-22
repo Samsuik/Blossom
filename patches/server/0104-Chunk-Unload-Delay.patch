@@ -1,14 +1,14 @@
-From bd74917b2f14a22d4a5e7698921d032acee0d235 Mon Sep 17 00:00:00 2001
+From 0f95ed918dd8a8476e2d28869e00761725eed8f2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index bc41f1ad9..8e98079ed 100644
+index bae934ee5..22a2e898e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -509,4 +509,9 @@ public class BlossomConfig {
+@@ -508,4 +508,9 @@ public class BlossomConfig {
          chunkCacheSize = getInt("chunk.chunk-cache-size", 8);
      }
  
