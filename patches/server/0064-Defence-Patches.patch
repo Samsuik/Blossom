@@ -1,4 +1,4 @@
-From 19f7a24b5c2a6b2be3a31f24a324de0a140bd66c Mon Sep 17 00:00:00 2001
+From ca4701186fc6d0e55021d79ff492351bd0246f39 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -27,18 +27,18 @@ index 97a27a755..bacdc8a47 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockSlime.java b/src/main/java/net/minecraft/server/BlockSlime.java
-index 331bafa03..9b418ac91 100644
+index 331bafa03..83da9eb38 100644
 --- a/src/main/java/net/minecraft/server/BlockSlime.java
 +++ b/src/main/java/net/minecraft/server/BlockSlime.java
-@@ -20,7 +20,7 @@ public class BlockSlime extends BlockHalfTransparent {
-     public void a(World world, Entity entity) {
-         if (entity.isSneaking()) {
-             super.a(world, entity);
--        } else if (entity.motY < 0.0D) {
-+        } else if (entity.motY < 0.0D && (!me.samsuik.blossom.configuration.BlossomConfig.fixSlimeBlockDefence || Math.abs(entity.lastX - entity.locX) + Math.abs(entity.lastZ - entity.locZ) < 48.0)) { // Blossom
-             entity.motY = -entity.motY;
-         }
+@@ -18,7 +18,7 @@ public class BlockSlime extends BlockHalfTransparent {
+     }
  
+     public void a(World world, Entity entity) {
+-        if (entity.isSneaking()) {
++        if (entity.isSneaking() || me.samsuik.blossom.configuration.BlossomConfig.fixSlimeBlockDefence && entity.isCannoningEntity) { // Blossom
+             super.a(world, entity);
+         } else if (entity.motY < 0.0D) {
+             entity.motY = -entity.motY;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
 index 1674bbb04..6c06a8e35 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
