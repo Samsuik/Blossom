@@ -1,11 +1,11 @@
-From 4c71c65304008ab8e93e246ce7d40d639e5d2189 Mon Sep 17 00:00:00 2001
+From 30632713ae5478ed9753be449a38a65f7098997d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 9 Jul 2023 23:54:44 +0100
 Subject: [PATCH] Configure Player Knockback
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f99926c50..fa05366dc 100644
+index fb457839b..cbfcdc407 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -410,4 +410,44 @@ public class BlossomConfig {
@@ -39,7 +39,7 @@ index f99926c50..fa05366dc 100644
 +
 +        playerExtraVertical = getDouble("player.knockback.extra.extra-vertical", 0.1);
 +        playerExtraHorizontal = getDouble("player.knockback.extra.extra-horizontal", 0.5);
-+        sprintingKnockbackDelay = getInt("player.knockback.extra.sprint-delay-ms", 1000) / 50;
++        sprintingKnockbackDelay = getInt("player.knockback.extra.sprint-delay-ms", 1000);
 +        knockbackStrengthLimit = getInt("player.knockback.extra.knockback-enchant-strength-limit", 2);
 +
 +        fishingVertical = getDouble("player.knockback.fishing.vertical", 0.4);
