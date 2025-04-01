@@ -1,4 +1,4 @@
-From 1d24232bc866b6c5850ad16c301f1cd8cfe05598 Mon Sep 17 00:00:00 2001
+From 7f006edc87a6e8d1716c8e923b48290949deda7d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
@@ -41,7 +41,7 @@ index 9ca105afa..f035df0cb 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index cd2993500..6f82a63be 100644
+index 4a8909191..6afe8e719 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -116,6 +116,7 @@ public class BlockStateList {
@@ -54,13 +54,13 @@ index cd2993500..6f82a63be 100644
          private final ImmutableMap<IBlockState, Comparable> bAsImmutableMap;
 @@ -127,6 +128,7 @@ public class BlockStateList {
          private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
-         private boolean dynamic;
+         private boolean dynamic = true;
          // Blossom end
 +        private final int id = UNIQUE_COUNTER++; // Blossom
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -213,7 +215,7 @@ public class BlockStateList {
+@@ -216,7 +218,7 @@ public class BlockStateList {
          }
  
          public int hashCode() {
@@ -190,5 +190,5 @@ index d9d458239..8615bf01b 100644
      }
  }
 -- 
-2.40.0.windows.1
+2.49.0
 

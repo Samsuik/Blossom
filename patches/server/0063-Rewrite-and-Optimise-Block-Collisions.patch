@@ -1,11 +1,11 @@
-From 1b478b1bdf8bd4a7452e977a8d6f6aadfe79b4a6 Mon Sep 17 00:00:00 2001
+From e85eea13850852674a369dda54128d3012ff900d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 3504e4edb..97a27a755 100644
+index 2bedc1c05..73b70bc03 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -362,4 +362,13 @@ public class BlossomConfig {
@@ -532,7 +532,7 @@ index 0a60daeb2..99dadd748 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index fda96405b..cd2993500 100644
+index fda96405b..4a8909191 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -122,6 +122,11 @@ public class BlockStateList {
@@ -542,45 +542,48 @@ index fda96405b..cd2993500 100644
 +        // Blossom start
 +        private static final AxisAlignedBB MASSIVE_BB = new AxisAlignedBB(-100, -100, -100, 100, 100, 100);
 +        private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
-+        private boolean dynamic;
++        private boolean dynamic = true;
 +        // Blossom end
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -135,6 +140,39 @@ public class BlockStateList {
+@@ -135,6 +140,42 @@ public class BlockStateList {
              // TacoSpigot end
          }
  
 +        // Blossom start
 +        public void calculateShape() {
 +            try {
-+                a.updateShape(null, BlockPosition.ZERO);
++                this.a.updateShape(null, BlockPosition.ZERO);
 +            } catch (Throwable e) {
-+                a.updateShape(this); // recalculate shape using block state if possible
++                this.a.updateShape(this); // recalculate shape using block state if possible
 +            }
 +
 +            try {
-+                a.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
++                this.a.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
++                this.dynamic = false;
 +            } catch (Throwable e) {
-+                shape.clear();
-+                dynamic = true;
++                this.shape.clear();
++                this.dynamic = true;
 +            }
 +
-+            //MinecraftServer.LOGGER.info(dynamic ? "dynamic: {}" : "static: {} {}", this, shape);
++//            if (this.dynamic) {
++//                MinecraftServer.LOGGER.info("{} has a dynamic shape", this);
++//            }
 +        }
 +
 +        public void markDynamic() {
-+            dynamic = true;
++            this.dynamic = true;
 +        }
 +
 +        @Override
 +        public boolean isShapeDynamic() {
-+            return dynamic;
++            return this.dynamic;
 +        }
 +
 +        @Override
 +        public List<AxisAlignedBB> shape() {
-+            return shape;
++            return this.shape;
 +        }
 +        // Blossom end
 +
@@ -893,7 +896,7 @@ index 3c3ab0c59..1468694aa 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 176f63885..2048e7e6b 100644
+index 176f63885..b7f7be794 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
@@ -989,37 +992,37 @@ index 176f63885..2048e7e6b 100644
 +        }
 +    }
 +
-+    private boolean traverseChunkX(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int x, int minY, int maxY, int minZ, int maxZ) {
++    private boolean traverseChunkX(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int x, int minY, int maxY, int minZ, int maxZ) {
 +        for (int z = minZ; z < maxZ; ++z) {
 +            for (int y = minY; y < maxY; ++y) {
-+                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++                collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
 +        return !shapes.isEmpty();
 +    }
 +
-+    private boolean traverseChunkY(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int y, int minX, int maxX, int minZ, int maxZ) {
++    private boolean traverseChunkY(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int y, int minX, int maxX, int minZ, int maxZ) {
 +        for (int x = minX; x < maxX; ++x) {
 +            for (int z = minZ; z < maxZ; ++z) {
-+                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++                collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
 +        return !shapes.isEmpty();
 +    }
 +
-+    private boolean traverseChunkZ(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB bb, SectionChunkCache cache, int z, int minX, int maxX, int minY, int maxY) {
++    private boolean traverseChunkZ(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int z, int minX, int maxX, int minY, int maxY) {
 +        for (int x = minX; x < maxX; ++x) {
 +            for (int y = minY; y < maxY; ++y) {
-+                collideWithBlock(entity, shapes, bb, cache, x, y, z);
++                collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
 +        return !shapes.isEmpty();
 +    }
 +
-+    private void collideWithBlock(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB axisalignedbb, SectionChunkCache cache, int x, int y, int z) {
++    private void collideWithBlock(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int x, int y, int z) {
 +        IBlockData iblockdata = cache.getType(x, y, z);
 +
 +        if (iblockdata != null) {
@@ -1031,7 +1034,7 @@ index 176f63885..2048e7e6b 100644
 +
 +            AxisAlignedBB entityBB = entity.getBoundingBox();
 +            if (iblockdata.isShapeDynamic()) {
-+                iblockdata.getBlock().a(this, new BlockPosition(x, y, z), iblockdata, axisalignedbb, shapes, entity);
++                iblockdata.getBlock().a(this, new BlockPosition(x, y, z), iblockdata, scan, shapes, entity);
 +                // inserted bbs may be inside the entity bb which would cause the collision to fail
 +                for (int i = 0; i < shapes.size(); i++) {
 +                    AxisAlignedBB bb = shapes.get(i);
@@ -1042,7 +1045,7 @@ index 176f63885..2048e7e6b 100644
 +                //noinspection ForLoopReplaceableByForEach
 +                for (int i = 0, shapeSize = shape.size(); i < shapeSize; i++) {
 +                    final AxisAlignedBB moved = shape.get(i).c(x, y, z);
-+                    if (axisalignedbb.b(moved) && !entityBB.b(moved)) shapes.add(moved);
++                    if (scan.b(moved) && !entityBB.b(moved)) shapes.add(moved);
 +                }
 +            }
 +        }
@@ -1103,5 +1106,5 @@ index 176f63885..2048e7e6b 100644
                                  // PaperSpigot end
                              }
 -- 
-2.40.0.windows.1
+2.49.0
 
