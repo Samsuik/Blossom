@@ -1,11 +1,11 @@
-From a624b63b720552dbc712c34910727b22296c60bf Mon Sep 17 00:00:00 2001
+From ed80e75fd1b58e9e93351ddd5c8d1a092ec625fe Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 Jun 2022 19:57:36 +0100
 Subject: [PATCH] POM Changes
 
 
 diff --git a/pom.xml b/pom.xml
-index 91f8d798e..dcbce916f 100644
+index 91f8d798e..769a8143e 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -1,12 +1,12 @@
@@ -46,6 +46,15 @@ index 91f8d798e..dcbce916f 100644
              <artifactId>api</artifactId>
              <version>${project.version}</version>
              <type>jar</type>
+@@ -116,7 +116,7 @@
+         <!-- PaperSpigot - Repo for gitdescribe -->
+         <pluginRepository>
+             <id>papermc</id> <!-- Paper - Update Log4j -->
+-            <url>https://papermc.io/repo/repository/maven-public/</url> <!-- Paper - Update Log4j -->
++            <url>https://repo.papermc.io/repository/maven-public/</url> <!-- Paper - Update Log4j -->
+         </pluginRepository>
+     </pluginRepositories>
+ 
 @@ -129,7 +129,7 @@
              <artifactId>gitdescribe-maven-plugin</artifactId>
              <version>1.3</version>
@@ -132,5 +141,5 @@ index 6549e73bc..49f1ab608 100644
  
          if (stream != null) {
 -- 
-2.40.0.windows.1
+2.49.0
 
