@@ -1,4 +1,4 @@
-From 7f006edc87a6e8d1716c8e923b48290949deda7d Mon Sep 17 00:00:00 2001
+From 8f01be369909e9b2ab3830b82abf46aec5c172e0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
@@ -41,7 +41,7 @@ index 9ca105afa..f035df0cb 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index 4a8909191..6afe8e719 100644
+index 78da6dd56..2960be257 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -116,6 +116,7 @@ public class BlockStateList {
@@ -52,15 +52,15 @@ index 4a8909191..6afe8e719 100644
          private final Block a;
          // TacoSpigot start
          private final ImmutableMap<IBlockState, Comparable> bAsImmutableMap;
-@@ -127,6 +128,7 @@ public class BlockStateList {
-         private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
+@@ -128,6 +129,7 @@ public class BlockStateList {
          private boolean dynamic = true;
+         private boolean collideWithSignsBlock = false;
          // Blossom end
 +        private final int id = UNIQUE_COUNTER++; // Blossom
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -216,7 +218,7 @@ public class BlockStateList {
+@@ -229,7 +231,7 @@ public class BlockStateList {
          }
  
          public int hashCode() {

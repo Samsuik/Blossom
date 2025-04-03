@@ -1,11 +1,11 @@
-From ca4701186fc6d0e55021d79ff492351bd0246f39 Mon Sep 17 00:00:00 2001
+From 21ec6536aa773ec4062b3544950a011494d13a20 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 97a27a755..bacdc8a47 100644
+index 73b70bc03..b76c93bdd 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -371,4 +371,17 @@ public class BlossomConfig {
@@ -101,10 +101,10 @@ index 34b6f6bd3..66f541c27 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 2048e7e6b..361a3549f 100644
+index 02f4d79c9..2e6427a80 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3269,11 +3269,16 @@ public abstract class World implements IBlockAccess {
+@@ -3270,11 +3270,16 @@ public abstract class World implements IBlockAccess {
      }
  
      public boolean a(Block block, BlockPosition blockposition, boolean flag, EnumDirection enumdirection, Entity entity, ItemStack itemstack) {
@@ -123,5 +123,5 @@ index 2048e7e6b..361a3549f 100644
          this.getServer().getPluginManager().callEvent(event);
  
 -- 
-2.40.0.windows.1
+2.49.0
 
