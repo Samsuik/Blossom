@@ -1,4 +1,4 @@
-From f9c0cf541bb96b1d3c521413fae242ee94eefd14 Mon Sep 17 00:00:00 2001
+From c2b1d42a458db325ecb57bcaa677bc220ea27d83 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -913,7 +913,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 176f63885..02f4d79c9 100644
+index 176f63885..da376724d 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
@@ -1046,7 +1046,7 @@ index 176f63885..02f4d79c9 100644
 +            AxisAlignedBB entityBB = entity.getBoundingBox();
 +            if (paper_isForcedFullBlock(entity, iblockdata)) {
 +                AxisAlignedBB bb = AxisAlignedBB.a(x, y, z, x + 1.0, y + 1.0, z + 1.0);
-+                if (!entityBB.b(bb)) {
++                if (scan.b(bb) && !entityBB.b(bb)) {
 +                    shapes.add(bb);
 +                    return;
 +                }
