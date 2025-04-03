@@ -1,4 +1,4 @@
-From 285a6953900817db6ee73b9887f68b8968b8cff4 Mon Sep 17 00:00:00 2001
+From b09d0f7748373a0d9b190c2d2e5b0969a43106dd Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -22,10 +22,10 @@ index f3bee75b1..01acb3027 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 new file mode 100644
-index 000000000..6f9c07c00
+index 000000000..6e7242de0
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,151 @@
 +package me.samsuik.blossom.explosions;
 +
 +import me.samsuik.blossom.configuration.BlossomConfig;
@@ -89,7 +89,9 @@ index 000000000..6f9c07c00
 +
 +            // calculate next position
 +            if (i + 1 < potential) {
-+                world.notifyPlayersOfExplosion(this, posX, posY, posZ, size);
++                if (!this.wasCanceled) {
++                    world.notifyPlayersOfExplosion(this, posX, posY, posZ, size);
++                }
 +
 +                source.lastProperties(source);
 +
@@ -939,5 +941,5 @@ index bfd0ff5a7..10cc04fe5 100644
  
      public void playBlockAction(BlockPosition blockposition, Block block, int i, int j) {
 -- 
-2.40.0.windows.1
+2.49.0
 

@@ -1,11 +1,11 @@
-From bd83c313643d29c5adc11dd6525bde2a585ca17b Mon Sep 17 00:00:00 2001
+From efa46f9a08d35ea5d78395aab803bb5f66b5d679 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8bcacc41a..152e9679f 100644
+index 4f62c8768..040ab7128 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -350,4 +350,11 @@ public class BlossomConfig {
@@ -73,10 +73,10 @@ index 000000000..829a35358
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-index 6f9c07c00..70d1349af 100644
+index 6e7242de0..f4c03093e 100644
 --- a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-@@ -130,7 +130,7 @@ public class BlossomExplosion extends Explosion {
+@@ -132,7 +132,7 @@ public class BlossomExplosion extends Explosion {
      private int collectExplosionPotential() {
          List<Entity> entityList = world.entityList;
          int index = entityList.indexOf(source);
@@ -85,7 +85,7 @@ index 6f9c07c00..70d1349af 100644
  
          for (int i = index + 1; i < entityList.size(); ++i) {
              Entity entity = entityList.get(i);
-@@ -139,7 +139,7 @@ public class BlossomExplosion extends Explosion {
+@@ -141,7 +141,7 @@ public class BlossomExplosion extends Explosion {
                  break;
              }
  
@@ -367,5 +367,5 @@ index 27248a774..78d22fc2b 100644
                      entity.tickTimer.startTiming(); // Spigot
                      this.g(entity);
 -- 
-2.40.0.windows.1
+2.49.0
 
