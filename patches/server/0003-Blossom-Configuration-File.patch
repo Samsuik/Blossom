@@ -1,4 +1,4 @@
-From dacb4c73cf1263cd0de0164f176dfcd2cf56278a Mon Sep 17 00:00:00 2001
+From 2654e49b0f63b3caadfc79dd62bd105360fd120f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -100,16 +100,17 @@ index 000000000..96c24e2f0
 +}
 diff --git a/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
 new file mode 100644
-index 000000000..98fc07cdf
+index 000000000..4ac129dc9
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,39 @@
 +package me.samsuik.blossom.commands.subcommands;
 +
 +import me.samsuik.blossom.commands.BaseCommand;
 +import net.md_5.bungee.api.ChatColor;
 +import net.md_5.bungee.api.chat.ComponentBuilder;
 +import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.World;
 +import org.bukkit.command.CommandSender;
 +
 +import java.io.File;
@@ -128,6 +129,9 @@ index 000000000..98fc07cdf
 +        }
 +
 +        me.samsuik.blossom.configuration.BlossomConfig.init((File) MinecraftServer.getServer().options.valueOf("blossom-settings"));
++        for (World world : MinecraftServer.getServer().worlds) {
++            world.blossomConfig.init();
++        }
 +        me.samsuik.blossom.configuration.BlossomConfig.registerCommands();
 +
 +        sender.sendMessage(new ComponentBuilder("")
@@ -423,5 +427,5 @@ index 569a8846b..8366a2933 100644
                  MinecraftServer.main(options);
              } catch (Throwable t) {
 -- 
-2.40.0.windows.1
+2.49.0
 
