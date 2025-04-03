@@ -1,4 +1,4 @@
-From c2b1d42a458db325ecb57bcaa677bc220ea27d83 Mon Sep 17 00:00:00 2001
+From e4dbd9d05d69cdb9a44d4528ec25a40f607c3635 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -532,7 +532,7 @@ index 0a60daeb2..99dadd748 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index fda96405b..78da6dd56 100644
+index fda96405b..61dba6cab 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -122,6 +122,12 @@ public class BlockStateList {
@@ -543,25 +543,26 @@ index fda96405b..78da6dd56 100644
 +        private static final AxisAlignedBB MASSIVE_BB = new AxisAlignedBB(-100, -100, -100, 100, 100, 100);
 +        private final List<AxisAlignedBB> shape = new ArrayList<>(0); // Blossom
 +        private boolean dynamic = true;
-+        private boolean collideWithSignsBlock = false;
++        private boolean collideAsFullBlock = false;
 +        // Blossom end
  
          private BlockData(Block block, ImmutableMap<IBlockState, Comparable> immutablemap) {
              this.a = block;
-@@ -135,6 +141,54 @@ public class BlockStateList {
+@@ -135,6 +141,57 @@ public class BlockStateList {
              // TacoSpigot end
          }
  
 +        // Blossom start
 +        public void calculateShape() {
++            final Block block = this.a;
 +            try {
-+                this.a.updateShape(null, BlockPosition.ZERO);
++                block.updateShape(null, BlockPosition.ZERO);
 +            } catch (Throwable e) {
-+                this.a.updateShape(this); // recalculate shape using block state if possible
++                block.updateShape(this); // recalculate shape using block state if possible
 +            }
 +
 +            try {
-+                this.a.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
++                block.a(null, BlockPosition.ZERO, this, MASSIVE_BB, shape, null);
 +                this.dynamic = false;
 +            } catch (Throwable e) {
 +                this.shape.clear();
@@ -569,11 +570,13 @@ index fda96405b..78da6dd56 100644
 +            }
 +
 +            // This abomination should be configurable
-+            this.collideWithSignsBlock = b instanceof BlockSign || b instanceof BlockFenceGate || b instanceof BlockTorch
-+                          || b instanceof BlockButtonAbstract || b instanceof BlockLever || b instanceof BlockTripwireHook
-+                          || b instanceof BlockTripwire || b instanceof BlockChest || b instanceof BlockSlowSand
-+                          || b instanceof BlockBed || b instanceof BlockEnderChest || b instanceof BlockEnchantmentTable
-+                          || b instanceof BlockBrewingStand;
++            this.collideAsFullBlock = block instanceof BlockSign || block instanceof BlockFenceGate
++                    || block instanceof BlockTorch || block instanceof BlockButtonAbstract
++                    || block instanceof BlockLever || block instanceof BlockTripwireHook
++                    || block instanceof BlockTripwire || block instanceof BlockChest
++                    || block instanceof BlockSlowSand || block instanceof BlockBed
++                    || block instanceof BlockEnderChest || block instanceof BlockEnchantmentTable
++                    || block instanceof BlockBrewingStand;
 +
 +//            if (this.dynamic) {
 +//                MinecraftServer.LOGGER.info("{} has a dynamic shape", this);
@@ -596,7 +599,7 @@ index fda96405b..78da6dd56 100644
 +
 +        @Override
 +        public boolean collideAsFullBlock() {
-+            return this.collideWithSignsBlock;
++            return this.collideAsFullBlock;
 +        }
 +        // Blossom end
 +
