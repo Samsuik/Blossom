@@ -1,4 +1,4 @@
-From aca06dd272118171c42a22013a71829b39edd0a7 Mon Sep 17 00:00:00 2001
+From 1fe9c1b7e6a3b679930c890d01ad5bfd36927262 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Player Bound Potion Ticking
@@ -21,13 +21,13 @@ index 4ad3f15b7..00c95e2e3 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index bb4f92238..3d32ddf2e 100644
+index 1a21f6baf..5326248ff 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -284,6 +284,7 @@ public abstract class Entity implements ICommandListener {
+@@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {
+         return true; // possibly?
      }
      // Blossom end
-     public boolean eastWestPatched; // Blossom
 +    public boolean boundEntity; // Blossom
  
      public int getId() {
@@ -112,7 +112,7 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index ac3c5dad2..d58f4ba55 100644
+index f1b6a7f52..1ace30bac 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {

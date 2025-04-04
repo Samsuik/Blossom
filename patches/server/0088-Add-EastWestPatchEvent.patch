@@ -1,37 +1,33 @@
-From a57b28a4c2f72f416742c782a1e88ce282917579 Mon Sep 17 00:00:00 2001
+From d6eaea538d4014c93b0e55c5035011ab147fb445 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index d87139483..5ef363a3b 100644
+index d87139483..ff1198cb6 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {
-         return true; // possibly?
+@@ -353,6 +353,18 @@ public abstract class Entity implements ICommandListener {
+         this.c(1);
      }
-     // Blossom end
-+    public boolean eastWestPatched; // Blossom
- 
-     public int getId() {
-         return this.id;
-@@ -384,6 +385,14 @@ public abstract class Entity implements ICommandListener {
-         this.datawatcher = new DataWatcher(this);
-         }
-         // Blossom end
-+        // Blossom start
-+        this.eastWestPatched = world != null && world.tacoSpigotConfig.fixEastWest;
-+        if (world != null && this.isCannoningEntity && me.samsuik.blossom.events.entity.EastWestPatchEvent.getHandlerList().getRegisteredListeners().length != 0) {
-+            me.samsuik.blossom.events.entity.EastWestPatchEvent event = new me.samsuik.blossom.events.entity.EastWestPatchEvent(getBukkitEntity(), eastWestPatched);
+     // Paper end - make end portalling safe
++    // Blossom start - add east west patch event
++    public boolean eastWestPatched;
++
++    protected final void callEastWestPatchEvent() {
++        this.eastWestPatched = this.world.tacoSpigotConfig.fixEastWest;
++        if (me.samsuik.blossom.events.entity.EastWestPatchEvent.getHandlerList().getRegisteredListeners().length != 0) {
++            me.samsuik.blossom.events.entity.EastWestPatchEvent event = new me.samsuik.blossom.events.entity.EastWestPatchEvent(this.getBukkitEntity(), this.eastWestPatched);
 +            org.bukkit.Bukkit.getPluginManager().callEvent(event);
 +            this.eastWestPatched = event.isEastWestPatched();
 +        }
-+        // Blossom end
-         this.datawatcher.a(0, Byte.valueOf((byte) 0));
-         this.datawatcher.a(1, Short.valueOf((short) 300));
-         this.datawatcher.a(3, Byte.valueOf((byte) 0));
-@@ -699,7 +708,7 @@ public abstract class Entity implements ICommandListener {
++    }
++    // Blossom end - add east west patch event
+ 
+     public Entity(World world) {
+         this.id = Entity.entityCount++;
+@@ -699,7 +711,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -40,7 +36,7 @@ index d87139483..5ef363a3b 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -892,7 +901,7 @@ public abstract class Entity implements ICommandListener {
+@@ -892,7 +904,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  
@@ -49,6 +45,30 @@ index d87139483..5ef363a3b 100644
                  if(axisScan) list = this.world.getCubes(this, this.getBoundingBox().a(0, 0, d2)); // TacoSpigot - get z axis blocks
  
                  for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index 1d0098bef..8b807300b 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -49,6 +49,7 @@ public class EntityFallingBlock extends Entity {
+         this.lastZ = d2;
+         this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
+         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
++        this.callEastWestPatchEvent(); // Blossom - add east west patch event
+     }
+ 
+     protected boolean s_() {
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 3a52a514c..baaafc769 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -40,6 +40,7 @@ public class EntityTNTPrimed extends Entity {
+         this.source = entityliving;
+         if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
+         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
++        this.callEastWestPatchEvent(); // Blossom - add east west patch event
+     }
+ 
+     protected void h() {}
 -- 
-2.40.0.windows.1
+2.49.0
 
