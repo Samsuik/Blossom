@@ -1,4 +1,4 @@
-From ef4a79d6bb48f13b71babcda713bd5e1d2f21a21 Mon Sep 17 00:00:00 2001
+From 8ee879e003535d28ec2b2b8f68c16b9b60227f5f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -6,10 +6,10 @@ Subject: [PATCH] Redstone Algorithm
 
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
 new file mode 100644
-index 000000000..efb9424ac
+index 000000000..644bb13fd
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
-@@ -0,0 +1,509 @@
+@@ -0,0 +1,511 @@
 +package me.samsuik.blossom.blocks.redstone;
 +
 +import com.google.common.collect.Lists;
@@ -52,15 +52,17 @@ index 000000000..efb9424ac
 +    static {
 +        Set<BaseBlockPosition> set = Sets.newLinkedHashSet();
 +        for (EnumDirection facing : facings) {
-+            set.add(ReflectUtil.getOfT(facing, BaseBlockPosition.class));
++            set.add(facing.getPositionOffset());
 +        }
 +
-+        for (EnumDirection facing1 : facings) {
-+            BaseBlockPosition v1 = ReflectUtil.getOfT(facing1, BaseBlockPosition.class);
-+
-+            for (EnumDirection facing2 : facings) {
-+                BaseBlockPosition v2 = ReflectUtil.getOfT(facing2, BaseBlockPosition.class);
-+                set.add(new BlockPosition(v1.getX() + v2.getX(), v1.getY() + v2.getY(), v1.getZ() + v2.getZ()));
++        Set<BaseBlockPosition> offsets = Sets.newLinkedHashSet(set);
++        for (BaseBlockPosition neighborPosition : offsets) {
++            for (BaseBlockPosition adjacentPosition : offsets) {
++                set.add(new BlockPosition(
++                        neighborPosition.getX() + adjacentPosition.getX(),
++                        neighborPosition.getY() + adjacentPosition.getY(),
++                        neighborPosition.getZ() + adjacentPosition.getZ()
++                ));
 +            }
 +        }
 +
@@ -521,10 +523,10 @@ index 000000000..efb9424ac
 +}
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
 new file mode 100644
-index 000000000..cacaf40e6
+index 000000000..58c7e626d
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
-@@ -0,0 +1,463 @@
+@@ -0,0 +1,465 @@
 +package me.samsuik.blossom.blocks.redstone;
 +
 +import com.google.common.collect.Lists;
@@ -569,15 +571,17 @@ index 000000000..cacaf40e6
 +    static {
 +        Set<BaseBlockPosition> set = Sets.newLinkedHashSet();
 +        for (EnumDirection facing : facings) {
-+            set.add(ReflectUtil.getOfT(facing, BaseBlockPosition.class));
++            set.add(facing.getPositionOffset());
 +        }
 +
-+        for (EnumDirection facing1 : facings) {
-+            BaseBlockPosition v1 = ReflectUtil.getOfT(facing1, BaseBlockPosition.class);
-+
-+            for (EnumDirection facing2 : facings) {
-+                BaseBlockPosition v2 = ReflectUtil.getOfT(facing2, BaseBlockPosition.class);
-+                set.add(new BlockPosition(v1.getX() + v2.getX(), v1.getY() + v2.getY(), v1.getZ() + v2.getZ()));
++        Set<BaseBlockPosition> offsets = Sets.newLinkedHashSet(set);
++        for (BaseBlockPosition neighborPosition : offsets) {
++            for (BaseBlockPosition adjacentPosition : offsets) {
++                set.add(new BlockPosition(
++                        neighborPosition.getX() + adjacentPosition.getX(),
++                        neighborPosition.getY() + adjacentPosition.getY(),
++                        neighborPosition.getZ() + adjacentPosition.getZ()
++                ));
 +            }
 +        }
 +
@@ -1002,42 +1006,6 @@ index 000000000..8e73701e6
 +    PANDAWIRE,
 +    PANDAWIRE_EX,
 +}
-diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ReflectUtil.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ReflectUtil.java
-new file mode 100644
-index 000000000..80c9f4a71
---- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ReflectUtil.java
-@@ -0,0 +1,30 @@
-+package me.samsuik.blossom.blocks.redstone;
-+
-+import java.lang.reflect.Field;
-+
-+/*
-+ * Decompiled from https://www.spigotmc.org/resources/pandawire-1-8-8-1-15-2.41991/
-+ */
-+public class ReflectUtil {
-+
-+    public static <T> T getOfT(Object obj, Class<T> type) {
-+        for (Field field : obj.getClass().getDeclaredFields()) {
-+            if (type.equals(field.getType())) {
-+                return get(obj, field, type);
-+            }
-+        }
-+
-+        return null;
-+    }
-+
-+    public static <T> T get(Object obj, Field field, Class<T> type) {
-+        try {
-+            field.setAccessible(true);
-+            return type.cast(field.get(obj));
-+        } catch (ReflectiveOperationException ex) {
-+            ex.printStackTrace();
-+            return null;
-+        }
-+    }
-+
-+}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 index 989407920..228fa08e4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
@@ -1083,6 +1051,19 @@ index 0911ae12a..2dc3b1755 100644
          a(56, "diamond_ore", (new BlockOre()).c(3.0F).b(5.0F).a(Block.i).c("oreDiamond"));
          a(57, "diamond_block", (new Block(Material.ORE, MaterialMapColor.G)).c(5.0F).b(10.0F).a(Block.j).c("blockDiamond").a(CreativeModeTab.b));
          a(58, "crafting_table", (new BlockWorkbench()).c(2.5F).a(Block.f).c("workbench"));
+diff --git a/src/main/java/net/minecraft/server/EnumDirection.java b/src/main/java/net/minecraft/server/EnumDirection.java
+index f31a184bb..d155bc4ff 100644
+--- a/src/main/java/net/minecraft/server/EnumDirection.java
++++ b/src/main/java/net/minecraft/server/EnumDirection.java
+@@ -17,7 +17,7 @@ public enum EnumDirection implements INamable {
+     private final String j;
+     private final EnumAxis k;
+     private final EnumAxisDirection l;
+-    private final BaseBlockPosition m;
++    private final BaseBlockPosition m; public final BaseBlockPosition getPositionOffset() { return this.m; } // Blossom - OBFHELPER
+     private static final EnumDirection[] n = new EnumDirection[6];
+     private static final EnumDirection[] o = new EnumDirection[4];
+     private static final Map<String, EnumDirection> p = Maps.newHashMap();
 -- 
 2.49.0
 
