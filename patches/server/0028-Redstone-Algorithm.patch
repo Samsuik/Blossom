@@ -1,4 +1,4 @@
-From 521c40263b39235231c6624f15e6d0852ab63b0b Mon Sep 17 00:00:00 2001
+From db6587013269b741f2ec2539be890ff3a8c2bf54 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -6,7 +6,7 @@ Subject: [PATCH] Redstone Algorithm
 
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
 new file mode 100644
-index 000000000..5d6508eec
+index 000000000..039ce8e8b
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
 @@ -0,0 +1,513 @@
@@ -218,7 +218,7 @@ index 000000000..5d6508eec
 +        for (int i1 = 0; i1 < facings.length && blockPower < 15; i1++) {
 +            EnumDirection facing = facings[i1];
 +            if (facing != opposite && (facing != EnumDirection.UP || from == EnumDirection.UP) && (facing != EnumDirection.DOWN || from != EnumDirection.UP)) {
-+                blockPower = world.getBlockPower(blockposition.shift(facing), facing);
++                blockPower = Math.max(world.getBlockPower(blockposition.shift(facing), facing), blockPower);
 +            }
 +        }
 +
@@ -1043,7 +1043,7 @@ index 000000000..80c9f4a71
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5cf2d5710..7781b9791 100644
+index 989407920..228fa08e4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -199,4 +199,27 @@ public class BlossomConfig {
@@ -1088,5 +1088,5 @@ index 0911ae12a..2dc3b1755 100644
          a(57, "diamond_block", (new Block(Material.ORE, MaterialMapColor.G)).c(5.0F).b(10.0F).a(Block.j).c("blockDiamond").a(CreativeModeTab.b));
          a(58, "crafting_table", (new BlockWorkbench()).c(2.5F).a(Block.f).c("workbench"));
 -- 
-2.40.0.windows.1
+2.49.0
 
