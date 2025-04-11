@@ -1,4 +1,4 @@
-From db6587013269b741f2ec2539be890ff3a8c2bf54 Mon Sep 17 00:00:00 2001
+From ef4a79d6bb48f13b71babcda713bd5e1d2f21a21 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -6,10 +6,10 @@ Subject: [PATCH] Redstone Algorithm
 
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
 new file mode 100644
-index 000000000..039ce8e8b
+index 000000000..efb9424ac
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
-@@ -0,0 +1,513 @@
+@@ -0,0 +1,509 @@
 +package me.samsuik.blossom.blocks.redstone;
 +
 +import com.google.common.collect.Lists;
@@ -121,46 +121,41 @@ index 000000000..039ce8e8b
 +            checkSurroundingWires(worldIn, position, 0);
 +        }
 +
++        int blocksUnpowered = 0;
 +        while (!turnOff.isEmpty()) {
 +            BlockPosition pos = turnOff.poll();
 +            state = worldIn.getType(pos);
 +            int oldPower = state.get(POWER);
-+            // We expect blocks to provide updates to us
-+            int blockPower = pos != position ? 0 : getConnectedBlockPower(worldIn, pos);
++            int blockPower = pos == position ? getConnectedBlockPower(worldIn, pos) : 0;
 +            int wirePower = getSurroundingWirePower(worldIn, pos);
 +            // Lower the strength as it moved a block
 +            --wirePower;
 +            int newPower = Math.max(blockPower, wirePower);
 +
-+            // Can power change?
-+            if (newPower == oldPower) {
-+                continue;
-+            }
-+
 +            // Power lowered?
 +            if (newPower < oldPower) {
-+                // If it's still powered by a direct source (but weaker) mark for turn on
-+                if (blockPower > 0 && !turnOn.contains(pos)) {
-+                    turnOn.add(pos);
-+                }
++                // After unpowering try to reactivate this block
++                turnOn.addFirst(pos);
++                blocksUnpowered++;
 +                // Set all the way to off for now, because wires that were powered by this need to update first
 +                setWireState(worldIn, pos, state, 0);
 +                // Power rose?
-+            } else if (!turnOn.contains(pos)) {
-+                // Queue power raise update
-+                turnOn.addFirst(pos);
-+                continue;
++            } else if (newPower > oldPower) {
++                // Set new Power
++                setWireState(worldIn, pos, state, newPower);
 +            }
++
 +            // Check if surrounding wires need to change based on the current/new state and add them to the lists
-+            checkSurroundingWires(worldIn, pos, wirePower);
++            if (newPower != oldPower) {
++                checkSurroundingWires(worldIn, pos, wirePower);
++            }
 +        }
 +
 +        while (!turnOn.isEmpty()) {
 +            BlockPosition pos = turnOn.poll();
 +            state = worldIn.getType(pos);
 +            int oldPower = state.get(POWER);
-+            // We expect blocks to provide updates to us
-+            int blockPower = pos != position ? 0 : getConnectedBlockPower(worldIn, pos);
++            int blockPower = blocksUnpowered-- > 0 || pos == position ? getConnectedBlockPower(worldIn, pos) : 0;
 +            int wirePower = getSurroundingWirePower(worldIn, pos);
 +            // Lower the strength as it moved a block
 +            wirePower--;
@@ -173,15 +168,16 @@ index 000000000..039ce8e8b
 +                        newPower);
 +                worldIn.getServer().getPluginManager().callEvent(event);
 +                newPower = event.getNewCurrent();
-+            } else {
-+                continue;
 +            }
 +
 +            if (newPower > oldPower) {
 +                setWireState(worldIn, pos, state, newPower);
 +            }
++
 +            // Check if surrounding wires need to change based on the current/new state and add them to the lists
-+            checkSurroundingWires(worldIn, pos, wirePower + 1);
++            if (newPower != oldPower) {
++                checkSurroundingWires(worldIn, pos, wirePower + 1);
++            }
 +        }
 +
 +        turnOff.clear();
