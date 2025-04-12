@@ -1,4 +1,4 @@
-From 8ee879e003535d28ec2b2b8f68c16b9b60227f5f Mon Sep 17 00:00:00 2001
+From e1b2f3560f2f0b540f398216bffb7215d14ee4a5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -6,10 +6,10 @@ Subject: [PATCH] Redstone Algorithm
 
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
 new file mode 100644
-index 000000000..644bb13fd
+index 000000000..348693892
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
-@@ -0,0 +1,511 @@
+@@ -0,0 +1,499 @@
 +package me.samsuik.blossom.blocks.redstone;
 +
 +import com.google.common.collect.Lists;
@@ -408,21 +408,13 @@ index 000000000..644bb13fd
 +    }
 +
 +    private boolean canSidePower(World worldIn, BlockPosition pos, EnumDirection side) {
-+        Set<EnumDirection> retval = Sets.newHashSet();
++        EnumDirection.EnumAxis axis = side.e().k();
 +        for (EnumDirection facing : facingsHorizontal) {
-+            if (this.isPowerSourceAt(worldIn, pos, facing)) {
-+                retval.add(facing);
++            if (facing.k() == axis && this.isPowerSourceAt(worldIn, pos, facing)) {
++                return false;
 +            }
 +        }
-+        if (retval.isEmpty()) {
-+            return side != EnumDirection.DOWN && side != EnumDirection.UP;
-+        } else if (retval.contains(EnumDirection.NORTH) || retval.contains(EnumDirection.SOUTH)) {
-+            return side.k() == EnumDirection.EnumAxis.Z;
-+        } else if (retval.contains(EnumDirection.EAST) || retval.contains(EnumDirection.WEST)) {
-+            return side.k() == EnumDirection.EnumAxis.X;
-+        }
-+
-+        return false;
++        return true;
 +    }
 +
 +    /**
@@ -484,10 +476,6 @@ index 000000000..644bb13fd
 +        return getPower(world.getType(blockposition), i);
 +    }
 +
-+    protected final int getPower(World world, int x, int y, int z, int i) {
-+        return getPower(world.getTypeIfLoaded(x, y, z), i);
-+    }
-+
 +    protected final int getPower(IBlockData state, int power) {
 +        if (state.getBlock() != Blocks.REDSTONE_WIRE) {
 +            return power;
@@ -501,7 +489,7 @@ index 000000000..644bb13fd
 +            return 0;
 +        } else {
 +            int i = iblockdata.get(BlockRedstoneWire.POWER);
-+            if (i == 0) { // md_5 change? This isn't in the original.
++            if (i == 0 || enumdirection == EnumDirection.DOWN) { // md_5 change? This isn't in the original.
 +                return 0;
 +            } else if (enumdirection == EnumDirection.UP) {
 +                return i;
@@ -523,10 +511,10 @@ index 000000000..644bb13fd
 +}
 diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
 new file mode 100644
-index 000000000..58c7e626d
+index 000000000..e2e52762d
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
-@@ -0,0 +1,465 @@
+@@ -0,0 +1,442 @@
 +package me.samsuik.blossom.blocks.redstone;
 +
 +import com.google.common.collect.Lists;
@@ -882,29 +870,6 @@ index 000000000..58c7e626d
 +        return retval;
 +    }
 +
-+    private boolean canSidePower(World worldIn, BlockPosition pos, EnumDirection side) {
-+        Set<EnumDirection> retval = Sets.newHashSet();
-+        for (EnumDirection facing : facingsHorizontal) {
-+            if (this.isPowerSourceAt(worldIn, pos, facing)) {
-+                retval.add(facing);
-+            }
-+        }
-+        if (retval.isEmpty()) {
-+            return side != EnumDirection.DOWN && side != EnumDirection.UP;
-+        }
-+        boolean northsouth = retval.contains(EnumDirection.NORTH) || retval.contains(EnumDirection.SOUTH);
-+        boolean eastwest = retval.contains(EnumDirection.EAST) || retval.contains(EnumDirection.WEST);
-+        if (northsouth) {
-+            retval.remove(EnumDirection.EAST);
-+            retval.remove(EnumDirection.WEST);
-+        }
-+        if (eastwest) {
-+            retval.remove(EnumDirection.NORTH);
-+            retval.remove(EnumDirection.SOUTH);
-+        }
-+        return retval.contains(side);
-+    }
-+
 +    /**
 +     * Adds all surrounding positions to a set.
 +     * This is the neighbor blocks, as well as their neighbors
@@ -977,7 +942,7 @@ index 000000000..58c7e626d
 +            } else if (enumdirection == EnumDirection.UP) {
 +                return i;
 +            } else {
-+                return this.canSidePower((World) iblockaccess, blockposition, enumdirection) ? i : 0;
++                return this.getSidesToPower((World) iblockaccess, blockposition).contains(enumdirection) ? i : 0;
 +            }
 +        }
 +    }
