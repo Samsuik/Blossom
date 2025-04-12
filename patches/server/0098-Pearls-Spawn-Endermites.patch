@@ -1,11 +1,11 @@
-From b4de08528d2a903792ea8c69469e02ec08dad359 Mon Sep 17 00:00:00 2001
+From 04565b2c48a26769d28ca4813d42f344736d189e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 21:56:38 +0100
 Subject: [PATCH] Pearls Spawn Endermites
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 6cb717d57..0a00551a4 100644
+index 8aa72b14d..4ad3f15b7 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -482,5 +482,10 @@ public class BlossomConfig {
@@ -20,10 +20,10 @@ index 6cb717d57..0a00551a4 100644
      
  }
 diff --git a/src/main/java/net/minecraft/server/EntityEnderPearl.java b/src/main/java/net/minecraft/server/EntityEnderPearl.java
-index 714908b8e..a2ae3d59e 100644
+index abb88858f..5c8df35e9 100644
 --- a/src/main/java/net/minecraft/server/EntityEnderPearl.java
 +++ b/src/main/java/net/minecraft/server/EntityEnderPearl.java
-@@ -84,7 +84,7 @@ public class EntityEnderPearl extends EntityProjectile {
+@@ -90,7 +90,7 @@ public class EntityEnderPearl extends EntityProjectile {
                      Bukkit.getPluginManager().callEvent(teleEvent);
  
                      if (!teleEvent.isCancelled() && !entityplayer.playerConnection.isDisconnected()) {
@@ -33,5 +33,5 @@ index 714908b8e..a2ae3d59e 100644
  
                              entityendermite.a(true);
 -- 
-2.40.0.windows.1
+2.49.0
 
