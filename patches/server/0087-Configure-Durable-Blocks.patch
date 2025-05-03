@@ -1,14 +1,14 @@
-From f8beb22960dd18cc43f7b0463b9118a773b9a1f8 Mon Sep 17 00:00:00 2001
+From 2c9d5b7cc280e50aa7845e9bb89e69c91498fd9d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 90429695d..f99926c50 100644
+index 2fde7e673..ab298de7f 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -405,4 +405,9 @@ public class BlossomConfig {
+@@ -417,4 +417,9 @@ public class BlossomConfig {
          projectileTimeout = getInt("projectiles.time-out", 1200);
      }
  
@@ -289,7 +289,7 @@ index d508018a4..e013ab636 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index cbf7c7bcb..efe09cac8 100644
+index 00579836c..f1b6a7f52 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -173,6 +173,7 @@ public abstract class World implements IBlockAccess {
@@ -301,5 +301,5 @@ index cbf7c7bcb..efe09cac8 100644
      protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
          this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
 -- 
-2.40.0.windows.1
+2.49.0
 

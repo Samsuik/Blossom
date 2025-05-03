@@ -1,14 +1,14 @@
-From 9bcb28f1debb01e7fc03e6d8bd518337492dffc0 Mon Sep 17 00:00:00 2001
+From 22fb0214cfe50133b7ff1ad220fa3b8a7f984fe9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5bdd15c41..8bcacc41a 100644
+index 25fcd6585..d026ca710 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -343,4 +343,11 @@ public class BlossomConfig {
+@@ -355,4 +355,11 @@ public class BlossomConfig {
          playerObjectiveUpdates = getBoolean("player.scoreboard-objective-updates", true);
      }
  
@@ -404,5 +404,5 @@ index 630a81bea..9000a9ddb 100644
  import org.bukkit.event.inventory.InventoryMoveItemEvent;
  
 -- 
-2.40.0.windows.1
+2.49.0
 

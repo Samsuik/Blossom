@@ -1,4 +1,4 @@
-From c68f165c9df5eb07fa0471cdba9a3f3d82b2072d Mon Sep 17 00:00:00 2001
+From 471066d49af0d85e62fe133bdf955664018b0d29 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 18:08:16 +0100
 Subject: [PATCH] FPS Command
@@ -93,7 +93,7 @@ index 000000000..410f91574
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index cc03f442f..623d5e70c 100644
+index e7b53edd0..759708624 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -3,6 +3,9 @@ package me.samsuik.blossom.configuration;
@@ -106,7 +106,7 @@ index cc03f442f..623d5e70c 100644
  import net.minecraft.server.MinecraftServer;
  import org.bukkit.command.Command;
  import org.bukkit.configuration.InvalidConfigurationException;
-@@ -50,6 +53,10 @@ public class BlossomConfig {
+@@ -51,6 +54,10 @@ public class BlossomConfig {
  
          commands.put("blossom", new BlossomCommand());
          commands.put("config", new ConfigCommand());
@@ -118,5 +118,5 @@ index cc03f442f..623d5e70c 100644
          version = getInt("config-version", 2);
          set("config-version", 2);
 -- 
-2.40.0.windows.1
+2.49.0
 

@@ -1,14 +1,14 @@
-From 5bb753661bff61bb4f881585c0396c7e23fda1e2 Mon Sep 17 00:00:00 2001
+From 88a9ec461fa1b1594715e823268b27b1d6c460b0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 6 Jul 2022 16:34:42 +0100
 Subject: [PATCH] Rewritten Data Watcher
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 021ee2c67..8922bd9da 100644
+index bb95b41f5..eeb5a13ed 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -308,4 +308,9 @@ public class BlossomConfig {
+@@ -320,4 +320,9 @@ public class BlossomConfig {
          sendEmptyChunkSections = getBoolean("player.send-empty-chunk-sections", false);
      }
  
@@ -261,5 +261,5 @@ index dd2286e5a..edd3843f8 100644
          this.datawatcher.a(1, Short.valueOf((short) 300));
          this.datawatcher.a(3, Byte.valueOf((byte) 0));
 -- 
-2.40.0.windows.1
+2.49.0
 

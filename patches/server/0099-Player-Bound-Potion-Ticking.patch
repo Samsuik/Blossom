@@ -1,14 +1,14 @@
-From 1fe9c1b7e6a3b679930c890d01ad5bfd36927262 Mon Sep 17 00:00:00 2001
+From 151b14d3a1528d00ba6ca36ee55848652b0245e2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Player Bound Potion Ticking
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 4ad3f15b7..00c95e2e3 100644
+index f5f779c87..85a4cf1ae 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -487,5 +487,10 @@ public class BlossomConfig {
+@@ -499,5 +499,10 @@ public class BlossomConfig {
      private static void PearlSpawnEndermite() {
          pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
      }
@@ -21,7 +21,7 @@ index 4ad3f15b7..00c95e2e3 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 1a21f6baf..5326248ff 100644
+index 08bb78b99..f682af11d 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {

@@ -1,14 +1,14 @@
-From 524206c3c1e7bcf7566f3befb32fca870151316b Mon Sep 17 00:00:00 2001
+From 9e5b2741f164cb47a82bafd45fd3a6f9b9515913 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 21 Sep 2020 04:56:07 +0100
 Subject: [PATCH] Fix Sand Unloading
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8ddd2caba..5cf2d5710 100644
+index 759708624..4840c39de 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -193,5 +193,10 @@ public class BlossomConfig {
+@@ -205,5 +205,10 @@ public class BlossomConfig {
      private static void CommandSign() {
          commandSigns = getBoolean("command-signs", true);
      }
@@ -34,5 +34,5 @@ index 1d952b82a..a7d0d40b5 100644
                      // PaperSpigot start - Add FallingBlock source location API
                      org.bukkit.Location loc = new org.bukkit.Location(world.getWorld(), (double) ((float) blockposition.getX() + 0.5F), (double) blockposition.getY(), (double) ((float) blockposition.getZ() + 0.5F));
 -- 
-2.40.0.windows.1
+2.49.0
 

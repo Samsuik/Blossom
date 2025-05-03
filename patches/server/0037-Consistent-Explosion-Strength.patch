@@ -1,14 +1,14 @@
-From de085d0e9b4712adb9d05ad0a4f37555017c92c7 Mon Sep 17 00:00:00 2001
+From 0a0d307172f0ff38b00c282fa1ad42e934216ba6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 25 Jun 2022 21:14:04 +0100
 Subject: [PATCH] Consistent Explosion Strength
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5fd40bb48..e6f564318 100644
+index 5d9ac3700..83124959b 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -273,4 +273,11 @@ public class BlossomConfig {
+@@ -285,4 +285,11 @@ public class BlossomConfig {
          pearlThroughCobwebs = getBoolean("projectiles.pearl.through-cobwebs", false);
      }
  
@@ -75,5 +75,5 @@ index f4ccd8d4d..4b288ae8b 100644
                          double d5 = this.posY;
                          double d6 = this.posZ;
 -- 
-2.40.0.windows.1
+2.49.0
 

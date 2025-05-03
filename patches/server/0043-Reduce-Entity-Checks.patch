@@ -1,14 +1,14 @@
-From 786db9ecb0a9a672d8e4121de35ed375859cf574 Mon Sep 17 00:00:00 2001
+From c2487d67d7c1baa44cb7a082f1072592d4b19801 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 1518b1def..d8455d6d0 100644
+index f71ebbab4..98e1c627b 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -294,4 +294,13 @@ public class BlossomConfig {
+@@ -306,4 +306,13 @@ public class BlossomConfig {
          trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
      }
  
@@ -321,5 +321,5 @@ index e8056f78c..b6c0b7731 100644
          int j = MathHelper.floor(axisalignedbb.d + 1.0D);
          int k = MathHelper.floor(axisalignedbb.b);
 -- 
-2.40.0.windows.1
+2.49.0
 

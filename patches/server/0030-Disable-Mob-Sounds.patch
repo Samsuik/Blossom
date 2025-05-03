@@ -1,14 +1,14 @@
-From c74af22f11861a5598c70f68b1d5eea37a3c0c28 Mon Sep 17 00:00:00 2001
+From e5845069200b8e15fc3990b73276c3ea27a8bf38 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 21:09:34 +0000
 Subject: [PATCH] Disable Mob Sounds
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a7f0e7291..4c0c0eb8c 100644
+index 95a643c3e..d61ab0a0c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -243,4 +243,11 @@ public class BlossomConfig {
+@@ -255,4 +255,11 @@ public class BlossomConfig {
          requirePlayers = getBoolean("spawners.nearby.require-players", true);
      }
  
@@ -71,5 +71,5 @@ index a72956075..49402ca7f 100644
          }
  
 -- 
-2.40.0.windows.1
+2.49.0
 

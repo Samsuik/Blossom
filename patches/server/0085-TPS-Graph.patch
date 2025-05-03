@@ -1,4 +1,4 @@
-From ba0e9c0437888820e8f3a0ea96273f2bf1a85610 Mon Sep 17 00:00:00 2001
+From 6d1f0d90343655ab5b29e25b20dfa2b30b8af8af Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 13:26:34 +0100
 Subject: [PATCH] TPS Graph
@@ -84,7 +84,7 @@ index 000000000..b7d741908
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 615fc5584..cd9eece11 100644
+index 74917beda..2fde7e673 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
@@ -95,7 +95,7 @@ index 615fc5584..cd9eece11 100644
  import me.samsuik.blossom.commands.subcommands.VisualCommand;
  import me.samsuik.blossom.visuals.Visuals;
  import net.minecraft.server.MinecraftServer;
-@@ -57,6 +58,7 @@ public class BlossomConfig {
+@@ -58,6 +59,7 @@ public class BlossomConfig {
          commands.put("tntvisibility", new VisualCommand(Visuals.VisualType.TNT_VISIBILITY, "tnttoggle"));
          commands.put("sandvisibility", new VisualCommand(Visuals.VisualType.SAND_VISIBILITY, "sandtoggle"));
          commands.put("minimal", new VisualCommand(Visuals.VisualType.MINIMAL, "minimaltnt", "tntlag"));
@@ -434,5 +434,5 @@ index b9d185d99..e1be19ad2 100644
  
      public static int playerSample;
 -- 
-2.40.0.windows.1
+2.49.0
 

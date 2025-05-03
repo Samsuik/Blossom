@@ -1,14 +1,14 @@
-From f06a9cea309c6c89210ad340417493a3c996d862 Mon Sep 17 00:00:00 2001
+From d956c60c36987ada44d425a165ded388281d9f0e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 20:37:38 +0100
 Subject: [PATCH] Allow disabling command signs
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 71e9717e1..d89f2bd1a 100644
+index fb2414ec1..e7b53edd0 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -181,5 +181,10 @@ public class BlossomConfig {
+@@ -193,5 +193,10 @@ public class BlossomConfig {
          bookLength = getInt("books.page-length", 400); // later versions require this to be around 800
          bookPages = getInt("books.max-pages", 50); // later versions can support up to 100 pages, ouch
      }
@@ -33,5 +33,5 @@ index e927fd237..5f787d6dc 100644
                      // MinecraftServer.getServer().getCommandHandler().a(tileentitysignplayerwrapper, chatclickable.b());
                      CommandBlockListenerAbstract.executeCommand(entityhuman, (org.bukkit.entity.Player) entityhuman.getBukkitEntity(), chatclickable.b());
 -- 
-2.40.0.windows.1
+2.49.0
 

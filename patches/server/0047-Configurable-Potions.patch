@@ -1,4 +1,4 @@
-From 188ef852a60995e8ab7e0b1debdf37e425ca952a Mon Sep 17 00:00:00 2001
+From 233d49dfc8aaf7c95fbf1c2aed065c1b76e5eb94 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 18 Dec 2020 20:58:59 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Configurable Potions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8922bd9da..57e46cf51 100644
+index eeb5a13ed..9943d5f73 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -313,4 +313,15 @@ public class BlossomConfig {
+@@ -325,4 +325,15 @@ public class BlossomConfig {
          rewrittenDataWatcher = getBoolean("mobs.rewritten-data-watcher", true);
      }
  
@@ -64,5 +64,5 @@ index 6cd060831..2f757ee38 100644
                      AxisAlignedBB axisalignedbb = entity1.getBoundingBox().grow((double) f, (double) f, (double) f);
                      MovingObjectPosition movingobjectposition1 = axisalignedbb.a(vec3d, vec3d1);
 -- 
-2.40.0.windows.1
+2.49.0
 

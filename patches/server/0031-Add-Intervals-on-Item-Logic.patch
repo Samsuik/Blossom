@@ -1,14 +1,14 @@
-From b8ec8e148606c27a25e4cb620f9d2d0c2d73ae26 Mon Sep 17 00:00:00 2001
+From c0a46779c677636dde760128593f6a3e642c7e14 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 22:11:04 +0000
 Subject: [PATCH] Add Intervals on Item Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 4c0c0eb8c..18a9a6c8a 100644
+index d61ab0a0c..c72ac2336 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -250,4 +250,13 @@ public class BlossomConfig {
+@@ -262,4 +262,13 @@ public class BlossomConfig {
          silenceSounds = getBoolean("mobs.sounds.silenced", false);
      }
  
@@ -63,5 +63,5 @@ index 8e01ccd26..90f58516c 100644
          // CraftBukkit start - Use wall time for pickup and despawn timers
          int elapsedTicks = MinecraftServer.currentTick - this.lastTick;
 -- 
-2.40.0.windows.1
+2.49.0
 

@@ -1,14 +1,14 @@
-From bc22cd5c5c3befa32dee1b183ff19e6dc206d835 Mon Sep 17 00:00:00 2001
+From 15b51bd632a4d44db0f77115dd82a4e98f896bc6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:20:39 +0100
 Subject: [PATCH] Waterproof Redstone
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 74883737b..2da5d17d6 100644
+index 3be970cb9..493b4c427 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -529,4 +529,9 @@ public class BlossomConfig {
+@@ -541,4 +541,9 @@ public class BlossomConfig {
          lavaObsidianGeneration = getBoolean("fluids.lava.create-obsidian", true);
      }
  
@@ -36,5 +36,5 @@ index 6d0e5502f..80a583ff1 100644
  
          return !(block instanceof BlockDoor) && block != Blocks.STANDING_SIGN && block != Blocks.LADDER && block != Blocks.REEDS ? (block.material == Material.PORTAL ? true : block.material.isSolid()) : true;
 -- 
-2.40.0.windows.1
+2.49.0
 

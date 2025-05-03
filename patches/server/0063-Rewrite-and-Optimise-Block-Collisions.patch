@@ -1,14 +1,14 @@
-From e4dbd9d05d69cdb9a44d4528ec25a40f607c3635 Mon Sep 17 00:00:00 2001
+From a8f6afffd440a8b141b8405ecc756732ae2edb94 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 2bedc1c05..73b70bc03 100644
+index 894329c3a..202cb714e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -362,4 +362,13 @@ public class BlossomConfig {
+@@ -374,4 +374,13 @@ public class BlossomConfig {
          activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
      }
  

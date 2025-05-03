@@ -1,14 +1,14 @@
-From 19d19b03d2127f04db372d74861ff7c89a8570bc Mon Sep 17 00:00:00 2001
+From ac8043c2b23c8e289c70d28f9cee66c10d04f607 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:33:09 +0100
 Subject: [PATCH] Activation Range Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 152e9679f..3504e4edb 100644
+index 85faac7ef..894329c3a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -357,4 +357,9 @@ public class BlossomConfig {
+@@ -369,4 +369,9 @@ public class BlossomConfig {
          mergeEntitiesOnSpawn = getBoolean("tnt.merging.on-spawn", true);
      }
  
@@ -44,5 +44,5 @@ index d3767d2a8..64532b4d8 100644
                  isActive = true;
              }
 -- 
-2.40.0.windows.1
+2.49.0
 

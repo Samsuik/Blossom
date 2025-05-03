@@ -1,14 +1,14 @@
-From 21ec6536aa773ec4062b3544950a011494d13a20 Mon Sep 17 00:00:00 2001
+From 14409a93c949e2a6479789c9314e04f8cb434a4a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 73b70bc03..b76c93bdd 100644
+index 202cb714e..d3d8511e9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -371,4 +371,17 @@ public class BlossomConfig {
+@@ -383,4 +383,17 @@ public class BlossomConfig {
          optimisedMovement = getBoolean("tnt.optimised-movement", true);
      }
  
@@ -101,7 +101,7 @@ index 34b6f6bd3..66f541c27 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 02f4d79c9..2e6427a80 100644
+index da376724d..5f73c3ace 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -3270,11 +3270,16 @@ public abstract class World implements IBlockAccess {

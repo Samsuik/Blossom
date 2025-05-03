@@ -1,14 +1,14 @@
-From c20c9c7fd50e86113d4925e6af03c4c3a8542111 Mon Sep 17 00:00:00 2001
+From 73d7143a5ecc5aca6c7712e370e2240a9b41a3f9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 30 Jun 2022 23:06:01 +0100
 Subject: [PATCH] Optimise Entity Tracker
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 859701db6..1518b1def 100644
+index 83124959b..f71ebbab4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -280,4 +280,18 @@ public class BlossomConfig {
+@@ -292,4 +292,18 @@ public class BlossomConfig {
          consistentExplosionSeed = getBoolean("explosions.consistent-explosion-seed", false);
      }
  
@@ -239,5 +239,5 @@ index d8f2ec0e0..0fd959119 100644
          private short[] dirtyBlocks = new short[64];
          private int dirtyCount;
 -- 
-2.40.0.windows.1
+2.49.0
 

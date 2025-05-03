@@ -1,4 +1,4 @@
-From fc818f6491b80d298dadd03ff8aa2f61ee9b5a6d Mon Sep 17 00:00:00 2001
+From e9847477c8abcef8a53eb39a8448992f54f06568 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -41,10 +41,10 @@ index 000000000..0199b35c8
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 0b9aac748..bae934ee5 100644
+index 787538992..dcfd28b00 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -502,5 +502,10 @@ public class BlossomConfig {
+@@ -514,5 +514,10 @@ public class BlossomConfig {
      private static void EnsureInteractedBlockIsVisible() {
          ensureInteractedBlockIsVisible = getBoolean("player.ensure-interacted-block-is-visible", true);
      }
@@ -89,5 +89,5 @@ index f74937ef8..67c3a9fbb 100644
  
      public ChunkProviderServer(WorldServer worldserver, IChunkLoader ichunkloader, IChunkProvider ichunkprovider) {
 -- 
-2.40.0.windows.1
+2.49.0
 
