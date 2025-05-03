@@ -3,7 +3,7 @@
 PS1="$"
 basedir=`pwd`
 workdir=$basedir/work
-minecraftversion=$(cat $workdir/BuildData/info.json | grep minecraftVersion | cut -d '"' -f 4)
+minecraftversion=$(cat "$workdir/BuildData/info.json" | grep minecraftVersion | cut -d '"' -f 4)
 decompiledir=$workdir/$minecraftversion
 nms=$decompiledir/net/minecraft/server
 cb=src/main/java/net/minecraft/server
@@ -16,8 +16,9 @@ fi
 echo "Applying CraftBukkit patches to NMS..."
 cd "$workdir/CraftBukkit"
 git checkout -B patched HEAD >/dev/null 2>&1
-rm -rf $cb
-mkdir -p $cb
+rm -rf "$cb"
+mkdir -p "$cb"
+
 for file in $(ls nms-patches)
 do
     patchFile="nms-patches/$file"
