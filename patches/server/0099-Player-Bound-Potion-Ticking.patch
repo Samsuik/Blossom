@@ -1,14 +1,14 @@
-From 151b14d3a1528d00ba6ca36ee55848652b0245e2 Mon Sep 17 00:00:00 2001
+From 269eb19cc146b2f812a4ae0677c4dd5aa5ed7c25 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Player Bound Potion Ticking
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f5f779c87..85a4cf1ae 100644
+index 036e45006..d1da37738 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -499,5 +499,10 @@ public class BlossomConfig {
+@@ -503,5 +503,10 @@ public class BlossomConfig {
      private static void PearlSpawnEndermite() {
          pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
      }

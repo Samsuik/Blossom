@@ -1,14 +1,14 @@
-From bbed3bf07041fad6cc7fd7b54399ff7875eca4af Mon Sep 17 00:00:00 2001
+From efc56a7b39b8ca781b74391802ff1b012e00a659 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 16:32:15 +0100
 Subject: [PATCH] Send Empty Chunk Sections
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 98e1c627b..bb95b41f5 100644
+index fc6d0f7f9..b9774bf07 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -315,4 +315,9 @@ public class BlossomConfig {
+@@ -319,4 +319,9 @@ public class BlossomConfig {
          reduceEntityChecks = getBoolean("mobs.reduce-entity-checks", true);
      }
  

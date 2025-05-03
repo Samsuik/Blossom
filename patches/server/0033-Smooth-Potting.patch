@@ -1,4 +1,4 @@
-From 10bda60282557a72d6ca0e3020067162fb910e22 Mon Sep 17 00:00:00 2001
+From 31b7c95a864c07256376998a9b96c0af20523c17 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 16 Dec 2020 18:38:26 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Smooth Potting
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index c72ac2336..7375e9f0c 100644
+index cd4810b80..29619c61c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -271,4 +271,9 @@ public class BlossomConfig {
+@@ -275,4 +275,9 @@ public class BlossomConfig {
          hopperInterval = Math.max(getInt("items.hoppers.delay", 0), 0) + 1;
      }
  

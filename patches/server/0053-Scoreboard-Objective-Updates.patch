@@ -1,14 +1,14 @@
-From c7ea2b6469d9b6a83f768b573207022804bc5d8e Mon Sep 17 00:00:00 2001
+From a6843f8ecedc00f140ed71b9eef12b82c4f26c9b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 19:52:00 +0100
 Subject: [PATCH] Scoreboard Objective Updates
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index cd15f127f..25fcd6585 100644
+index de2524634..f8dcb0176 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -350,4 +350,9 @@ public class BlossomConfig {
+@@ -354,4 +354,9 @@ public class BlossomConfig {
          avoidRedundantBlockSearches = getBoolean("explosions.avoid-redundant-block-searches", true);
      }
  

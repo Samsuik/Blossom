@@ -1,14 +1,14 @@
-From b19c692d7f4d0aab870b358c98fcf0aafe6c20cd Mon Sep 17 00:00:00 2001
+From 05e91b9eafc64e06114486a2b4ad9cf03f7e162f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 20:30:08 +0100
 Subject: [PATCH] Introduce Book Limits
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 61cf12ada..fb2414ec1 100644
+index ce9d37998..f4f1590dc 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -180,5 +180,18 @@ public class BlossomConfig {
+@@ -181,5 +181,18 @@ public class BlossomConfig {
              limits.put(key, ((Number) value).longValue());
          });
      }

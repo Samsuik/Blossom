@@ -1,14 +1,14 @@
-From 7b7b4d5702f5c0a5bba4ae655fec4cea4999f0d8 Mon Sep 17 00:00:00 2001
+From 1124658574da2df4a063f105dafe190ac72f806a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Jun 2023 01:03:40 +0100
 Subject: [PATCH] Simplify farmland moisture
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ae078a859..211b80206 100644
+index bd22a5f33..87485d372 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -403,4 +403,11 @@ public class BlossomConfig {
+@@ -407,4 +407,11 @@ public class BlossomConfig {
          ignoreNonPlayerLight = getBoolean("player.ignore-non-player-light-updates", false);
      }
  

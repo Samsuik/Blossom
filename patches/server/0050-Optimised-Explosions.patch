@@ -1,14 +1,14 @@
-From 874db2716c11c83cece0ef7a1afebfc723efc587 Mon Sep 17 00:00:00 2001
+From ef67b9b421b8407eed71f352f9c9bb82cc73e36b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 58181c494..cd15f127f 100644
+index fad447cd5..de2524634 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -343,4 +343,11 @@ public class BlossomConfig {
+@@ -347,4 +347,11 @@ public class BlossomConfig {
          ironGolemsTakeFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
      }
  

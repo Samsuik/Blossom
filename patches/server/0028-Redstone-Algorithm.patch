@@ -1,4 +1,4 @@
-From 72818005cf190ebbe18e97c9bb2389e91eeb1d21 Mon Sep 17 00:00:00 2001
+From d5d489b7499e8c4ce8ea029b110611daf6f59164 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -972,10 +972,10 @@ index 000000000..8e73701e6
 +    PANDAWIRE_EX,
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 4840c39de..87ece215e 100644
+index 19a9c3e5c..992bb89db 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -211,4 +211,27 @@ public class BlossomConfig {
+@@ -212,4 +212,30 @@ public class BlossomConfig {
          preventInstantSandFalling = getBoolean("sand.instant-falling-in-lazy-chunks", false);
      }
  
@@ -983,9 +983,12 @@ index 4840c39de..87ece215e 100644
 +    public static me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm redstoneAlgorithm;
 +    private static void RedstoneAlgorithm() {
 +        try {
-+            redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.valueOf(getString("redstone.algorithm", "pandawire").toUpperCase(java.util.Locale.ROOT));
++            String value = getString("redstone.algorithm", "pandawire");
++            String upperCase = value.toUpperCase(Locale.ROOT);
++            redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.valueOf(upperCase);
 +        } catch (Exception e) {
-+            e.printStackTrace();
++            redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.PANDAWIRE;
++            LOGGER.info("malformed \"redstone.algorithm\" defaulting to \"pandawire\"");
 +        }
 +        optimisedGlowstone = getBoolean("redstone.panda-wire.optimise-glowstone-wiring", false);
 +    }

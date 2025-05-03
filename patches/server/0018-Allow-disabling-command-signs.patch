@@ -1,14 +1,14 @@
-From d956c60c36987ada44d425a165ded388281d9f0e Mon Sep 17 00:00:00 2001
+From f2e25b4c4b1e9bb9e5636f111a418a5f4eda00cb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 20:37:38 +0100
 Subject: [PATCH] Allow disabling command signs
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fb2414ec1..e7b53edd0 100644
+index f4f1590dc..4d7063143 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -193,5 +193,10 @@ public class BlossomConfig {
+@@ -194,5 +194,10 @@ public class BlossomConfig {
          bookLength = getInt("books.page-length", 400); // later versions require this to be around 800
          bookPages = getInt("books.max-pages", 50); // later versions can support up to 100 pages, ouch
      }

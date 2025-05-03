@@ -1,14 +1,14 @@
-From aea4931005f539545a76bbee3460ddc21f7a5954 Mon Sep 17 00:00:00 2001
+From 4ef8b643ca6241f4a164beac1202b280a89beff1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:31:07 +0100
 Subject: [PATCH] Disable Player Suffocation Teleport
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 85a4cf1ae..733c367cb 100644
+index d1da37738..9c2964678 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -505,4 +505,9 @@ public class BlossomConfig {
+@@ -509,4 +509,9 @@ public class BlossomConfig {
          playerBoundPotions = getBoolean("projectiles.potion.player-bound-potions", true);
      }
  
