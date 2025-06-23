@@ -1,11 +1,11 @@
-From 8c1bd04891626db7547bd2d09fd89be13e6acf55 Mon Sep 17 00:00:00 2001
+From 9030044d06908424be23ec08d7f584cbb6af0d1c Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Mon, 23 Jun 2025 23:57:21 +0100
 Subject: [PATCH] fix items not being updated when interact is cancelled
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index b8d685d7d..bea4e466d 100644
+index b8d685d7d..1fa7cd82b 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -1036,6 +1036,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -21,29 +21,6 @@ index b8d685d7d..bea4e466d 100644
              }
              // Spigot end
  
-@@ -1084,13 +1090,20 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
- 
-         if (itemstack == null || itemstack.l() == 0) {
-             this.player.g = true;
--            // Blossom - unnecessary item clone?
-+//            // Blossom - unnecessary item clone?
-+//            Slot slot = this.player.activeContainer.getSlot(this.player.inventory, this.player.inventory.itemInHandIndex);
-+//
-+//            this.player.activeContainer.b();
-+//            this.player.g = false;
-+//            // CraftBukkit - TODO CHECK IF NEEDED -- new if structure might not need 'always'. Kept it in for now, but may be able to remove in future
-+//            if (!ItemStack.fastMatches(this.player.inventory.getItemInHand(), packetplayinblockplace.getItemStack()) || always) { // Blossom
-+            this.player.inventory.items[this.player.inventory.itemInHandIndex] = ItemStack.b(this.player.inventory.items[this.player.inventory.itemInHandIndex]);
-             Slot slot = this.player.activeContainer.getSlot(this.player.inventory, this.player.inventory.itemInHandIndex);
- 
-             this.player.activeContainer.b();
-             this.player.g = false;
-             // CraftBukkit - TODO CHECK IF NEEDED -- new if structure might not need 'always'. Kept it in for now, but may be able to remove in future
--            if (!ItemStack.fastMatches(this.player.inventory.getItemInHand(), packetplayinblockplace.getItemStack()) || always) { // Blossom
-+            if (!ItemStack.matches(this.player.inventory.getItemInHand(), packetplayinblockplace.getItemStack()) || always) {
-                 this.sendPacket(new PacketPlayOutSetSlot(this.player.activeContainer.windowId, slot.rawSlotIndex, this.player.inventory.getItemInHand()));
-             }
-         }
 diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
 index 971b5a29e..91d7de18f 100644
 --- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
