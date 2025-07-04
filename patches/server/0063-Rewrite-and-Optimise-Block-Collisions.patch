@@ -1,11 +1,11 @@
-From 64659b384bfdb75bb8c27b097f98b67bf9290ec6 Mon Sep 17 00:00:00 2001
+From 3da7aae77c23a8e9c58cd23348284326a94defd3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7bedc6856..0fa2b6104 100644
+index c50f3e1c9..a65306dc9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -378,4 +378,13 @@ public class BlossomConfig {
@@ -225,39 +225,6 @@ index 4918483ad..4b0382a60 100644
          float f2 = 0.5F;
  
          this.a(f1, 0.0F, f, 1.0F - f, f2, 1.0F - f);
-diff --git a/src/main/java/net/minecraft/server/BlockCobbleWall.java b/src/main/java/net/minecraft/server/BlockCobbleWall.java
-index 08f8b5e29..3eb088845 100644
---- a/src/main/java/net/minecraft/server/BlockCobbleWall.java
-+++ b/src/main/java/net/minecraft/server/BlockCobbleWall.java
-@@ -35,10 +35,15 @@ public class BlockCobbleWall extends Block {
-     }
- 
-     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
--        boolean flag = this.e(iblockaccess, blockposition.north());
--        boolean flag1 = this.e(iblockaccess, blockposition.south());
--        boolean flag2 = this.e(iblockaccess, blockposition.west());
--        boolean flag3 = this.e(iblockaccess, blockposition.east());
-+        // Blossom start
-+        updateShape(iblockaccess.getType(blockposition));
-+    }
-+    public void updateShape(IBlockData iblockdata) {
-+        boolean flag = iblockdata.get(BlockFence.NORTH);
-+        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
-+        boolean flag2 = iblockdata.get(BlockFence.WEST);
-+        boolean flag3 = iblockdata.get(BlockFence.EAST);
-+        // Blossom end
-         float f = 0.25F;
-         float f1 = 0.75F;
-         float f2 = 0.25F;
-@@ -75,7 +80,7 @@ public class BlockCobbleWall extends Block {
-     }
- 
-     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
--        this.updateShape(world, blockposition);
-+        this.updateShape(iblockdata); // Blossom
-         this.maxY = 1.5D;
-         return super.a(world, blockposition, iblockdata);
-     }
 diff --git a/src/main/java/net/minecraft/server/BlockCocoa.java b/src/main/java/net/minecraft/server/BlockCocoa.java
 index c77b648ae..8455d8465 100644
 --- a/src/main/java/net/minecraft/server/BlockCocoa.java
@@ -312,45 +279,6 @@ index 43e1da0ee..1f49d5c17 100644
              this.a(0.3125F, 0.8125F, 0.3125F, 0.6875F, 1.0F, 0.6875F);
              super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
          }
-diff --git a/src/main/java/net/minecraft/server/BlockFence.java b/src/main/java/net/minecraft/server/BlockFence.java
-index 1d500553b..3e673d59c 100644
---- a/src/main/java/net/minecraft/server/BlockFence.java
-+++ b/src/main/java/net/minecraft/server/BlockFence.java
-@@ -20,10 +20,12 @@ public class BlockFence extends Block {
-     }
- 
-     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
--        boolean flag = this.e(world, blockposition.north());
--        boolean flag1 = this.e(world, blockposition.south());
--        boolean flag2 = this.e(world, blockposition.west());
--        boolean flag3 = this.e(world, blockposition.east());
-+        // Blossom start
-+        boolean flag = iblockdata.get(BlockFence.NORTH);
-+        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
-+        boolean flag2 = iblockdata.get(BlockFence.WEST);
-+        boolean flag3 = iblockdata.get(BlockFence.EAST);
-+        // Blossom end
-         float f = 0.375F;
-         float f1 = 0.625F;
-         float f2 = 0.375F;
-@@ -69,10 +71,13 @@ public class BlockFence extends Block {
-     }
- 
-     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
--        boolean flag = this.e(iblockaccess, blockposition.north());
--        boolean flag1 = this.e(iblockaccess, blockposition.south());
--        boolean flag2 = this.e(iblockaccess, blockposition.west());
--        boolean flag3 = this.e(iblockaccess, blockposition.east());
-+        // Blossom start
-+        IBlockData iblockdata = iblockaccess.getType(blockposition);
-+        boolean flag = iblockdata.get(BlockFence.NORTH);
-+        boolean flag1 = iblockdata.get(BlockFence.SOUTH);
-+        boolean flag2 = iblockdata.get(BlockFence.WEST);
-+        boolean flag3 = iblockdata.get(BlockFence.EAST);
-+        // Blossom end
-         float f = 0.375F;
-         float f1 = 0.625F;
-         float f2 = 0.375F;
 diff --git a/src/main/java/net/minecraft/server/BlockFenceGate.java b/src/main/java/net/minecraft/server/BlockFenceGate.java
 index c02281293..6e0335ffd 100644
 --- a/src/main/java/net/minecraft/server/BlockFenceGate.java
@@ -636,52 +564,6 @@ index 70db05c40..9d93edc43 100644
          super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
      }
  
-diff --git a/src/main/java/net/minecraft/server/BlockThin.java b/src/main/java/net/minecraft/server/BlockThin.java
-index 5a89a779c..21bc2baf2 100644
---- a/src/main/java/net/minecraft/server/BlockThin.java
-+++ b/src/main/java/net/minecraft/server/BlockThin.java
-@@ -35,10 +35,12 @@ public class BlockThin extends Block {
-     }
- 
-     public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
--        boolean flag = this.c(world.getType(blockposition.north()).getBlock());
--        boolean flag1 = this.c(world.getType(blockposition.south()).getBlock());
--        boolean flag2 = this.c(world.getType(blockposition.west()).getBlock());
--        boolean flag3 = this.c(world.getType(blockposition.east()).getBlock());
-+        // Blossom start
-+        boolean flag = iblockdata.get(NORTH);
-+        boolean flag1 = iblockdata.get(SOUTH);
-+        boolean flag2 = iblockdata.get(WEST);
-+        boolean flag3 = iblockdata.get(EAST);
-+        // Blossom end
- 
-         if ((!flag2 || !flag3) && (flag2 || flag3 || flag || flag1)) {
-             if (flag2) {
-@@ -73,14 +75,20 @@ public class BlockThin extends Block {
-     }
- 
-     public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
-+        // Blossom start
-+        updateShape(iblockaccess.getType(blockposition));
-+    }
-+    public void updateShape(IBlockData iblockdata) {
-         float f = 0.4375F;
-         float f1 = 0.5625F;
-         float f2 = 0.4375F;
-         float f3 = 0.5625F;
--        boolean flag = this.c(iblockaccess.getType(blockposition.north()).getBlock());
--        boolean flag1 = this.c(iblockaccess.getType(blockposition.south()).getBlock());
--        boolean flag2 = this.c(iblockaccess.getType(blockposition.west()).getBlock());
--        boolean flag3 = this.c(iblockaccess.getType(blockposition.east()).getBlock());
-+
-+        boolean flag = iblockdata.get(NORTH);
-+        boolean flag1 = iblockdata.get(SOUTH);
-+        boolean flag2 = iblockdata.get(WEST);
-+        boolean flag3 = iblockdata.get(EAST);
-+        // Blossom end
- 
-         if ((!flag2 || !flag3) && (flag2 || flag3 || flag || flag1)) {
-             if (flag2) {
 diff --git a/src/main/java/net/minecraft/server/BlockTrapdoor.java b/src/main/java/net/minecraft/server/BlockTrapdoor.java
 index 88131b507..5deed1646 100644
 --- a/src/main/java/net/minecraft/server/BlockTrapdoor.java
@@ -1127,5 +1009,5 @@ index 176f63885..da376724d 100644
                                  // PaperSpigot end
                              }
 -- 
-2.49.0
+2.50.0
 
