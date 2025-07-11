@@ -1,4 +1,4 @@
-From 3283e9f4b7c6dc9812f06fe4cfd42bcb11647f11 Mon Sep 17 00:00:00 2001
+From e87551524a6b2867d78ecab11ab1398aa9537270 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 23:32:01 +0100
 Subject: [PATCH] Actual Throttle Placement Configuration
@@ -6,7 +6,7 @@ Subject: [PATCH] Actual Throttle Placement Configuration
 smh, paper
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f24b201ab..8bc7ffbf6 100644
+index 836001f62..6ee5770a4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -564,4 +564,9 @@ public class BlossomConfig {
@@ -20,10 +20,10 @@ index f24b201ab..8bc7ffbf6 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index d9bc3f9e1..b470c709a 100644
+index a19ccafa0..af3fe7303 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -948,6 +948,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -932,6 +932,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              this.lastInteractedSlot = this.player.inventory.itemInHandIndex;
          }
          // Blossom end
@@ -36,5 +36,5 @@ index d9bc3f9e1..b470c709a 100644
          boolean flag = false;
          BlockPosition blockposition = packetplayinblockplace.a();
 -- 
-2.49.0
+2.50.0
 

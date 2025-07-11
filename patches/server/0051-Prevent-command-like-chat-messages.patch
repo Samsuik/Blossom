@@ -1,4 +1,4 @@
-From 859659219d3c839330a1e86973e0f385ca3a65aa Mon Sep 17 00:00:00 2001
+From 936ec01264ea4695974d35b1dcdef68935f6d7ba Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 18:32:27 +0100
 Subject: [PATCH] Prevent command-like chat messages
@@ -9,10 +9,10 @@ in front is sanitised after the "/" command check, allowing it to
 be sent as a chat message and be exempt from the antispam by spigot.
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 854f19eb8..315492671 100644
+index 7603e1869..597b72fa6 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1264,7 +1264,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1248,7 +1248,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              }
  
              // CraftBukkit start
@@ -28,5 +28,5 @@ index 854f19eb8..315492671 100644
                      this.minecraftServer.server.playerCommandState = true;
                      this.handleCommand(s);
 -- 
-2.40.0.windows.1
+2.50.0
 

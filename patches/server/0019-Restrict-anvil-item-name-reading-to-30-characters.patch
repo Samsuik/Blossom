@@ -1,14 +1,14 @@
-From 24177de5d32aeb6d4a033c8be3f92adbba2efebb Mon Sep 17 00:00:00 2001
+From 1c7f15153129d3b9b7745bf145f235b565afd34d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 21:05:18 +0100
 Subject: [PATCH] Restrict anvil item name reading to 30 characters
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 0c53634c8..7c081cb8d 100644
+index fc6f3affc..aa2f26225 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -2211,7 +2211,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2195,7 +2195,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              ContainerAnvil containeranvil = (ContainerAnvil) this.player.activeContainer;
  
              if (packetplayincustompayload.b() != null && packetplayincustompayload.b().readableBytes() >= 1) {
@@ -18,5 +18,5 @@ index 0c53634c8..7c081cb8d 100644
                  if (s1.length() <= 30) {
                      containeranvil.a(s1);
 -- 
-2.40.0.windows.1
+2.50.0
 

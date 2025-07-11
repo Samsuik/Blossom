@@ -1,14 +1,14 @@
-From c41efe0e9200c03082c7085179c81a9f46361503 Mon Sep 17 00:00:00 2001
+From 52b86c650faf88c0132629a4351ee542a7aabe2d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 21:14:08 +0100
 Subject: [PATCH] Restrict sign characters
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 7c081cb8d..aa65535f1 100644
+index aa2f26225..0a2b868ba 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1968,6 +1968,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1952,6 +1952,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              for (int i = 0; i < aichatbasecomponent.length; ++i) {
                  lines[i] = EnumChatFormat.a(aichatbasecomponent[i].c());
@@ -26,5 +26,5 @@ index 7c081cb8d..aa65535f1 100644
              SignChangeEvent event = new SignChangeEvent((org.bukkit.craftbukkit.block.CraftBlock) player.getWorld().getBlockAt(x, y, z), this.server.getPlayer(this.player), lines);
              this.server.getPluginManager().callEvent(event);
 -- 
-2.40.0.windows.1
+2.50.0
 

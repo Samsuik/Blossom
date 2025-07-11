@@ -1,4 +1,4 @@
-From 6b0b6a5be25ea036c123f5b1b33ee2b9e59c8e17 Mon Sep 17 00:00:00 2001
+From a697cf1a8b229fa00c858f72de1a1c41f0f8e554 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 15:54:26 +0100
 Subject: [PATCH] Fix player movement issues
@@ -16,7 +16,7 @@ Clients can clip up to 0.0625 inside a block causing moved wrongly check to fail
 TacoSpigots east west patch affects player movement causing a desync
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index dcf20c714..7441dd41c 100644
+index 15581efff..b69443147 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -529,4 +529,11 @@ public class BlossomConfig {
@@ -32,10 +32,10 @@ index dcf20c714..7441dd41c 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 354ff7252..d9bc3f9e1 100644
+index 12dae07f0..a19ccafa0 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -637,7 +637,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -622,7 +622,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      double d15 = d11 * d11 + d12 * d12 + d13 * d13;
  
                      // Spigot: make "moved too quickly" limit configurable
@@ -44,7 +44,7 @@ index 354ff7252..d9bc3f9e1 100644
                          PlayerConnection.c.warn(this.player.getName() + " moved too quickly! " + d11 + "," + d12 + "," + d13 + " (" + d11 + ", " + d12 + ", " + d13 + ")");
                          this.a(this.o, this.p, this.q, this.player.yaw, this.player.pitch);
                          return;
-@@ -650,22 +650,26 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -635,22 +635,26 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                          this.player.bF();
                      }
  
@@ -77,7 +77,7 @@ index 354ff7252..d9bc3f9e1 100644
                          flag1 = true;
                          PlayerConnection.c.warn(this.player.getName() + " moved wrongly!");
                      }
-@@ -675,7 +679,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -660,7 +664,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      if (!this.player.noclip) {
                          boolean flag2 = worldserver.getCubes(this.player, this.player.getBoundingBox().shrink((double) f4, (double) f4, (double) f4)).isEmpty();
  
@@ -87,5 +87,5 @@ index 354ff7252..d9bc3f9e1 100644
                              return;
                          }
 -- 
-2.49.0
+2.50.0
 

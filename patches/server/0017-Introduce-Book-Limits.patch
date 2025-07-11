@@ -1,11 +1,11 @@
-From 05e91b9eafc64e06114486a2b4ad9cf03f7e162f Mon Sep 17 00:00:00 2001
+From c3644ad297dc547e660e50ac681389aa0fba7129 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 20:30:08 +0100
 Subject: [PATCH] Introduce Book Limits
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ce9d37998..f4f1590dc 100644
+index ef3ed090b..b287fbfa2 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -181,5 +181,18 @@ public class BlossomConfig {
@@ -92,10 +92,10 @@ index d17904972..b9bac52c2 100644
  
              if (!nbttagcompound.getBoolean("resolved")) {
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 9ac2cca20..0afe5240c 100644
+index 1a48e67b0..fc6f3affc 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -2045,6 +2045,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2029,6 +2029,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
          try { // CraftBukkit
          if ("MC|BEdit".equals(packetplayincustompayload.a())) {
@@ -103,7 +103,7 @@ index 9ac2cca20..0afe5240c 100644
              // Blossom start - item verification
              ItemStack heldItem = player.inventory.getItemInHand();
              if (heldItem != null && heldItem.getItem() != Items.WRITABLE_BOOK || lastInteractedSlot != player.inventory.itemInHandIndex) {
-@@ -2083,6 +2084,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2067,6 +2068,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              return;
          } else if ("MC|BSign".equals(packetplayincustompayload.a())) {
@@ -162,5 +162,5 @@ index ae3341c4e..f90e66f6d 100644
                          this.pages.add(ChatSerializer.a(page));
                          continue;
 -- 
-2.49.0
+2.50.0
 

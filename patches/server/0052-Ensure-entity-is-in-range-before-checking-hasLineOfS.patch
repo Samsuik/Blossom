@@ -1,14 +1,14 @@
-From 25c2a966edaf2079bf687d97b3ce2411f294f4bc Mon Sep 17 00:00:00 2001
+From 32ce08f703935d15643503b721cd816ac74c934b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 18:42:58 +0100
 Subject: [PATCH] Ensure entity is in range before checking hasLineOfSight
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 315492671..793c80219 100644
+index 597b72fa6..e49fc4a50 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1592,14 +1592,10 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1576,14 +1576,10 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
          this.player.resetIdleTimer();
          if (entity != null) {
@@ -28,5 +28,5 @@ index 315492671..793c80219 100644
  
                  if (packetplayinuseentity.a() == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT
 -- 
-2.40.0.windows.1
+2.50.0
 

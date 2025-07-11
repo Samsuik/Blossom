@@ -1,11 +1,11 @@
-From be58a810309e9aa1c0afb480d07607dc449b484f Mon Sep 17 00:00:00 2001
+From a39b03b7ae5820dd570a0147eb05b90a7b62821e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 27 Jul 2023 20:03:36 +0100
 Subject: [PATCH] Command Restrictions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8bc7ffbf6..15f1d6b39 100644
+index 6ee5770a4..bfab53a07 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -569,4 +569,11 @@ public class BlossomConfig {
@@ -155,18 +155,18 @@ index 000000000..bcf95ff21
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 5215e7594..226fb7c71 100644
+index 67247ef81..d46df74cf 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -122,6 +122,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
-         return clientItem == null || clientItem instanceof ItemBlock || me.samsuik.blossom.configuration.BlossomConfig.hasNbtByteLimit(clientItem);
+@@ -107,6 +107,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
      }
      // Blossom end
+     private int lastInteractedSlot; // Blossom - prevent packet based crash exploits
 +    private long lastCommand = 0; // Blossom
  
      public PlayerConnection(MinecraftServer minecraftserver, NetworkManager networkmanager, EntityPlayer entityplayer) {
          this.minecraftServer = minecraftserver;
-@@ -1465,6 +1466,19 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1449,6 +1450,19 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
         // CraftBukkit start - whole method
          if ( org.spigotmc.SpigotConfig.logCommands ) // Spigot
          this.c.info(this.player.getName() + " issued server command: " + s);
@@ -199,5 +199,5 @@ index c122455c9..2d2e601db 100644
              DefaultPermissions.registerCorePermissions();
              CraftDefaultPermissions.registerCorePermissions();
 -- 
-2.49.0
+2.50.0
 

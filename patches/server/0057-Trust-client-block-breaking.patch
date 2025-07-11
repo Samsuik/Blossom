@@ -1,4 +1,4 @@
-From a0b4f368d36fb8bd61745aa9e1dd2e68064a4c42 Mon Sep 17 00:00:00 2001
+From f36002c72ed0c99c6f9795b6a1178c4e0f8399ea Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 11 Jun 2023 16:55:53 +0100
 Subject: [PATCH] Trust client block breaking
@@ -17,10 +17,10 @@ index 220ec205e..2023e0028 100644
      public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
          super(worldserver, gameprofile);
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 0ddaa6860..1de413e0b 100644
+index 11e5a7fc6..12dae07f0 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -447,6 +447,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -432,6 +432,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              this.h = true;
              if (!this.player.viewingCredits) {
@@ -70,5 +70,5 @@ index 404641a2f..27d09b102 100644
                      this.world.c(this.player.getId(), blockposition, -1);
                      this.breakBlock(blockposition);
 -- 
-2.40.0.windows.1
+2.50.0
 
