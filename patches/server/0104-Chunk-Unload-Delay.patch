@@ -1,11 +1,11 @@
-From 796171454fd945cc299d23e831c81e07a37020fd Mon Sep 17 00:00:00 2001
+From b3554607606bb2546fb5363944f905c0f4a0c07e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 03789a0c5..dcf20c714 100644
+index c82d714c1..15581efff 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -524,4 +524,9 @@ public class BlossomConfig {
@@ -31,34 +31,40 @@ index 5af16974b..99187971c 100644
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index 3821a9cf7..1701ea0e6 100644
+index af2bf5fea..eb4bdfc4b 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-@@ -148,6 +148,7 @@ public class ChunkProviderServer implements IChunkProvider {
-             runnable.run();
+@@ -366,6 +366,15 @@ public class ChunkProviderServer implements IChunkProvider {
+     }
+ 
+     // Blossom start - optimise unloadQueue
++    private boolean canUnloadChunk(long chunkCoord) {
++        Chunk chunk = this.chunks.get(chunkCoord);
++        if (chunk == null) {
++            return true;
++        }
++        long totalTicksSinceLoading = MinecraftServer.currentTick - chunk.loadedTick;
++        return totalTicksSinceLoading >= me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads;
++    }
++
+     private it.unimi.dsi.fastutil.longs.LongArrayList getChunksToUnload(int maxUnloads) {
+         it.unimi.dsi.fastutil.longs.LongArrayList toUnload = new it.unimi.dsi.fastutil.longs.LongArrayList();
+ 
+@@ -373,8 +382,12 @@ public class ChunkProviderServer implements IChunkProvider {
+             LongIterator itr = this.unloadQueue.iterator();
+             for (int chunks = 0; chunks < maxUnloads && itr.hasNext(); chunks++) {
+                 long chunkCoord = itr.nextLong();
+-                itr.remove();
+-                toUnload.add(chunkCoord);
++                if (!this.canUnloadChunk(chunkCoord)) {
++                    chunks--;
++                } else {
++                    itr.remove();
++                    toUnload.add(chunkCoord);
++                }
+             }
          }
  
-+        chunk.loadedTick = MinecraftServer.currentTick; // Blossom
-         return chunk;
-     }
-     public Chunk originalGetChunkAt(int i, int j) {
-@@ -374,9 +375,15 @@ public class ChunkProviderServer implements IChunkProvider {
-             LongIterator iterator = unloadQueue.iterator();
-             for (int i = 0; i < 100 && iterator.hasNext(); ++i) {
-                 long chunkcoordinates = iterator.next();
--                iterator.remove();
-+                // Blossom start
-                 // TacoSpigot end
-                 Chunk chunk = this.chunks.get(chunkcoordinates);
-+                if (chunk != null && MinecraftServer.currentTick - chunk.loadedTick < me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads) {
-+                    i--;
-+                    continue;
-+                }
-+                iterator.remove();
-+                // Blossom end
-                 if (chunk == null) continue;
- 
-                 ChunkUnloadEvent event = new ChunkUnloadEvent(chunk.bukkitChunk);
 -- 
-2.49.0
+2.50.0
 

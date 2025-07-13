@@ -1,4 +1,4 @@
-From 6e03c93f6f6d93c5af35779f7ac7e794cbb59a8b Mon Sep 17 00:00:00 2001
+From 62ac2b3c06c58176895059cc6fb9bbd692e9f6e3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -41,7 +41,7 @@ index 000000000..0199b35c8
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 55ab98acc..03789a0c5 100644
+index b1b6ccb5f..c82d714c1 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -518,5 +518,10 @@ public class BlossomConfig {
@@ -76,10 +76,10 @@ index d10970073..5af16974b 100644
  
          for (int k = 0; k < this.entitySlices.length; ++k) {
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index f74937ef8..67c3a9fbb 100644
+index 243e3bfa1..d0f55a7ff 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-@@ -39,7 +39,7 @@ public class ChunkProviderServer implements IChunkProvider {
+@@ -38,7 +38,7 @@ public class ChunkProviderServer implements IChunkProvider {
      public IChunkProvider chunkProvider;
      private IChunkLoader chunkLoader;
      public boolean forceChunkLoad = false; // CraftBukkit - true -> false
@@ -89,5 +89,5 @@ index f74937ef8..67c3a9fbb 100644
  
      public ChunkProviderServer(WorldServer worldserver, IChunkLoader ichunkloader, IChunkProvider ichunkprovider) {
 -- 
-2.49.0
+2.50.0
 
