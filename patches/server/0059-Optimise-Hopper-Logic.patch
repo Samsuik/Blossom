@@ -1,11 +1,11 @@
-From 54e6485c9a76743c4f0acc0df74089dd921cc20c Mon Sep 17 00:00:00 2001
+From 64bf643f9152c1189812f50b5c605d6432ed1907 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f8dcb0176..300fedd72 100644
+index bc2175047..7182a2718 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -359,4 +359,11 @@ public class BlossomConfig {
@@ -41,7 +41,7 @@ index e8107fcc3..8161caf06 100644
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..3222d630e 100644
+index 8d00cd0a2..c0c5e7c38 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -173,11 +173,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -62,7 +62,7 @@ index 8d00cd0a2..3222d630e 100644
              EnumDirection enumdirection = BlockHopper.b(this.u()).opposite();
  
 -            if (this.a(iinventory, enumdirection)) {
-+            if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? isContainerOpen(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
++            if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
                  return false;
              } else {
                  for (int i = 0; i < this.getSize(); ++i) {
@@ -138,12 +138,12 @@ index 8d00cd0a2..3222d630e 100644
                      }
                  }
  
-@@ -367,6 +347,125 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -367,6 +347,130 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          return true;
      }
  
 +    // Blossom start - optimise hopper logic
-+    private static boolean isContainerOpen(IInventory iinventory, EnumDirection enumdirection) {
++    private static boolean canInsertIntoContainer(IInventory iinventory, EnumDirection enumdirection) {
 +        if (iinventory instanceof IWorldInventory) {
 +            IWorldInventory iworldinventory = (IWorldInventory) iinventory;
 +            int[] accessible = iworldinventory.getSlotsForFace(enumdirection);
@@ -170,24 +170,29 @@ index 8d00cd0a2..3222d630e 100644
 +        if (!HopperHelper.isFireInventoryMoveItemEvent(ihopper)) {
 +            return moving;
 +        }
++        // todo: lazily clone nbt
 +        ItemStack newItemStack = itemstack.cloneItemStack();
 +        newItemStack.count = moving;
 +        return callItemMoveEvent(ihopper, from, to, newItemStack);
 +    }
 +
-+    private static int callItemMoveEvent(IHopper ihopper, IInventory from, IInventory to, ItemStack itemstack) {
-+        CraftItemStack oitemstack = CraftItemStack.asCraftMirror(itemstack); // Spigot
-+        // TacoSpigot start - add an option to turn of InventoryMoveItemEvent
-+
-+        Inventory destinationInventory;
++    private static Inventory bukkitInventory(IInventory inventory) {
++        Inventory bukkitInventory;
 +        // Have to special case large chests as they work oddly
-+        if (to instanceof InventoryLargeChest) {
-+            destinationInventory = new org.bukkit.craftbukkit.inventory.CraftInventoryDoubleChest((InventoryLargeChest) to);
++        if (inventory instanceof InventoryLargeChest) {
++            bukkitInventory = new org.bukkit.craftbukkit.inventory.CraftInventoryDoubleChest((InventoryLargeChest) inventory);
 +        } else {
-+            destinationInventory = to.getOwner().getInventory();
++            bukkitInventory = inventory.getOwner().getInventory();
 +        }
++        return bukkitInventory;
++    }
 +
-+        InventoryMoveItemEvent event = new InventoryMoveItemEvent(from.getOwner().getInventory(), oitemstack.clone(), destinationInventory, true);
++    private static int callItemMoveEvent(IHopper ihopper, IInventory from, IInventory to, ItemStack itemstack) {
++        Inventory sourceInventory = bukkitInventory(from);
++        Inventory destinationInventory = bukkitInventory(to);
++
++        CraftItemStack mirroredItem = CraftItemStack.asCraftMirror(itemstack); // Spigot
++        InventoryMoveItemEvent event = new InventoryMoveItemEvent(sourceInventory, mirroredItem.clone(), destinationInventory, true);
 +        ihopper.getWorld().getServer().getPluginManager().callEvent(event);
 +
 +        return event.isCancelled() ? -1 : event.getItem().getAmount();
@@ -264,7 +269,7 @@ index 8d00cd0a2..3222d630e 100644
      // TacoSpigot start - Split methods, one that pushes and one that pulls
      @Deprecated
      public static boolean a(IHopper ihopper) {
-@@ -374,6 +473,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -374,6 +478,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          if (ihopper.getWorld().tacoSpigotConfig.isHopperPushBased && ihopper instanceof TileEntityHopper) {
              BlockPosition pos = ((TileEntityHopper) ihopper).getPosition().up(); // Only pull from a above, because everything else comes to us
              iinventory = HopperHelper.getInventory(ihopper.getWorld(), pos);
@@ -272,7 +277,7 @@ index 8d00cd0a2..3222d630e 100644
          } else {
              iinventory = b(ihopper); // Use old behavior for BB entity searching
          }
-@@ -426,58 +526,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -426,58 +531,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          ItemStack itemstack = iinventory.getItem(i);
  
          if (itemstack != null && b(iinventory, itemstack, i, enumdirection)) {
@@ -346,7 +351,7 @@ index 8d00cd0a2..3222d630e 100644
          }
  
          return false;
-@@ -548,7 +622,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -548,7 +627,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
              boolean flag = false;
  
              if (itemstack1 == null) {
@@ -356,7 +361,7 @@ index 8d00cd0a2..3222d630e 100644
                  itemstack = null;
                  flag = true;
              } else if (a(itemstack1, itemstack)) {
-@@ -568,7 +644,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -568,7 +649,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                          tileentityhopper.d(tileentityhopper.world.spigotConfig.hopperTransfer); // Spigot
                      }
  
@@ -365,7 +370,7 @@ index 8d00cd0a2..3222d630e 100644
                  }
  
                  iinventory.update();
-@@ -589,7 +665,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -589,7 +670,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
      }
  
      public static List<EntityItem> a(World world, double d0, double d1, double d2) {
@@ -374,7 +379,7 @@ index 8d00cd0a2..3222d630e 100644
      }
  
      public static IInventory b(World world, double d0, double d1, double d2) {
-@@ -613,7 +689,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -613,7 +694,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          }
  
          if (object == null) {
@@ -404,5 +409,5 @@ index 630a81bea..9000a9ddb 100644
  import org.bukkit.event.inventory.InventoryMoveItemEvent;
  
 -- 
-2.49.0
+2.50.0
 
