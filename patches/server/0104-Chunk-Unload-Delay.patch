@@ -1,4 +1,4 @@
-From b3554607606bb2546fb5363944f905c0f4a0c07e Mon Sep 17 00:00:00 2001
+From 353318d39a9ffa65ce5e5403444be8d2616153d1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
@@ -19,7 +19,7 @@ index c82d714c1..15581efff 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 5af16974b..99187971c 100644
+index 5af16974b..41cfb9463 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -153,6 +153,7 @@ public class Chunk {
@@ -30,6 +30,14 @@ index 5af16974b..99187971c 100644
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
+@@ -190,6 +191,7 @@ public class Chunk {
+             }
+         }
+         // Blossom end
++        this.loadedTick = MinecraftServer.currentTick; // Blossom - chunk unload delay
+     }
+ 
+     public org.bukkit.Chunk bukkitChunk;
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
 index af2bf5fea..eb4bdfc4b 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
