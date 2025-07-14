@@ -1,11 +1,11 @@
-From 95095b695872ddebc67ff321391897c5690bea0c Mon Sep 17 00:00:00 2001
+From 5f231e21e4acfc1c6f080536c59d5ba55f5018ee Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 0fa2b6104..d7c4330a1 100644
+index a65306dc9..05f19e97c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -387,4 +387,17 @@ public class BlossomConfig {
@@ -40,10 +40,10 @@ index 331bafa03..83da9eb38 100644
          } else if (entity.motY < 0.0D) {
              entity.motY = -entity.motY;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 1674bbb04..6c06a8e35 100644
+index c157fe976..18064ce55 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -680,7 +680,7 @@ public abstract class Entity implements ICommandListener {
+@@ -686,7 +686,7 @@ public abstract class Entity implements ICommandListener {
          }
          // CraftBukkit end
  
@@ -101,10 +101,10 @@ index 34b6f6bd3..66f541c27 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index da376724d..5f73c3ace 100644
+index bad6f6530..bd1ad2a62 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3270,11 +3270,16 @@ public abstract class World implements IBlockAccess {
+@@ -3274,11 +3274,16 @@ public abstract class World implements IBlockAccess {
      }
  
      public boolean a(Block block, BlockPosition blockposition, boolean flag, EnumDirection enumdirection, Entity entity, ItemStack itemstack) {
@@ -123,5 +123,5 @@ index da376724d..5f73c3ace 100644
          this.getServer().getPluginManager().callEvent(event);
  
 -- 
-2.49.0
+2.50.0
 

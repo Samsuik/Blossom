@@ -1,17 +1,17 @@
-From d6eaea538d4014c93b0e55c5035011ab147fb445 Mon Sep 17 00:00:00 2001
+From dfeb2c6fe46256606366d668fe3aafd81e1dc65b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index d87139483..ff1198cb6 100644
+index 56d45c98b..9d44f53c8 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -353,6 +353,18 @@ public abstract class Entity implements ICommandListener {
-         this.c(1);
+@@ -359,6 +359,18 @@ public abstract class Entity implements ICommandListener {
+             && !(this instanceof EntityPlayer);
      }
-     // Paper end - make end portalling safe
+     // Blossom end - reduce entity checks
 +    // Blossom start - add east west patch event
 +    public boolean eastWestPatched;
 +
@@ -27,7 +27,7 @@ index d87139483..ff1198cb6 100644
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -699,7 +711,7 @@ public abstract class Entity implements ICommandListener {
+@@ -705,7 +717,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -36,7 +36,7 @@ index d87139483..ff1198cb6 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -892,7 +904,7 @@ public abstract class Entity implements ICommandListener {
+@@ -898,7 +910,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  
@@ -70,5 +70,5 @@ index 3a52a514c..baaafc769 100644
  
      protected void h() {}
 -- 
-2.49.0
+2.50.0
 

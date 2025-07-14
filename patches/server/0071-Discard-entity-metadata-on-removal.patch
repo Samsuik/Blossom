@@ -1,14 +1,14 @@
-From 173d8d464c996c83b9512303b868751acf12ef1f Mon Sep 17 00:00:00 2001
+From 3faa790d9ad68d7cc361c86d43e7822b9d82d93a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 21 Jun 2023 19:33:11 +0100
 Subject: [PATCH] Discard entity metadata on removal
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 6c06a8e35..2800c9835 100644
+index 18064ce55..815577909 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -412,6 +412,11 @@ public abstract class Entity implements ICommandListener {
+@@ -418,6 +418,11 @@ public abstract class Entity implements ICommandListener {
              storeMergeHistoryInWorld();
          }
          // Blossom end
@@ -84,5 +84,5 @@ index 35c484f46..d269de6d2 100644
       * Generates a unique metadata key for an {@link Entity} UUID.
       *
 -- 
-2.40.0.windows.1
+2.50.0
 

@@ -1,11 +1,11 @@
-From ef67b9b421b8407eed71f352f9c9bb82cc73e36b Mon Sep 17 00:00:00 2001
+From ca884f61eab19c10fcff849120a287a8f7971a67 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fad447cd5..de2524634 100644
+index 3f41b5ba1..4e476cad7 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -347,4 +347,11 @@ public class BlossomConfig {
@@ -438,7 +438,7 @@ index 3d1e583f3..815ba72d0 100644
              entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
              world.addEntity(entitytntprimed);
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index edd3843f8..575078165 100644
+index 08c96474f..ab652eb6b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -132,6 +132,33 @@ public abstract class Entity implements ICommandListener {
@@ -871,7 +871,7 @@ index 6bfb8b641..5e045faef 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index d4b0f2169..ad3dcf113 100644
+index 60c5fc7f1..785417121 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -890,7 +890,7 @@ index d4b0f2169..ad3dcf113 100644
              entity.P = entity.locX;
              entity.Q = entity.locY;
              entity.R = entity.locZ;
-@@ -2196,12 +2198,21 @@ public abstract class World implements IBlockAccess {
+@@ -2200,12 +2202,21 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
@@ -941,5 +941,5 @@ index bfd0ff5a7..10cc04fe5 100644
  
      public void playBlockAction(BlockPosition blockposition, Block block, int i, int j) {
 -- 
-2.49.0
+2.50.0
 

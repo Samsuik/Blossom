@@ -1,14 +1,14 @@
-From 2b7ec460d14815ffddd4193ec94f3a34d294fd99 Mon Sep 17 00:00:00 2001
+From 6cb2138a11153c04dd9d68decac6443e09d419eb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:05:38 +0100
 Subject: [PATCH] Prevent NaN and infinite lastYaw/lastPitch
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 5326248ff..1ef5c1050 100644
+index b3190d801..61ef43c7b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -477,6 +477,10 @@ public abstract class Entity implements ICommandListener {
+@@ -483,6 +483,10 @@ public abstract class Entity implements ICommandListener {
  
          this.yaw = f % 360.0F;
          this.pitch = f1 % 360.0F;
@@ -20,5 +20,5 @@ index 5326248ff..1ef5c1050 100644
  
      public void setPosition(double d0, double d1, double d2) {
 -- 
-2.49.0
+2.50.0
 

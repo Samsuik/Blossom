@@ -1,11 +1,11 @@
-From 893943322abec7690d22364ca4a26892a97bc61b Mon Sep 17 00:00:00 2001
+From 0610301d99a0bdfe2ecb7abd74b998dcde08d2b0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 300fedd72..860792454 100644
+index 7182a2718..b773b1936 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -366,4 +366,11 @@ public class BlossomConfig {
@@ -95,7 +95,7 @@ index 6e7242de0..f4c03093e 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 575078165..2f7ccceef 100644
+index ab652eb6b..6d8ce17e1 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -179,6 +179,61 @@ public abstract class Entity implements ICommandListener {
@@ -160,7 +160,7 @@ index 575078165..2f7ccceef 100644
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -352,6 +407,11 @@ public abstract class Entity implements ICommandListener {
+@@ -358,6 +413,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
@@ -318,7 +318,7 @@ index 5e045faef..448597881 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 27248a774..78d22fc2b 100644
+index b1d6dd8f6..37362a47a 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
@@ -367,5 +367,5 @@ index 27248a774..78d22fc2b 100644
                      entity.tickTimer.startTiming(); // Spigot
                      this.g(entity);
 -- 
-2.49.0
+2.50.0
 

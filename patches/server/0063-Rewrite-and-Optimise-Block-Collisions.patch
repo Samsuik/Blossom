@@ -1,4 +1,4 @@
-From 3da7aae77c23a8e9c58cd23348284326a94defd3 Mon Sep 17 00:00:00 2001
+From ccffd0a3f4200c4564930a28c786de375e11c1be Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -578,10 +578,10 @@ index 88131b507..5deed1646 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 2f7ccceef..1674bbb04 100644
+index 6d8ce17e1..c157fe976 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -663,6 +663,120 @@ public abstract class Entity implements ICommandListener {
+@@ -669,6 +669,120 @@ public abstract class Entity implements ICommandListener {
          // Blossom end
      }
  
@@ -702,7 +702,7 @@ index 2f7ccceef..1674bbb04 100644
  
      public void move(double d0, double d1, double d2) {
          if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
-@@ -774,11 +888,11 @@ public abstract class Entity implements ICommandListener {
+@@ -780,11 +894,11 @@ public abstract class Entity implements ICommandListener {
              Iterator iterator1;
  
              if(this.world.tacoSpigotConfig.fixEastWest && Math.abs(d0) > Math.abs(d2)) { //TacoSpigot - fix east/west cannoning by calculating the z movement before x if the x velocity is greater
@@ -718,7 +718,7 @@ index 2f7ccceef..1674bbb04 100644
  
                  this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
  
-@@ -791,21 +905,21 @@ public abstract class Entity implements ICommandListener {
+@@ -797,21 +911,21 @@ public abstract class Entity implements ICommandListener {
                  this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
  
              } else {
@@ -798,7 +798,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 176f63885..da376724d 100644
+index 30dbcafc6..bad6f6530 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
