@@ -1,11 +1,11 @@
-From 4ef8b643ca6241f4a164beac1202b280a89beff1 Mon Sep 17 00:00:00 2001
+From bace30622c0872106db12e1fd6bc45853bceaddc Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:31:07 +0100
 Subject: [PATCH] Disable Player Suffocation Teleport
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index d1da37738..9c2964678 100644
+index 8c56aebaa..e89cedc81 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -509,4 +509,9 @@ public class BlossomConfig {
@@ -19,10 +19,10 @@ index d1da37738..9c2964678 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 58487b1b3..d9897fb30 100644
+index cee1155bd..823e8515a 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -82,7 +82,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -83,7 +83,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
      public int movementTick = 0; // Blossom
      // Blossom start - bind entities to player ticking
      public final List<Entity> boundEntities = new ArrayList<>();
@@ -31,7 +31,7 @@ index 58487b1b3..d9897fb30 100644
      public void tickBoundEntities() {
          for (int i = 0; i < boundEntities.size(); ++i) {
              Entity entity = boundEntities.get(i);
-@@ -138,6 +138,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -139,6 +139,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
          this.S = 0.0F;
          this.setPositionRotation(blockposition, 0.0F, 0.0F);
  
@@ -52,5 +52,5 @@ index d69a4731f..0ffb3277c 100644
              entityplayer1.setPosition(entityplayer1.locX, entityplayer1.locY + 1.0D, entityplayer1.locZ);
          }
 -- 
-2.49.0
+2.50.0
 

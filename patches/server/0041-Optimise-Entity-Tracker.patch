@@ -1,11 +1,11 @@
-From 896c6addae0c191d602e1a91823bff5ed5f18cde Mon Sep 17 00:00:00 2001
+From 99708519ce4ac937932ecd413d0fd8a67e01196d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 30 Jun 2022 23:06:01 +0100
 Subject: [PATCH] Optimise Entity Tracker
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 02c3bc14f..e9aee5a7e 100644
+index 1bfbc49ad..c06d53516 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -296,4 +296,18 @@ public class BlossomConfig {
@@ -27,8 +27,28 @@ index 02c3bc14f..e9aee5a7e 100644
 +    }
 +
  }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index eaa4b489b..8586af99a 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -79,6 +79,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         return this.collidesWithEntities && super.ae(); // (second !this.isDead near bottom of EntityLiving)
+     }
+     // Spigot end
++    public final boolean realPlayer; // Blossom - optimise entity tracker
+ 
+     public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
+         super(worldserver, gameprofile);
+@@ -116,6 +117,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         // this.canPickUpLoot = true; TODO
+         this.maxHealthCache = this.getMaxHealth();
+         // CraftBukkit end
++        this.realPlayer = this.getClass() == EntityPlayer.class; // Blossom - optimise entity tracker
+     }
+ 
+     public void a(NBTTagCompound nbttagcompound) {
 diff --git a/src/main/java/net/minecraft/server/EntityTracker.java b/src/main/java/net/minecraft/server/EntityTracker.java
-index cb72b3672..dcaa22361 100644
+index cb72b3672..cd4f53892 100644
 --- a/src/main/java/net/minecraft/server/EntityTracker.java
 +++ b/src/main/java/net/minecraft/server/EntityTracker.java
 @@ -109,7 +109,7 @@ public class EntityTracker {
@@ -103,7 +123,7 @@ index cb72b3672..dcaa22361 100644
 +        for (EntityTrackerEntry entitytrackerentry : this.c) {
 +            Entity tracker = entitytrackerentry.tracker;
 +
-+            if (tracker instanceof EntityPlayer) {
++            if (tracker instanceof EntityPlayer && ((EntityPlayer) tracker).realPlayer) {
 +                continue; // done above
 +            }
 +
@@ -127,7 +147,7 @@ index cb72b3672..dcaa22361 100644
 +    }
 +
 +    private void unused_updatePlayers() {
-+        // Blossom end
++        // Blossom end - optimise entity tracker
          ArrayList arraylist = Lists.newArrayList();
          Iterator iterator = this.c.iterator();
  
@@ -239,5 +259,5 @@ index d8f2ec0e0..0fd959119 100644
          private short[] dirtyBlocks = new short[64];
          private int dirtyCount;
 -- 
-2.49.0
+2.50.0
 

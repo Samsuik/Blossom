@@ -1,17 +1,17 @@
-From f36002c72ed0c99c6f9795b6a1178c4e0f8399ea Mon Sep 17 00:00:00 2001
+From c4d6dd4be02e443d00792ce19483b84302f34579 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 11 Jun 2023 16:55:53 +0100
 Subject: [PATCH] Trust client block breaking
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 220ec205e..2023e0028 100644
+index 102e6bc7d..7fa061dd0 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -79,6 +79,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
-         return this.collidesWithEntities && super.ae(); // (second !this.isDead near bottom of EntityLiving)
+@@ -80,6 +80,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
      }
      // Spigot end
+     public final boolean realPlayer; // Blossom - optimise entity tracker
 +    public int movementTick = 0; // Blossom
  
      public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {

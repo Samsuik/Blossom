@@ -1,4 +1,4 @@
-From 6f33940988f85391195d0a71fc78e5efc599f5e1 Mon Sep 17 00:00:00 2001
+From 254b08554ce9e938fabfa9013fad55d8e5b9a81e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -361,10 +361,10 @@ index 3fe08391b..f1640a7de 100644
                                  // CraftBukkit end
                                  if (block instanceof BlockFalling) {
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 2023e0028..e5469fb6a 100644
+index 7fa061dd0..2261cc6c0 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -245,7 +245,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -247,7 +247,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
                  if (chunkcoordintpair != null) {
                      if (this.world.isLoaded(new BlockPosition(chunkcoordintpair.x << 4, 0, chunkcoordintpair.z << 4))) {
                          chunk = this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z);
@@ -426,7 +426,7 @@ index 27d09b102..9b1aeb5ee 100644
  
      public void a(BlockPosition blockposition) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index b6df58466..cbf7c7bcb 100644
+index ed84b0a2e..00579836c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {
@@ -487,5 +487,5 @@ index 8e86212aa..80628e946 100644
      public boolean zombieAggressiveTowardsVillager;
      private void zombieAggressiveTowardsVillager()
 -- 
-2.40.0.windows.1
+2.50.0
 
