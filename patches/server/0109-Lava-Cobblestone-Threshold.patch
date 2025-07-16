@@ -1,0 +1,41 @@
+From 1fe1a465bbbfd482d12d0028fc5095a59a62df5e Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 18 Jul 2023 20:42:28 +0100
+Subject: [PATCH] Lava Cobblestone Threshold
+
+-1 = paper,
+5 = vanilla,
+8 = cosmic
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 0ecf79a85..5be508f82 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -550,4 +550,11 @@ public class BlossomConfig {
+         waterProofRedstone = getBoolean("fluids.water-proof-redstone", true);
+     }
+ 
++    public static int lavaCobbleThreshold;
++    private static void LavaCobbleThreshold() {
++        // -1 = paper, 5 = vanilla, 8 = cosmic
++        lavaCobbleThreshold = getInt("fluids.cobble-generation-threshold", -1);
++        if (lavaCobbleThreshold < 0) lavaCobbleThreshold = Integer.MAX_VALUE;
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockFluids.java b/src/main/java/net/minecraft/server/BlockFluids.java
+index 190b5b7e6..058cf11b4 100644
+--- a/src/main/java/net/minecraft/server/BlockFluids.java
++++ b/src/main/java/net/minecraft/server/BlockFluids.java
+@@ -154,7 +154,7 @@ public abstract class BlockFluids extends Block {
+                     return true;
+                 }
+ 
+-                if (integer.intValue() > 0 && me.samsuik.blossom.configuration.BlossomConfig.lavaCobbleGeneration) { // Blossom // PaperSpigot
++                if (integer.intValue() > 0 && integer.intValue() < me.samsuik.blossom.configuration.BlossomConfig.lavaCobbleThreshold && me.samsuik.blossom.configuration.BlossomConfig.lavaCobbleGeneration) { // Blossom // PaperSpigot
+                     world.setTypeUpdate(blockposition, Blocks.COBBLESTONE.getBlockData());
+                     this.fizz(world, blockposition);
+                     return true;
+-- 
+2.50.1
+

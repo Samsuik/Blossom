@@ -1,0 +1,63 @@
+From 4c119e63aa5ce35863f8ff8a276a1d434d591f05 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 10 Jul 2023 17:05:57 +0100
+Subject: [PATCH] Configure Player Hit Delay
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 7eb0e5834..ba25d4b3e 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -479,5 +479,14 @@ public class BlossomConfig {
+     private static void MonsterEggsChangeSpawners() {
+         monsterEggsChangeSpawners = getBoolean("player.monster-eggs-change-spawners", false);
+     }
++
++    public static int playerHitDelay;
++    public static int mobHitDelay;
++    public static boolean playerHitDifference;
++    private static void PlayerHitDelay() {
++        playerHitDelay = getInt("player.hit-delay", 10);
++        mobHitDelay = getInt("mobs.hit-delay", 10);
++        playerHitDifference = getBoolean("player.allow-hit-difference", true);
++    }
+     
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 518869f4e..fa30106f1 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -118,6 +118,13 @@ public abstract class EntityLiving extends Entity {
+         this.yaw = (float) (Math.random() * 3.1415927410125732D * 2.0D);
+         this.aK = this.yaw;
+         this.S = 0.6F;
++        // Blossom start
++        if (this instanceof EntityHuman) {
++            maxNoDamageTicks = me.samsuik.blossom.configuration.BlossomConfig.playerHitDelay * 2;
++        } else {
++            maxNoDamageTicks = me.samsuik.blossom.configuration.BlossomConfig.mobHitDelay * 2;
++        }
++        // Blossom end
+     }
+ 
+     protected void h() {
+@@ -747,6 +754,16 @@ public abstract class EntityLiving extends Entity {
+                         return false;
+                     }
+ 
++                    // Blossom start
++                    // This prevents "double hits" or "hit glitching". This doesn't mean you deal
++                    // 2x more damage you still deal the same amount as the strongest weapon you used.
++                    // The issues come from plugins and armour, you can break armour faster by making
++                    // use of this mechanic and plugins may not be designed with this in mind.
++                    if (damagesource.getEntity() instanceof EntityHuman && !me.samsuik.blossom.configuration.BlossomConfig.playerHitDifference) {
++                        return false;
++                    }
++                    // Blossom end
++
+                     // CraftBukkit start
+                     if (!this.d(damagesource, f - this.lastDamage)) {
+                         return false;
+-- 
+2.50.1
+

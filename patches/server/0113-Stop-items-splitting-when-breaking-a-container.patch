@@ -1,0 +1,22 @@
+From 27e86cb911075691d2fe796af1b598efba167718 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Wed, 19 Jul 2023 13:23:18 +0100
+Subject: [PATCH] Stop items splitting when breaking a container
+
+
+diff --git a/src/main/java/net/minecraft/server/InventoryUtils.java b/src/main/java/net/minecraft/server/InventoryUtils.java
+index 55ab12f04..7ef0f1502 100644
+--- a/src/main/java/net/minecraft/server/InventoryUtils.java
++++ b/src/main/java/net/minecraft/server/InventoryUtils.java
+@@ -31,7 +31,7 @@ public class InventoryUtils {
+         float f2 = InventoryUtils.a.nextFloat() * 0.8F + 0.1F;
+ 
+         while (itemstack.count > 0) {
+-            int i = InventoryUtils.a.nextInt(21) + 10;
++            int i = itemstack.count; // Blossom - stop splitting items when breaking a container
+ 
+             if (i > itemstack.count) {
+                 i = itemstack.count;
+-- 
+2.50.1
+

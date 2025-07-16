@@ -1,0 +1,172 @@
+From a5cadcd9185d5bb50faa486006a176e445a7e711 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 9 Jul 2023 23:54:44 +0100
+Subject: [PATCH] Configure Player Knockback
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 93c1f7afb..ae8393fbf 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -426,4 +426,44 @@ public class BlossomConfig {
+         requireTNTToBlowUpDurableBlocks = getBoolean("explosions.durability.require-tnt-to-blow-up-durable-blocks", true);
+     }
+ 
++    public static double knockbackFriction;
++    public static double knockbackVertical;
++    public static double knockbackHorizontal;
++    public static double knockbackVerticalLimit;
++    public static double knockbackHorizontalMul;
++    public static double knockbackVerticalMul;
++    public static double playerExtraVertical;
++    public static double playerExtraHorizontal;
++    public static int sprintingKnockbackDelay;
++    public static double fishingVertical;
++    public static double fishingHorizontal;
++    public static double arrowExtraVertical;
++    public static double arrowExtraHorizontal;
++    public static boolean altKBCalculation;
++    public static int knockbackStrengthLimit;
++    public static int punchStrengthLimit;
++    private static void KnockBack() {
++        knockbackFriction = getDouble("player.knockback.friction", 2.0);
++        knockbackVertical = getDouble("player.knockback.vertical", 0.4);
++        knockbackHorizontal = getDouble("player.knockback.horizontal", 0.4);
++        knockbackVerticalLimit = getDouble("player.knockback.vertical-limit", 0.4);
++
++        knockbackHorizontalMul = getDouble("player.knockback.multipliers.horizontal", 1.0);
++        knockbackVerticalMul = getDouble("player.knockback.multipliers.horizontal", 1.0);
++
++        playerExtraVertical = getDouble("player.knockback.extra.extra-vertical", 0.1);
++        playerExtraHorizontal = getDouble("player.knockback.extra.extra-horizontal", 0.5);
++        sprintingKnockbackDelay = getInt("player.knockback.extra.sprint-delay-ms", 1000);
++        knockbackStrengthLimit = getInt("player.knockback.extra.knockback-enchant-strength-limit", 2);
++
++        fishingVertical = getDouble("player.knockback.fishing.vertical", 0.4);
++        fishingHorizontal = getDouble("player.knockback.fishing.horizontal", 0.4);
++
++        arrowExtraVertical = getDouble("player.knockback.arrow.extra-vertical", 0.1);
++        arrowExtraHorizontal = getDouble("player.knockback.arrow.extra-horizontal", 0.6);
++        punchStrengthLimit = getInt("player.knockback.arrow.punch-enchant-strength-limit", 2);
++
++        altKBCalculation = getBoolean("player.knockback.alternate-knockback", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
+index 9fc6d2777..3cad857b4 100644
+--- a/src/main/java/net/minecraft/server/EntityArrow.java
++++ b/src/main/java/net/minecraft/server/EntityArrow.java
+@@ -288,7 +288,11 @@ public class EntityArrow extends Entity implements IProjectile {
+                             if (this.knockbackStrength > 0) {
+                                 f3 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
+                                 if (f3 > 0.0F) {
+-                                    movingobjectposition.entity.g(this.motX * (double) this.knockbackStrength * 0.6000000238418579D / (double) f3, 0.1D, this.motZ * (double) this.knockbackStrength * 0.6000000238418579D / (double) f3);
++                                    // Blossom start
++                                    double vertical = me.samsuik.blossom.configuration.BlossomConfig.arrowExtraVertical;
++                                    double horizontal = me.samsuik.blossom.configuration.BlossomConfig.arrowExtraHorizontal;
++                                    movingobjectposition.entity.g(this.motX * (double) this.knockbackStrength * horizontal / (double) f3, vertical, this.motZ * (double) this.knockbackStrength * horizontal / (double) f3);
++                                    // Blossom end
+                                 }
+                             }
+ 
+@@ -481,7 +485,7 @@ public class EntityArrow extends Entity implements IProjectile {
+     }
+ 
+     public void setKnockbackStrength(int i) {
+-        this.knockbackStrength = i;
++        this.knockbackStrength = Math.min(i, me.samsuik.blossom.configuration.BlossomConfig.punchStrengthLimit); // Blossom
+     }
+ 
+     public boolean aD() {
+diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
+index e4b863499..3f3c94cbe 100644
+--- a/src/main/java/net/minecraft/server/EntityHuman.java
++++ b/src/main/java/net/minecraft/server/EntityHuman.java
+@@ -73,6 +73,7 @@ public abstract class EntityHuman extends EntityLiving {
+         return (CraftHumanEntity) super.getBukkitEntity();
+     }
+     // CraftBukkit end
++    private long lastExtraKnockback; // Blossom
+ 
+     public EntityHuman(World world, GameProfile gameprofile) {
+         super(world);
+@@ -984,7 +985,7 @@ public abstract class EntityHuman extends EntityLiving {
+                     f1 = EnchantmentManager.a(this.bA(), EnumMonsterType.UNDEFINED);
+                 }
+ 
+-                int i = b0 + EnchantmentManager.a((EntityLiving) this);
++                int i = b0 + Math.min(EnchantmentManager.a((EntityLiving) this), me.samsuik.blossom.configuration.BlossomConfig.knockbackStrengthLimit); // Blossom
+ 
+                 if (this.isSprinting()) {
+                     ++i;
+@@ -1020,7 +1021,15 @@ public abstract class EntityHuman extends EntityLiving {
+ 
+                     if (flag2) {
+                         if (i > 0) {
+-                            entity.g((double) (-MathHelper.sin(this.yaw * 3.1415927F / 180.0F) * (float) i * 0.5F), 0.1D, (double) (MathHelper.cos(this.yaw * 3.1415927F / 180.0F) * (float) i * 0.5F));
++                            // Blossom start
++                            double vertical = me.samsuik.blossom.configuration.BlossomConfig.playerExtraVertical;
++                            double horizontal = me.samsuik.blossom.configuration.BlossomConfig.playerExtraHorizontal;
++                            long millis = System.currentTimeMillis();
++                            if (i > 1 || millis - lastExtraKnockback > me.samsuik.blossom.configuration.BlossomConfig.sprintingKnockbackDelay) {
++                                entity.g((double) (-MathHelper.sin(this.yaw * 3.1415927F / 180.0F) * (float) i * horizontal), vertical, (double) (MathHelper.cos(this.yaw * 3.1415927F / 180.0F) * (float) i * horizontal));
++                                lastExtraKnockback = millis;
++                            }
++                            // Blossom end
+                             this.motX *= 0.6D;
+                             this.motZ *= 0.6D;
+                             this.setSprinting(false);
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 9800dd16f..2f9aab57b 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -910,16 +910,35 @@ public abstract class EntityLiving extends Entity {
+         if (this.random.nextDouble() >= this.getAttributeInstance(GenericAttributes.c).getValue()) {
+             this.ai = true;
+             float f1 = MathHelper.sqrt(d0 * d0 + d1 * d1);
+-            float f2 = 0.4F;
+-
+-            this.motX /= 2.0D;
+-            this.motY /= 2.0D;
+-            this.motZ /= 2.0D;
+-            this.motX -= d0 / (double) f1 * (double) f2;
+-            this.motY += (double) f2;
+-            this.motZ -= d1 / (double) f1 * (double) f2;
+-            if (this.motY > 0.4000000059604645D) {
+-                this.motY = 0.4000000059604645D;
++            // Blossom start
++            double verticalKnockback = (float) me.samsuik.blossom.configuration.BlossomConfig.knockbackVertical;
++            double horizontalKnockback = (float) me.samsuik.blossom.configuration.BlossomConfig.knockbackHorizontal;
++
++            if (entity instanceof EntityProjectile || entity instanceof EntityFishingHook) {
++                verticalKnockback = me.samsuik.blossom.configuration.BlossomConfig.fishingVertical;
++                horizontalKnockback = me.samsuik.blossom.configuration.BlossomConfig.fishingHorizontal;
++            }
++
++            verticalKnockback *= me.samsuik.blossom.configuration.BlossomConfig.knockbackVerticalMul;
++            horizontalKnockback *= me.samsuik.blossom.configuration.BlossomConfig.knockbackHorizontalMul;
++
++            this.motX /= me.samsuik.blossom.configuration.BlossomConfig.knockbackFriction;
++            this.motY /= me.samsuik.blossom.configuration.BlossomConfig.knockbackFriction;
++            this.motZ /= me.samsuik.blossom.configuration.BlossomConfig.knockbackFriction;
++
++            this.motY += verticalKnockback;
++
++            if (me.samsuik.blossom.configuration.BlossomConfig.altKBCalculation) {
++                this.motX += -MathHelper.sin(entity.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
++                this.motZ += MathHelper.cos(entity.yaw * 3.1415927F / 180.0F) * horizontalKnockback;
++            } else {
++                this.motX -= d0 / (double) f1 * horizontalKnockback;
++                this.motZ -= d1 / (double) f1 * horizontalKnockback;
++            }
++
++            if (this.motY > me.samsuik.blossom.configuration.BlossomConfig.knockbackVerticalLimit) {
++                this.motY = me.samsuik.blossom.configuration.BlossomConfig.knockbackVerticalLimit;
++                // Blossom end
+             }
+ 
+         }
+-- 
+2.50.1
+

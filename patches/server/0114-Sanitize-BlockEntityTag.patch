@@ -1,0 +1,38 @@
+From dff72485630516d542cb0c43e392a0243484a70a Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 20 Jul 2023 20:58:17 +0100
+Subject: [PATCH] Sanitize BlockEntityTag
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index af3fe7303..67247ef81 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -2060,9 +2060,24 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+                 if (nbttagcompound.hasKey("x") && nbttagcompound.hasKey("y") && nbttagcompound.hasKey("z")) {
+                     BlockPosition blockposition = new BlockPosition(nbttagcompound.getInt("x"), nbttagcompound.getInt("y"), nbttagcompound.getInt("z"));
++                    // Blossom start
++                    if (this.player.c(blockposition) >= CREATIVE_PLACE_DISTANCE_SQUARED) return;
+                     TileEntity tileentity = this.player.world.getTileEntity(blockposition);
+ 
+                     if (tileentity != null) {
++                        // Sanitize the item
++                        NBTTagCompound sanitized = new NBTTagCompound();
++
++                        if (itemstack.getTag().hasKeyOfType("display", 10)) {
++                            NBTTagCompound display = new NBTTagCompound();
++                            NBTTagList lore = new NBTTagList();
++                            lore.add(new NBTTagString(String.valueOf(org.bukkit.ChatColor.DARK_PURPLE) + org.bukkit.ChatColor.ITALIC + "(+NBT)"));
++                            display.set("Lore", lore);
++                            sanitized.set("display", display);
++                        }
++
++                        itemstack.setTag(sanitized);
++                        // Blossom end
+                         NBTTagCompound nbttagcompound1 = new NBTTagCompound();
+ 
+                         tileentity.b(nbttagcompound1);
+-- 
+2.50.1
+
