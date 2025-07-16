@@ -1,4 +1,4 @@
-From 64bf643f9152c1189812f50b5c605d6432ed1907 Mon Sep 17 00:00:00 2001
+From 19ac2310f14ca9f364cfba7811d5538eb725af92 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -41,7 +41,7 @@ index e8107fcc3..8161caf06 100644
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..c0c5e7c38 100644
+index 8d00cd0a2..3a259ba06 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -173,11 +173,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -134,7 +134,7 @@ index 8d00cd0a2..c0c5e7c38 100644
                          }
 -                        itemstack.count -= origCount - itemstack1.count; // Spigot
 -                        this.setItem(i, itemstack);
-+                        // Blossom end
++                        // Blossom end - optimise hopper logic
                      }
                  }
  
@@ -264,7 +264,7 @@ index 8d00cd0a2..c0c5e7c38 100644
 +
 +        return 0;
 +    }
-+    // Blossom end
++    // Blossom end - optimise hopper logic
 +
      // TacoSpigot start - Split methods, one that pushes and one that pulls
      @Deprecated
@@ -347,7 +347,7 @@ index 8d00cd0a2..c0c5e7c38 100644
  
 -            iinventory.setItem(i, itemstack1);
 +            return moved >= 0;
-+            // Blossom end
++            // Blossom end - optimise hopper logic
          }
  
          return false;
@@ -409,5 +409,5 @@ index 630a81bea..9000a9ddb 100644
  import org.bukkit.event.inventory.InventoryMoveItemEvent;
  
 -- 
-2.50.0
+2.50.1
 
