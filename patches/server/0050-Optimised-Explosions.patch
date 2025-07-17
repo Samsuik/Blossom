@@ -1,4 +1,4 @@
-From ca884f61eab19c10fcff849120a287a8f7971a67 Mon Sep 17 00:00:00 2001
+From 8b9a23c1fe559304469d17da01bf19694cce4474 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -914,10 +914,10 @@ index 60c5fc7f1..785417121 100644
          explosion.a();
          explosion.a(true);
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index bfd0ff5a7..10cc04fe5 100644
+index bc308733d..02466da3f 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -1102,6 +1102,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -1136,6 +1136,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              explosion.clearBlocks();
          }
  
@@ -931,7 +931,7 @@ index bfd0ff5a7..10cc04fe5 100644
          Iterator iterator = this.players.iterator();
  
          while (iterator.hasNext()) {
-@@ -1112,7 +1119,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -1146,7 +1153,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              }
          }
  
@@ -941,5 +941,5 @@ index bfd0ff5a7..10cc04fe5 100644
  
      public void playBlockAction(BlockPosition blockposition, Block block, int i, int j) {
 -- 
-2.50.0
+2.50.1
 
