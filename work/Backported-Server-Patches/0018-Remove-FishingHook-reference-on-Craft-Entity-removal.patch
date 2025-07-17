@@ -1,0 +1,28 @@
+From b25a8af8d86b74bfad2573d0d09ce8cab9d1ed5a Mon Sep 17 00:00:00 2001
+From: Aikar <aikar@aikar.co>
+Date: Thu, 16 Jun 2016 00:17:23 -0400
+Subject: [PATCH] Remove FishingHook reference on Craft Entity removal
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftFish.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftFish.java
+index ecfc316bb..5990e96a1 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftFish.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftFish.java
+@@ -73,4 +73,14 @@ public class CraftFish extends AbstractProjectile implements Fish {
+     public void _INVALID_setShooter(LivingEntity shooter) {
+         setShooter(shooter);
+     }
++    
++    // Paper start
++    @Override
++    public void remove() {
++        super.remove();
++        if (getHandle().owner != null) {
++            getHandle().owner.hookedFish = null;
++        }
++    }
++    // Paper end
+ }
+-- 
+2.50.1
+

@@ -1,0 +1,27 @@
+From f35cc7c6fbffb20740e076c99f04c3fb81ee1915 Mon Sep 17 00:00:00 2001
+From: Zach Brown <zach.brown@destroystokyo.com>
+Date: Sat, 19 Nov 2016 22:10:34 -0600
+Subject: [PATCH] SPIGOT-2806: Backport an event fix
+
+
+diff --git a/src/main/java/net/minecraft/server/Container.java b/src/main/java/net/minecraft/server/Container.java
+index 7fc495792..c2f7ccd75 100644
+--- a/src/main/java/net/minecraft/server/Container.java
++++ b/src/main/java/net/minecraft/server/Container.java
+@@ -226,8 +226,12 @@ public abstract class Container {
+                 if (i == -999) {
+                     if (playerinventory.getCarried() != null) {
+                         if (j == 0) {
+-                            entityhuman.drop(playerinventory.getCarried(), true);
++                            // Paper start - Backport an event fix - SPIGOT-2806
++                            //entityhuman.drop(playerinventory.getCarried(), true);
++                            ItemStack carried = playerinventory.getCarried();
+                             playerinventory.setCarried((ItemStack) null);
++                            entityhuman.drop(carried, true);
++                            // Paper end
+                         }
+ 
+                         if (j == 1) {
+-- 
+2.50.1
+

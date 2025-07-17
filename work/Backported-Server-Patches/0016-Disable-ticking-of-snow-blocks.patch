@@ -1,0 +1,47 @@
+From 5289f7df52fad4d8e4f38b508c60b641900ba5ad Mon Sep 17 00:00:00 2001
+From: killme <killme-git@ibts.me>
+Date: Tue, 30 Aug 2016 16:39:48 +0200
+Subject: [PATCH] Disable ticking of snow blocks
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockSnowBlock.java b/src/main/java/net/minecraft/server/BlockSnowBlock.java
+new file mode 100644
+index 000000000..3d48cb145
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/BlockSnowBlock.java
+@@ -0,0 +1,32 @@
++package net.minecraft.server;
++
++import java.util.Random;
++
++public class BlockSnowBlock extends Block {
++
++    protected BlockSnowBlock() {
++        super(Material.SNOW_BLOCK);
++        // this.a(true); // Paper - snow blocks don't need to tick
++        this.a(CreativeModeTab.b);
++    }
++
++    public Item getDropType(IBlockData iblockdata, Random random, int i) {
++        return Items.SNOWBALL;
++    }
++
++    public int a(Random random) {
++        return 4;
++    }
++
++    // Paper start - snow blocks don't need to tick
++    /*
++    public void b(World world, BlockPosition blockposition, IBlockData iblockdata, Random random) {
++        if (world.b(EnumSkyBlock.BLOCK, blockposition) > 11) {
++            this.b(world, blockposition, world.getType(blockposition), 0);
++            world.setAir(blockposition);
++        }
++
++    }
++    */
++    //Paper end
++}
+-- 
+2.50.1
+

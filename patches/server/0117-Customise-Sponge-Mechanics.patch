@@ -1,4 +1,4 @@
-From 6c9368a83c7459707cba27b7ca5a41f8314ccfdf Mon Sep 17 00:00:00 2001
+From b8f9d63952e4958004baa3986dbd0281840ba797 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
@@ -21,13 +21,13 @@ index bfab53a07..043b45111 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 80a583ff1..9da2a0cfe 100644
+index 3549fd814..32716a1ef 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
-@@ -163,9 +163,41 @@ public class BlockFlowing extends BlockFluids {
-         return source.getWorld().isChunkLoaded((source.getX() + face.getModX()) >> 4, (source.getZ() + face.getModZ()) >> 4);
+@@ -156,8 +156,40 @@ public class BlockFlowing extends BlockFluids {
+ 
      }
-     // Paper end
+ 
 +    // Blossom start
 +    private boolean isSpongeInRadius(World world, BlockPosition position, int radius) {
 +        int minX = position.getX() - radius;
@@ -54,15 +54,14 @@ index 80a583ff1..9da2a0cfe 100644
 +
 +        return false;
 +    }
- 
++
      private void flow(World world, BlockPosition blockposition, IBlockData iblockdata, int i) {
-         if (/*world.isLoaded(blockposition) &&*/ this.h(world, blockposition, iblockdata)) { // CraftBukkit - add isLoaded check // Paper - Already checked before we get here for isLoaded
+         if (world.isLoaded(blockposition) && this.h(world, blockposition, iblockdata)) { // CraftBukkit - add isLoaded check
 +            int radius = me.samsuik.blossom.configuration.BlossomConfig.spongeRadius;
 +            if (radius > 0 && isSpongeInRadius(world, blockposition, radius)) {
 +                return;
 +            }
 +            // Blossom end
-+
              if (iblockdata.getBlock() != Blocks.AIR) {
                  if (this.material == Material.LAVA) {
                      this.fizz(world, blockposition);

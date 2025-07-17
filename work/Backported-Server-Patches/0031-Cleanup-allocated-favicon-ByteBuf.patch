@@ -1,0 +1,43 @@
+From 813bb2017134c483a092117a22ed83b36f8456bd Mon Sep 17 00:00:00 2001
+From: Shane Freeder <theboyetronic@gmail.com>
+Date: Tue, 3 Jul 2018 19:14:38 +0100
+Subject: [PATCH] Cleanup allocated favicon ByteBuf
+
+Cleanups a bytebuffer which was allocated during the encoding of the
+favicon to be sent to the client.
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index f342c2450..c79d3527f 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -673,6 +673,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+ 
+         if (file.isFile()) {
+             ByteBuf bytebuf = Unpooled.buffer();
++            ByteBuf bytebuf1 = null; // Paper - cleanup favicon bytebuf
+ 
+             try {
+                 BufferedImage bufferedimage = ImageIO.read(file);
+@@ -680,13 +681,18 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                 Validate.validState(bufferedimage.getWidth() == 64, "Must be 64 pixels wide", new Object[0]);
+                 Validate.validState(bufferedimage.getHeight() == 64, "Must be 64 pixels high", new Object[0]);
+                 ImageIO.write(bufferedimage, "PNG", new ByteBufOutputStream(bytebuf));
+-                ByteBuf bytebuf1 = Base64.encode(bytebuf);
++                /*ByteBuf*/ bytebuf1 = Base64.encode(bytebuf); // Paper - cleanup favicon bytebuf
+ 
+                 serverping.setFavicon("data:image/png;base64," + bytebuf1.toString(Charsets.UTF_8));
+             } catch (Exception exception) {
+                 MinecraftServer.LOGGER.error("Couldn\'t load server icon", exception);
+             } finally {
+                 bytebuf.release();
++                // Paper start - cleanup favicon bytebuf
++                if (bytebuf1 != null) {
++                    bytebuf1.release();
++                }
++                // Paper end - cleanup favicon bytebuf
+             }
+         }
+ 
+-- 
+2.50.1
+

@@ -1,4 +1,4 @@
-From 9a4355706e86960f5142a837ebf3c1612ff84583 Mon Sep 17 00:00:00 2001
+From 922008257a66de24c86922a3a33dfc1d083c9950 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:20:39 +0100
 Subject: [PATCH] Waterproof Redstone
@@ -19,10 +19,10 @@ index 4cae11530..0ecf79a85 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 6d0e5502f..80a583ff1 100644
+index 2948ec77c..3549fd814 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
-@@ -243,6 +243,12 @@ public class BlockFlowing extends BlockFluids {
+@@ -235,6 +235,12 @@ public class BlockFlowing extends BlockFluids {
      }
  
      private boolean g(World world, BlockPosition blockposition, IBlockData iblockdata) {

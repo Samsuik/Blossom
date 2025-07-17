@@ -1,0 +1,48 @@
+From a0b66282cab353722f180d3c0a5e6f796e1b6be9 Mon Sep 17 00:00:00 2001
+From: Aikar <aikar@aikar.co>
+Date: Sat, 29 Sep 2018 12:13:23 -0400
+Subject: [PATCH] Backport Village Door fix from 1.13
+
+
+diff --git a/src/main/java/net/minecraft/server/Village.java b/src/main/java/net/minecraft/server/Village.java
+index e67aa0423..4d8fabe70 100644
+--- a/src/main/java/net/minecraft/server/Village.java
++++ b/src/main/java/net/minecraft/server/Village.java
+@@ -12,7 +12,7 @@ public class Village {
+     private World a;
+     private final List<VillageDoor> b = Lists.newArrayList();
+     private BlockPosition c;
+-    private BlockPosition d;
++    private BlockPosition d; private BlockPosition getCenter() { return d; } // Paper - OBFHELPER
+     private int e;
+     private int f;
+     private int g;
+@@ -42,6 +42,12 @@ public class Village {
+     }
+ 
+     public void a(int i) {
++        // Paper - don't tick village if chunk isn't loaded
++        Chunk chunk = this.a.getChunkIfLoaded(getCenter());
++        if (chunk == null || !chunk.areNeighborsLoaded(1)) {
++            return;
++        }
++        // Paper end
+         this.g = i;
+         this.m();
+         this.l();
+@@ -298,6 +304,12 @@ public class Village {
+ 
+         while (iterator.hasNext()) {
+             VillageDoor villagedoor = (VillageDoor) iterator.next();
++            // Paper start- don't remove doors from unloaded chunks
++            if (!this.a.isLoaded(villagedoor.d())) {
++                villagedoor.a(villagedoor.h() + 1);
++                continue;
++            }
++            // Paper end
+ 
+             if (flag1) {
+                 villagedoor.a();
+-- 
+2.50.1
+

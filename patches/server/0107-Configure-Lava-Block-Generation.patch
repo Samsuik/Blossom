@@ -1,4 +1,4 @@
-From 0b987ba501e93ab53fa4f49eb186840ce15798e6 Mon Sep 17 00:00:00 2001
+From 8269bcab405b668d8641b9c0680872af71083ea7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:13:30 +0100
 Subject: [PATCH] Configure Lava Block Generation
@@ -23,10 +23,10 @@ index b69443147..4cae11530 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index c77a46cf1..6d0e5502f 100644
+index 7b48815ee..2948ec77c 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
-@@ -112,7 +112,7 @@ public class BlockFlowing extends BlockFluids {
+@@ -111,7 +111,7 @@ public class BlockFlowing extends BlockFluids {
                  server.getPluginManager().callEvent(event);
              }
              if (!event.isCancelled()) {
