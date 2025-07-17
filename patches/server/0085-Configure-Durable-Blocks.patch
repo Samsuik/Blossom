@@ -1,4 +1,4 @@
-From 8d2c67b9f6cdde8462a075591b8ec46865baa968 Mon Sep 17 00:00:00 2001
+From 0c43d686d7fb7c555e2edfe76a7f41a66a6abba0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -71,7 +71,7 @@ index 0f6c4871f..a94402436 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java b/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java
 new file mode 100644
-index 000000000..f1926c262
+index 000000000..cd249dbfd
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java
 @@ -0,0 +1,121 @@
@@ -108,8 +108,8 @@ index 000000000..f1926c262
 +        return true;
 +    }
 +
-+    public float getResistance(Block block, int x, int y, int z) {
-+        if (world.blossomConfig.durabilityMap.containsKey(block)) {
++    public float getResistance(Block block, int x, int y, int z, boolean tnt) {
++        if (world.blossomConfig.durabilityMap.containsKey(block) && (tnt || !me.samsuik.blossom.configuration.BlossomConfig.requireTNTToBlowUpDurableBlocks)) {
 +            return getDurableBlock(block, x, y, z).getResistance();
 +        }
 +
@@ -210,7 +210,7 @@ index f035df0cb..a886c8937 100644
      public float getBlastResistance() {
          return ((durability / 5.0f) + 0.3f) * 0.3f;
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 696480d9b..d232f7cca 100644
+index 696480d9b..c7ea74c3e 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
 @@ -176,6 +176,10 @@ public class Explosion {
@@ -218,7 +218,7 @@ index 696480d9b..d232f7cca 100644
          Block block = iblockdata.getBlock();
          float resistance = block.getBlastResistance();
 +        // Blossom start
-+        float durableResistance = world.durableManager.getResistance(block, x, y, z);
++        float durableResistance = world.durableManager.getResistance(block, x, y, z, this.source instanceof EntityTNTPrimed);
 +        if (durableResistance != -1.0f) resistance = durableResistance;
 +        // Blossom end
  
