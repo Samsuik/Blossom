@@ -1,4 +1,4 @@
-From 23dc285a02b4bd22357e23c07d09e96b0aa18fdb Mon Sep 17 00:00:00 2001
+From b4280a67a272855e92b1e4edcce6129a8182da0c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 28 Jun 2022 23:06:32 +0100
 Subject: [PATCH] Optimise scheduled block ticking and unloading
@@ -82,7 +82,7 @@ index 3a4a074ed..e8056f78c 100644
          this.methodProfiler.a("entities");
          this.methodProfiler.a("global");
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index bc603bfba..2e849ccd2 100644
+index bc603bfba..5e41dc4fe 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -36,7 +36,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -94,6 +94,15 @@ index bc603bfba..2e849ccd2 100644
      private final Map<UUID, Entity> entitiesByUUID = Maps.newHashMap();
      public ChunkProviderServer chunkProviderServer;
      public boolean savingDisabled;
+@@ -48,7 +48,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+     private WorldServer.BlockActionDataList[] S = new WorldServer.BlockActionDataList[] { new WorldServer.BlockActionDataList(null), new WorldServer.BlockActionDataList(null)};
+     private int T;
+     private static final List<StructurePieceTreasure> U = Lists.newArrayList(new StructurePieceTreasure[] { new StructurePieceTreasure(Items.STICK, 0, 1, 3, 10), new StructurePieceTreasure(Item.getItemOf(Blocks.PLANKS), 0, 1, 3, 10), new StructurePieceTreasure(Item.getItemOf(Blocks.LOG), 0, 1, 3, 10), new StructurePieceTreasure(Items.STONE_AXE, 0, 1, 1, 3), new StructurePieceTreasure(Items.WOODEN_AXE, 0, 1, 1, 5), new StructurePieceTreasure(Items.STONE_PICKAXE, 0, 1, 1, 3), new StructurePieceTreasure(Items.WOODEN_PICKAXE, 0, 1, 1, 5), new StructurePieceTreasure(Items.APPLE, 0, 2, 3, 5), new StructurePieceTreasure(Items.BREAD, 0, 2, 3, 3), new StructurePieceTreasure(Item.getItemOf(Blocks.LOG2), 0, 1, 3, 10)});
+-    private List<NextTickListEntry> V = Lists.newArrayList();
++    private final ArrayDeque<NextTickListEntry> V = new ArrayDeque<>(); // Blossom - optimise scheduled block ticking
+ 
+     // CraftBukkit start
+     public final int dimension;
 @@ -559,21 +559,29 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              i = 1;
          }
@@ -138,23 +147,88 @@ index bc603bfba..2e849ccd2 100644
          }
  
      }
-@@ -674,8 +684,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
-                     iterator.remove();
-                     byte b0 = 0;
+@@ -635,47 +645,53 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 timings.scheduledBlocksCleanup.startTiming(); // Spigot
+                 NextTickListEntry nextticklistentry;
  
+-                for (int j = 0; j < i; ++j) {
+-                    nextticklistentry = (NextTickListEntry) this.M.first();
++                // Blossom start - optimise scheduled block ticking
++                Iterator<NextTickListEntry> scheduledBlockItr = this.M.iterator();
++                int count = 0;
++                while (scheduledBlockItr.hasNext()) {
++                    nextticklistentry = scheduledBlockItr.next();
+                     if (!flag && nextticklistentry.b > this.worldData.getTime()) {
+                         break;
+                     }
+ 
+-                    // CraftBukkit - use M, PAIL: Rename nextTickList
+-                    this.M.remove(nextticklistentry);
+-                    this.V.add(nextticklistentry);
+-                }
+-                timings.scheduledBlocksCleanup.stopTiming(); // Spigot
++                    boolean tickBlock = count < i;
+ 
+-                // PaperSpigot start - Allow redstone ticks to bypass the tickNextTickListCap
+-                if (paperSpigotConfig.tickNextTickListCapIgnoresRedstone) {
+-                    Iterator<NextTickListEntry> iterator = this.M.iterator();
+-                    while (iterator.hasNext()) {
+-                        NextTickListEntry next = iterator.next();
+-                        if (!flag && next.b > this.worldData.getTime()) {
+-                            break;
+-                        }
++                    // PaperSpigot start - Allow redstone ticks to bypass the tickNextTickListCap
++                    if (paperSpigotConfig.tickNextTickListCapIgnoresRedstone) {
++                        Block block = nextticklistentry.a();
++                        tickBlock |= block.isPowerSource() || block instanceof IContainer || block instanceof BlockFalling; // Blossom - falling blocks should bypass tick cap
++                    } else if (!tickBlock) {
++                        break;
++                    }
++                    // PaperSpigot end - Allow redstone ticks to bypass the tickNextTickListCap
+ 
+-                        if (next.a().isPowerSource() || next.a() instanceof IContainer || next.a() instanceof BlockFalling) { // Blossom - falling blocks should bypass tick cap
+-                            iterator.remove();
+-                            this.V.add(next);
++                    if (tickBlock) {
++                        Chunk chunk = this.getChunkIfLoaded(nextticklistentry.a);
++                        if (chunk != null) {
++                            chunk.scheduledToTick.remove(nextticklistentry);
+                         }
++                        scheduledBlockItr.remove();
++                        this.V.add(nextticklistentry);
++                        count++;
+                     }
+                 }
+-                // PaperSpigot end
++                // Blossom end - optimise scheduled block ticking
++                timings.scheduledBlocksCleanup.stopTiming(); // Spigot
++
++                // Blossom - optimise scheduled block ticking; moved up
+ 
+                 this.methodProfiler.b();
+                 this.methodProfiler.a("ticking");
+                 timings.scheduledBlocksTicking.startTiming(); // Spigot
+-                Iterator iterator = this.V.iterator();
+ 
+-                while (iterator.hasNext()) {
+-                    nextticklistentry = (NextTickListEntry) iterator.next();
+-                    iterator.remove();
+-                    byte b0 = 0;
+-
 -                    if (this.areChunksLoadedBetween(nextticklistentry.a.a(-b0, -b0, -b0), nextticklistentry.a.a(b0, b0, b0))) {
 -                        IBlockData iblockdata = this.getType(nextticklistentry.a);
-+                    // Blossom start - optimise scheduled block ticking
++                // Blossom start - optimise scheduled block ticking
++                while ((nextticklistentry = this.V.poll()) != null) {
 +                    BlockPosition position = nextticklistentry.a;
 +                    Chunk chunk = this.getChunkIfLoaded(position.getX() >> 4, position.getZ() >> 4);
-+                    if (chunk != null/* && this.areChunksLoadedBetween(nextticklistentry.a.a(-b0, -b0, -b0), nextticklistentry.a.a(b0, b0, b0))*/) {
-+                        chunk.scheduledToTick.remove(nextticklistentry);
++                    if (chunk != null/*this.areChunksLoadedBetween(nextticklistentry.a.a(-b0, -b0, -b0), nextticklistentry.a.a(b0, b0, b0))*/) {
++                        //chunk.scheduledToTick.remove(nextticklistentry);
 +                        IBlockData iblockdata = chunk.getBlockData(nextticklistentry.a);
 +                        // Blossom end - optimise scheduled block ticking
                          co.aikar.timings.Timing timing = iblockdata.getBlock().getTiming(); // Spigot
                          timing.startTiming(); // Spigot
  
-@@ -714,7 +729,56 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -714,7 +730,56 @@ public class WorldServer extends World implements IAsyncTaskHandler {
          return this.a(new StructureBoundingBox(i, 0, k, j, 256, l), flag);
      }
  
