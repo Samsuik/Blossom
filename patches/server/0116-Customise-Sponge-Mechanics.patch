@@ -1,4 +1,4 @@
-From 85958b753117252bbc2a7c55b7df643c6c9d961e Mon Sep 17 00:00:00 2001
+From 16db4101969bdca3c5e56cc619cb53d1f6a7f947 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
@@ -21,15 +21,15 @@ index bfab53a07..043b45111 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 3549fd814..32716a1ef 100644
+index 3549fd814..85874326b 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
-@@ -156,8 +156,40 @@ public class BlockFlowing extends BlockFluids {
+@@ -156,8 +156,41 @@ public class BlockFlowing extends BlockFluids {
  
      }
  
-+    // Blossom start
-+    private boolean isSpongeInRadius(World world, BlockPosition position, int radius) {
++    // Blossom start - customise sponge mechanics
++    private boolean hasSpongeInRadius(World world, BlockPosition position, int radius) {
 +        int minX = position.getX() - radius;
 +        int minY = position.getY() - radius;
 +        int minZ = position.getZ() - radius;
@@ -44,7 +44,6 @@ index 3549fd814..32716a1ef 100644
 +
 +                for (int y = minY; y <= maxY; ++y) {
 +                    IBlockData data = chunk.getBlockData(x, y, z);
-+
 +                    if (data.getBlock() == Blocks.SPONGE) {
 +                        return true;
 +                    }
@@ -54,14 +53,16 @@ index 3549fd814..32716a1ef 100644
 +
 +        return false;
 +    }
++    // Blossom end - customise sponge mechanics
 +
      private void flow(World world, BlockPosition blockposition, IBlockData iblockdata, int i) {
          if (world.isLoaded(blockposition) && this.h(world, blockposition, iblockdata)) { // CraftBukkit - add isLoaded check
++            // Blossom start - customise sponge mechanics
 +            int radius = me.samsuik.blossom.configuration.BlossomConfig.spongeRadius;
-+            if (radius > 0 && isSpongeInRadius(world, blockposition, radius)) {
++            if (radius > 0 && this.hasSpongeInRadius(world, blockposition, radius)) {
 +                return;
 +            }
-+            // Blossom end
++            // Blossom end - customise sponge mechanics
              if (iblockdata.getBlock() != Blocks.AIR) {
                  if (this.material == Material.LAVA) {
                      this.fizz(world, blockposition);
