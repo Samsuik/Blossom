@@ -1,15 +1,15 @@
-From 401557db4d96f4a4fb85cf05ecc9d77f13463c29 Mon Sep 17 00:00:00 2001
+From 73922f81b02f0381f4dc2ced70e05e606521c490 Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Wed, 16 Jul 2025 18:08:58 +0100
 Subject: [PATCH] Allow hoppers to move multiple items at a time
 
 
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 3a259ba06..032851869 100644
+index 5e1364607..0b5f8fa4e 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -261,12 +261,13 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
-             if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
+             if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? !canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
                  return false;
              } else {
 +                int itemsToMove = world.spigotConfig.hopperAmount; // Blossom - allow hoppers to move multiple items at a time

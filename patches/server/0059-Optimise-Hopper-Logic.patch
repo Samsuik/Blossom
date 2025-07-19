@@ -1,4 +1,4 @@
-From 19ac2310f14ca9f364cfba7811d5538eb725af92 Mon Sep 17 00:00:00 2001
+From c8d596d79c3fde8a678fd4c1c558d097aa5ebef4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -41,7 +41,7 @@ index e8107fcc3..8161caf06 100644
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..3a259ba06 100644
+index 8d00cd0a2..5e1364607 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -173,11 +173,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -62,7 +62,7 @@ index 8d00cd0a2..3a259ba06 100644
              EnumDirection enumdirection = BlockHopper.b(this.u()).opposite();
  
 -            if (this.a(iinventory, enumdirection)) {
-+            if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
++            if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? !canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
                  return false;
              } else {
                  for (int i = 0; i < this.getSize(); ++i) {
