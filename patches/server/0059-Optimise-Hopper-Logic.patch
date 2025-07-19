@@ -1,4 +1,4 @@
-From c8d596d79c3fde8a678fd4c1c558d097aa5ebef4 Mon Sep 17 00:00:00 2001
+From 05f51903a4d5af2090f0c12d9fa500f716416f27 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -41,7 +41,7 @@ index e8107fcc3..8161caf06 100644
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..5e1364607 100644
+index 8d00cd0a2..b0e75e739 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -173,11 +173,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -269,15 +269,7 @@ index 8d00cd0a2..5e1364607 100644
      // TacoSpigot start - Split methods, one that pushes and one that pulls
      @Deprecated
      public static boolean a(IHopper ihopper) {
-@@ -374,6 +478,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
-         if (ihopper.getWorld().tacoSpigotConfig.isHopperPushBased && ihopper instanceof TileEntityHopper) {
-             BlockPosition pos = ((TileEntityHopper) ihopper).getPosition().up(); // Only pull from a above, because everything else comes to us
-             iinventory = HopperHelper.getInventory(ihopper.getWorld(), pos);
-+            if (iinventory instanceof IHopper) return false; // Blossom
-         } else {
-             iinventory = b(ihopper); // Use old behavior for BB entity searching
-         }
-@@ -426,58 +531,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -426,58 +530,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          ItemStack itemstack = iinventory.getItem(i);
  
          if (itemstack != null && b(iinventory, itemstack, i, enumdirection)) {
@@ -351,7 +343,7 @@ index 8d00cd0a2..5e1364607 100644
          }
  
          return false;
-@@ -548,7 +627,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -548,7 +626,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
              boolean flag = false;
  
              if (itemstack1 == null) {
@@ -361,7 +353,7 @@ index 8d00cd0a2..5e1364607 100644
                  itemstack = null;
                  flag = true;
              } else if (a(itemstack1, itemstack)) {
-@@ -568,7 +649,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -568,7 +648,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                          tileentityhopper.d(tileentityhopper.world.spigotConfig.hopperTransfer); // Spigot
                      }
  
@@ -370,7 +362,7 @@ index 8d00cd0a2..5e1364607 100644
                  }
  
                  iinventory.update();
-@@ -589,7 +670,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -589,7 +669,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
      }
  
      public static List<EntityItem> a(World world, double d0, double d1, double d2) {
@@ -379,7 +371,7 @@ index 8d00cd0a2..5e1364607 100644
      }
  
      public static IInventory b(World world, double d0, double d1, double d2) {
-@@ -613,7 +694,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -613,7 +693,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          }
  
          if (object == null) {

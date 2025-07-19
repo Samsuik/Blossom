@@ -1,11 +1,11 @@
-From 73922f81b02f0381f4dc2ced70e05e606521c490 Mon Sep 17 00:00:00 2001
+From b1d0b8e5f8056ce9c4f049109fe5b2a387a50933 Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Wed, 16 Jul 2025 18:08:58 +0100
 Subject: [PATCH] Allow hoppers to move multiple items at a time
 
 
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 5e1364607..0b5f8fa4e 100644
+index b0e75e739..2034e3c28 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -261,12 +261,13 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -35,7 +35,7 @@ index 5e1364607..0b5f8fa4e 100644
                              return true;
                          }
                          // Blossom end - optimise hopper logic
-@@ -494,24 +498,27 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -493,24 +497,27 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                  return false;
              }
  
@@ -71,7 +71,7 @@ index 5e1364607..0b5f8fa4e 100644
          } else if (!ihopper.getWorld().tacoSpigotConfig.isHopperPushBased || !(ihopper instanceof TileEntityHopper)) { // TacoSpigot - only search for entities in 'pull mode'
              Iterator iterator = a(ihopper.getWorld(), ihopper.A(), ihopper.B() + 1.0D, ihopper.C()).iterator();
  
-@@ -528,11 +535,17 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -527,11 +534,17 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
      }
  
      private static boolean a(IHopper ihopper, IInventory iinventory, int i, EnumDirection enumdirection) {
@@ -90,7 +90,7 @@ index 5e1364607..0b5f8fa4e 100644
  
              int response = callItemMoveEvent(ihopper, iinventory, ihopper, itemstack, moving);
              if (response == -1) {
-@@ -541,7 +554,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -540,7 +553,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                  } else if (ihopper instanceof EntityMinecartHopper) {
                      ((EntityMinecartHopper) ihopper).m(ihopper.getWorld().spigotConfig.hopperTransfer / 2); // Spigot
                  }
@@ -99,7 +99,7 @@ index 5e1364607..0b5f8fa4e 100644
              } else if (response != moving) {
                  moving = response;
              }
-@@ -555,11 +568,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -554,11 +567,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                  IGNORE_TILE_UPDATES = false;
              }
  
