@@ -1,14 +1,14 @@
-From 16db4101969bdca3c5e56cc619cb53d1f6a7f947 Mon Sep 17 00:00:00 2001
+From 8ec60388e7fa0eddbddb00da3b150ddc2ddc68a4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index bfab53a07..043b45111 100644
+index fc340055d..9a126b4f9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -576,4 +576,11 @@ public class BlossomConfig {
+@@ -571,4 +571,11 @@ public class BlossomConfig {
          pluginCommandLabels = getBoolean("player.commands.plugin-labels", false);
      }
  
@@ -21,7 +21,7 @@ index bfab53a07..043b45111 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 3549fd814..85874326b 100644
+index 7d2caaaff..9c999d110 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
 @@ -156,8 +156,41 @@ public class BlockFlowing extends BlockFluids {

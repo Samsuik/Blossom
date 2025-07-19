@@ -1,4 +1,4 @@
-From cdc927b305f1abf10e81aadf6a8d41ec724ab7b6 Mon Sep 17 00:00:00 2001
+From 9fc93fee82e2994f3b89e9fe590360521c49a90f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 15:54:26 +0100
 Subject: [PATCH] Fix player movement issues
@@ -16,10 +16,10 @@ Clients can clip up to 0.0625 inside a block causing moved wrongly check to fail
 TacoSpigots east west patch affects player movement causing a desync
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 15581efff..b69443147 100644
+index b80b9d9b0..9465b33af 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -529,4 +529,11 @@ public class BlossomConfig {
+@@ -524,4 +524,11 @@ public class BlossomConfig {
          delayChunkUnloads = getInt("chunk.chunk-unload-delay", 100);
      }
  
