@@ -1,4 +1,4 @@
-From d5e96a824f53caa9557d13eb20d33afcc1c599a7 Mon Sep 17 00:00:00 2001
+From 5de72dd0c41000b2f292404f7f6c10501a8e61e9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:20:39 +0100
 Subject: [PATCH] Waterproof Redstone
@@ -19,22 +19,21 @@ index 4cae11530..0ecf79a85 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 2948ec77c..3549fd814 100644
+index 2948ec77c..7d2caaaff 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
-@@ -235,6 +235,12 @@ public class BlockFlowing extends BlockFluids {
-     }
+@@ -236,6 +236,11 @@ public class BlockFlowing extends BlockFluids {
  
      private boolean g(World world, BlockPosition blockposition, IBlockData iblockdata) {
-+        // Blossom start
+         Block block = world.getType(blockposition).getBlock();
++        // Blossom start - waterproof redstone
 +        if (me.samsuik.blossom.configuration.BlossomConfig.waterProofRedstone) {
-+            Block block = iblockdata.getBlock();
 +            return !(block == Blocks.AIR || block instanceof BlockFluids);
 +        }
-+        // Blossom end
-         Block block = world.getType(blockposition).getBlock();
++        // Blossom end - waterproof redstone
  
          return !(block instanceof BlockDoor) && block != Blocks.STANDING_SIGN && block != Blocks.LADDER && block != Blocks.REEDS ? (block.material == Material.PORTAL ? true : block.material.isSolid()) : true;
+     }
 -- 
 2.50.1
 

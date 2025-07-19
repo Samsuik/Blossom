@@ -1,11 +1,11 @@
-From 0e58c8e490d36eab35dbd40d0b7a1ae34d46c52f Mon Sep 17 00:00:00 2001
+From ab4c9b348a1fb32aaa012fe4d2e15f1f546bc6f6 Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Sat, 19 Jul 2025 16:04:51 +0100
 Subject: [PATCH] optimise fluids
 
 
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 85874326b..42f6149ee 100644
+index 9c999d110..25c111113 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
 @@ -55,8 +55,11 @@ public class BlockFlowing extends BlockFluids {
@@ -31,7 +31,7 @@ index 85874326b..42f6149ee 100644
                      world.setAir(blockposition);
                  } else {
                      iblockdata = iblockdata.set(BlockFlowing.LEVEL, Integer.valueOf(i1));
-@@ -205,6 +208,18 @@ public class BlockFlowing extends BlockFluids {
+@@ -205,6 +208,17 @@ public class BlockFlowing extends BlockFluids {
      }
  
      private int a(World world, BlockPosition blockposition, int i, EnumDirection enumdirection) {
@@ -46,32 +46,25 @@ index 85874326b..42f6149ee 100644
 +            EnumDirection enumdirection,
 +            it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<BlockPosition> checked
 +    ) {
-+        // Blossom end - optimise fluids
          int j = 1000;
          Iterator iterator = EnumDirection.EnumDirectionLimit.HORIZONTAL.iterator();
  
-@@ -214,6 +229,11 @@ public class BlockFlowing extends BlockFluids {
-             if (enumdirection1 != enumdirection) {
-                 BlockPosition blockposition1 = blockposition.shift(enumdirection1);
-                 IBlockData iblockdata = world.getType(blockposition1);
-+                // Blossom start - optimise fluids
-+                if (!checked.add(blockposition1)) {
-+                    continue;
-+                }
-+                // Blossom end - optimise fluids
- 
-                 if (!this.g(world, blockposition1, iblockdata) && (iblockdata.getBlock().getMaterial() != this.material || ((Integer) iblockdata.get(BlockFlowing.LEVEL)).intValue() > 0)) {
-                     if (!this.g(world, blockposition1.down(), iblockdata)) {
-@@ -221,7 +241,7 @@ public class BlockFlowing extends BlockFluids {
+@@ -221,7 +235,13 @@ public class BlockFlowing extends BlockFluids {
                      }
  
                      if (i < 4) {
 -                        int k = this.a(world, blockposition1, i + 1, enumdirection1.opposite());
++                        // Blossom start - optimise fluids
++                        if (!checked.add(blockposition1)) {
++                            continue;
++                        }
++                        // Blossom end - optimise fluids
++
 +                        int k = this.distanceToTheClosestHole(world, blockposition1, i + 1, enumdirection1.opposite(), checked); // Blossom - optimise fluids
  
                          if (k < j) {
                              j = k;
-@@ -317,15 +337,24 @@ public class BlockFlowing extends BlockFluids {
+@@ -316,16 +336,25 @@ public class BlockFlowing extends BlockFluids {
          if (this.getMaterial() == Material.LAVA) {
              return world.worldProvider.o() ? world.paperSpigotConfig.lavaFlowSpeedNether : world.paperSpigotConfig.lavaFlowSpeedNormal;
          }
@@ -88,8 +81,8 @@ index 85874326b..42f6149ee 100644
          }
 -        return super.a(world);
 +        return actualFlowSpeed;
-+    }
-+
+     }
+ 
 +    private static boolean isAdjacentToMaterial(World world, BlockPosition blockposition, Material material) {
 +        for (EnumDirection direction : EnumDirection.EnumDirectionLimit.HORIZONTAL) {
 +            if (world.getType(blockposition.shift(direction)).getBlock().getMaterial() == material) {
@@ -97,12 +90,13 @@ index 85874326b..42f6149ee 100644
 +            }
 +        }
 +        return false;
-     }
++    }
 +    // Blossom end - optimise fluids
- 
++
      /**
       * PaperSpigot - Data check method for fast draining
-@@ -338,40 +367,24 @@ public class BlockFlowing extends BlockFluids {
+      */
+@@ -337,40 +366,24 @@ public class BlockFlowing extends BlockFluids {
      /**
       * PaperSpigot - Checks surrounding blocks to determine if block can be fast drained
       */
