@@ -1,4 +1,4 @@
-From 616dacc37d03a13e79823a679693286810a9ee9a Mon Sep 17 00:00:00 2001
+From af199af748cd35b2bd96f6fe22e96bad26397659 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -22,7 +22,7 @@ index 3f41b5ba1..4e476cad7 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 new file mode 100644
-index 000000000..6e7242de0
+index 000000000..49ca10990
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 @@ -0,0 +1,151 @@
@@ -147,7 +147,7 @@ index 000000000..6e7242de0
 +            }
 +
 +            double x = entity.locX - centre.a;
-+            double y = entity.locY - centre.b;
++            double y = entity.locY + (double) entity.getHeadHeight() - centre.b;
 +            double z = entity.locZ - centre.c;
 +            double s = x * x + y * y + z * z;
 +
@@ -398,10 +398,10 @@ index 88b6fe532..431097ec3 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 9facefa1f..6b371c677 100644
+index 9facefa1f..8efe45ea2 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -62,6 +62,23 @@ public class Block {
+@@ -62,6 +62,27 @@ public class Block {
      protected boolean v;
      protected float strength;
      protected float durability;
@@ -411,15 +411,19 @@ index 9facefa1f..6b371c677 100644
 +    }
 +
 +    public boolean isInsideBlock(IBlockAccess world, BlockPosition pos, double x, double y, double z) {
-+        updateShape(world, pos);
++        IBlockData iblockdata = world.getType(pos);
++        if (!this.a(iblockdata, false)) {
++            return false;
++        }
 +
 +        double relX = x - pos.getX();
 +        double relY = y - pos.getY();
 +        double relZ = z - pos.getZ();
 +
-+        return minX <= relX && maxX >= relX
-+            && minY <= relY && maxY >= relY
-+            && minZ <= relZ && maxZ >= relZ;
++        this.updateShape(world, pos);
++        return this.minX < relX && this.maxX > relX
++            && this.minY < relY && this.maxY > relY
++            && this.minZ < relZ && this.maxZ > relZ;
 +    }
 +    // Blossom end
      protected boolean y;
