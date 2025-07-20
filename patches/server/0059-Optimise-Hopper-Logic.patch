@@ -1,4 +1,4 @@
-From 05f51903a4d5af2090f0c12d9fa500f716416f27 Mon Sep 17 00:00:00 2001
+From aa2caafc61e1442842d86e3ebc568b9c9e2a29a0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -20,8 +20,43 @@ index bc2175047..7182a2718 100644
 +    }
 +
  }
+diff --git a/src/main/java/net/minecraft/server/ITileInventory.java b/src/main/java/net/minecraft/server/ITileInventory.java
+index 6dc5cbcee..66c9c4b89 100644
+--- a/src/main/java/net/minecraft/server/ITileInventory.java
++++ b/src/main/java/net/minecraft/server/ITileInventory.java
+@@ -7,4 +7,10 @@ public interface ITileInventory extends IInventory, ITileEntityContainer {
+     void a(ChestLock chestlock);
+ 
+     ChestLock i();
++
++    // Blossom start - optimise hopper logic
++    default boolean isRemoved() {
++        return true;
++    }
++    // Blossom end - optimise hopper logic
+ }
+diff --git a/src/main/java/net/minecraft/server/InventoryLargeChest.java b/src/main/java/net/minecraft/server/InventoryLargeChest.java
+index 7e83ce3e0..0f341a1cd 100644
+--- a/src/main/java/net/minecraft/server/InventoryLargeChest.java
++++ b/src/main/java/net/minecraft/server/InventoryLargeChest.java
+@@ -49,6 +49,15 @@ public class InventoryLargeChest implements ITileInventory {
+         this.right.setMaxStackSize(size);
+     }
+     // CraftBukkit end
++    // Blossom start - optimise hopper logic
++    public final boolean isRemoved() {
++        return !isValidChest(this.left) || !isValidChest(this.right);
++    }
++
++    private static boolean isValidChest(final ITileInventory inventory) {
++        return inventory instanceof TileEntityContainer && !((TileEntityContainer) inventory).isRemoved();
++    }
++    // Blossom end - optimise hopper logic
+ 
+     public InventoryLargeChest(String s, ITileInventory itileinventory, ITileInventory itileinventory1) {
+         this.a = s;
 diff --git a/src/main/java/net/minecraft/server/TileEntity.java b/src/main/java/net/minecraft/server/TileEntity.java
-index e8107fcc3..8161caf06 100644
+index e8107fcc3..269435739 100644
 --- a/src/main/java/net/minecraft/server/TileEntity.java
 +++ b/src/main/java/net/minecraft/server/TileEntity.java
 @@ -14,6 +14,7 @@ public abstract class TileEntity {
@@ -40,11 +75,62 @@ index e8107fcc3..8161caf06 100644
              IBlockData iblockdata = this.world.getType(this.position);
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
+@@ -137,6 +139,7 @@ public abstract class TileEntity {
+         return null;
+     }
+ 
++    public final boolean isRemoved() { return this.x(); } // Blossom - optimise hopper logic; OBFHELPER
+     public boolean x() {
+         return this.d;
+     }
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..b0e75e739 100644
+index 8d00cd0a2..f96961631 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
-@@ -173,11 +173,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -44,6 +44,42 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+         maxStack = size;
+     }
+     // CraftBukkit end
++    // Blossom start - optimise hopper logic
++    private ITileInventory destinationContainer = null;
++    private ITileInventory sourceContainer = null;
++
++    private IInventory getDestinationContainer() {
++        ITileInventory destinationContainer = this.destinationContainer;
++        if (destinationContainer == null || destinationContainer.isRemoved()) {
++            BlockPosition destinationPos = this.getPosition().shift(BlockHopper.b(this.u()));
++            IInventory iinventory = HopperHelper.getInventory(this.getWorld(), destinationPos);
++            if (iinventory instanceof ITileInventory && isContainerSafeToCache((ITileInventory) iinventory)) {
++                destinationContainer = (ITileInventory) iinventory;
++                this.destinationContainer = destinationContainer;
++            }
++            return iinventory;
++        }
++        return destinationContainer;
++    }
++
++    private IInventory getSourceContainer() {
++        ITileInventory sourceContainer = this.sourceContainer;
++        if (sourceContainer == null || sourceContainer.isRemoved()) {
++            BlockPosition sourcePos = this.getPosition().up();
++            IInventory iinventory = HopperHelper.getInventory(this.getWorld(), sourcePos);
++            if (iinventory instanceof ITileInventory && isContainerSafeToCache((ITileInventory) iinventory)) {
++                sourceContainer = (ITileInventory) iinventory;
++                this.sourceContainer = sourceContainer;
++            }
++            return iinventory;
++        }
++        return sourceContainer;
++    }
++
++    private static boolean isContainerSafeToCache(ITileInventory inventory) {
++        return !inventory.isRemoved() && !(inventory instanceof TileEntityChest);
++    }
++    // Blossom end - optimise hopper logic
+ 
+     public TileEntityHopper() {}
+ 
+@@ -173,11 +209,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
  
      public void c() {
          if (this.world != null && !this.world.isClientSide) {
@@ -57,7 +143,16 @@ index 8d00cd0a2..b0e75e739 100644
  
          }
      }
-@@ -258,57 +258,37 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -250,7 +286,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+ 
+     private boolean r() {
+         // TacoSpigot start - Don't use inefficient H() which does another bounding box search
+-        IInventory iinventory = HopperHelper.getInventory(getWorld(), getPosition().shift(BlockHopper.b(this.u())));
++        IInventory iinventory = this.getDestinationContainer(); // Blossom - optimise hopper logic
+         // TacoSpigot end
+ 
+         if (iinventory == null) {
+@@ -258,57 +294,37 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          } else {
              EnumDirection enumdirection = BlockHopper.b(this.u()).opposite();
  
@@ -138,7 +233,7 @@ index 8d00cd0a2..b0e75e739 100644
                      }
                  }
  
-@@ -367,6 +347,130 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -367,13 +383,136 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          return true;
      }
  
@@ -269,7 +364,15 @@ index 8d00cd0a2..b0e75e739 100644
      // TacoSpigot start - Split methods, one that pushes and one that pulls
      @Deprecated
      public static boolean a(IHopper ihopper) {
-@@ -426,58 +530,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+         IInventory iinventory;
+         if (ihopper.getWorld().tacoSpigotConfig.isHopperPushBased && ihopper instanceof TileEntityHopper) {
+-            BlockPosition pos = ((TileEntityHopper) ihopper).getPosition().up(); // Only pull from a above, because everything else comes to us
+-            iinventory = HopperHelper.getInventory(ihopper.getWorld(), pos);
++            iinventory = ((TileEntityHopper) ihopper).getSourceContainer();
+         } else {
+             iinventory = b(ihopper); // Use old behavior for BB entity searching
+         }
+@@ -426,58 +565,32 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          ItemStack itemstack = iinventory.getItem(i);
  
          if (itemstack != null && b(iinventory, itemstack, i, enumdirection)) {
@@ -343,7 +446,7 @@ index 8d00cd0a2..b0e75e739 100644
          }
  
          return false;
-@@ -548,7 +626,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -548,7 +661,9 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
              boolean flag = false;
  
              if (itemstack1 == null) {
@@ -353,7 +456,7 @@ index 8d00cd0a2..b0e75e739 100644
                  itemstack = null;
                  flag = true;
              } else if (a(itemstack1, itemstack)) {
-@@ -568,7 +648,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -568,7 +683,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
                          tileentityhopper.d(tileentityhopper.world.spigotConfig.hopperTransfer); // Spigot
                      }
  
@@ -362,16 +465,25 @@ index 8d00cd0a2..b0e75e739 100644
                  }
  
                  iinventory.update();
-@@ -589,7 +669,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -589,7 +704,16 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
      }
  
      public static List<EntityItem> a(World world, double d0, double d1, double d2) {
 -        return world.a(EntityItem.class, new AxisAlignedBB(d0 - 0.5D, d1 - 0.5D, d2 - 0.5D, d0 + 0.5D, d1 + 0.5D, d2 + 0.5D), IEntitySelector.a);
-+        return world.getEntitiesLimitedByType(EntityItem.class, new AxisAlignedBB(d0 - 0.5D, d1 - 0.5D, d2 - 0.5D, d0 + 0.5D, d1 + 0.5D, d2 + 0.5D), IEntitySelector.a, me.samsuik.blossom.configuration.BlossomConfig.hopperSearchLimit, me.samsuik.blossom.configuration.BlossomConfig.hopperSearchLimit * 2); // Blossom
++        // Blossom start - optimise hopper logic
++        int searchLimit = me.samsuik.blossom.configuration.BlossomConfig.hopperSearchLimit;
++        return world.getEntitiesLimitedByType(
++                EntityItem.class,
++                new AxisAlignedBB(d0 - 0.5D, d1 - 0.5D, d2 - 0.5D, d0 + 0.5D, d1 + 0.5D, d2 + 0.5D),
++                IEntitySelector.a,
++                searchLimit,
++                searchLimit * 2
++        );
++        // Blossom end - optimise hopper logic
      }
  
      public static IInventory b(World world, double d0, double d1, double d2) {
-@@ -613,7 +693,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -613,7 +737,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
          }
  
          if (object == null) {
@@ -380,6 +492,18 @@ index 8d00cd0a2..b0e75e739 100644
  
              if (list.size() > 0) {
                  object = (IInventory) list.get(world.random.nextInt(list.size()));
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index b87c9dfea..c121be3e6 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1710,6 +1710,7 @@ public abstract class World implements IBlockAccess {
+         // CraftBukkit start - From below, clean up tile entities before ticking them
+         if (!this.c.isEmpty()) {
+             this.tileEntityList.removeAll(this.c);
++            this.c.forEach(TileEntity::y); // Blossom - optimise hopper logic
+             //this.h.removeAll(this.c); // PaperSpigot - Remove unused list
+             this.c.clear();
+         }
 diff --git a/src/main/java/net/techcable/tacospigot/HopperHelper.java b/src/main/java/net/techcable/tacospigot/HopperHelper.java
 index 630a81bea..9000a9ddb 100644
 --- a/src/main/java/net/techcable/tacospigot/HopperHelper.java

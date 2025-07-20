@@ -1,4 +1,4 @@
-From de64d8953204c4ee41ecad5d6f1e1bb5f36a8587 Mon Sep 17 00:00:00 2001
+From 59f71684101bf7ba58d3ccde0050b72b1414757b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:10:11 +0100
 Subject: [PATCH] mc dev imports
@@ -4397,6 +4397,36 @@ index 000000000..3c3ab0c59
 +
 +    Block getBlock();
 +}
+diff --git a/src/main/java/net/minecraft/server/ITileEntityContainer.java b/src/main/java/net/minecraft/server/ITileEntityContainer.java
+new file mode 100644
+index 000000000..4da429842
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/ITileEntityContainer.java
+@@ -0,0 +1,8 @@
++package net.minecraft.server;
++
++public interface ITileEntityContainer extends INamableTileEntity {
++
++    Container createContainer(PlayerInventory playerinventory, EntityHuman entityhuman);
++
++    String getContainerName();
++}
+diff --git a/src/main/java/net/minecraft/server/ITileInventory.java b/src/main/java/net/minecraft/server/ITileInventory.java
+new file mode 100644
+index 000000000..6dc5cbcee
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/ITileInventory.java
+@@ -0,0 +1,10 @@
++package net.minecraft.server;
++
++public interface ITileInventory extends IInventory, ITileEntityContainer {
++
++    boolean r_();
++
++    void a(ChestLock chestlock);
++
++    ChestLock i();
++}
 diff --git a/src/main/java/net/minecraft/server/InventoryUtils.java b/src/main/java/net/minecraft/server/InventoryUtils.java
 new file mode 100644
 index 000000000..55ab12f04
@@ -6139,5 +6169,5 @@ index 000000000..209fe3bfe
 +    }
 +}
 -- 
-2.49.0
+2.50.1
 

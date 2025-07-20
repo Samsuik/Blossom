@@ -1,14 +1,14 @@
-From c4569fef04c79e155713a7d87427bd27dee1c4cc Mon Sep 17 00:00:00 2001
+From 24e68379615c6386fe1a9b2ebe03ee332624a1be Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Sat, 19 Jul 2025 17:28:07 +0100
 Subject: [PATCH] Fix hoppers mishandling oversized items
 
 
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 2034e3c28..f337d9783 100644
+index 46d7b3cd5..3434f63b9 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
-@@ -617,7 +617,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -652,7 +652,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
              }
          }
  
@@ -17,7 +17,7 @@ index 2034e3c28..f337d9783 100644
              itemstack = null;
          }
  
-@@ -640,9 +640,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+@@ -675,9 +675,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
  
              if (itemstack1 == null) {
                  IGNORE_TILE_UPDATES = true; // Blossom

@@ -1,4 +1,4 @@
-From 5f231e21e4acfc1c6f080536c59d5ba55f5018ee Mon Sep 17 00:00:00 2001
+From 63beecd30a7a12c3b17dde33b8b96e62d5580ab0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -101,10 +101,10 @@ index 34b6f6bd3..66f541c27 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index bad6f6530..bd1ad2a62 100644
+index 6dea49273..ba3692128 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3274,11 +3274,16 @@ public abstract class World implements IBlockAccess {
+@@ -3275,11 +3275,16 @@ public abstract class World implements IBlockAccess {
      }
  
      public boolean a(Block block, BlockPosition blockposition, boolean flag, EnumDirection enumdirection, Entity entity, ItemStack itemstack) {
@@ -123,5 +123,5 @@ index bad6f6530..bd1ad2a62 100644
          this.getServer().getPluginManager().callEvent(event);
  
 -- 
-2.50.0
+2.50.1
 
