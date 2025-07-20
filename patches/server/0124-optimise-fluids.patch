@@ -1,11 +1,11 @@
-From ab4c9b348a1fb32aaa012fe4d2e15f1f546bc6f6 Mon Sep 17 00:00:00 2001
+From 5afcc22c4641ee0257fbfaa7377d5b6079a80bcd Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Sat, 19 Jul 2025 16:04:51 +0100
 Subject: [PATCH] optimise fluids
 
 
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 9c999d110..25c111113 100644
+index 9c999d110..aba1b02e3 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
 @@ -55,8 +55,11 @@ public class BlockFlowing extends BlockFluids {
@@ -31,6 +31,15 @@ index 9c999d110..25c111113 100644
                      world.setAir(blockposition);
                  } else {
                      iblockdata = iblockdata.set(BlockFlowing.LEVEL, Integer.valueOf(i1));
+@@ -124,7 +127,7 @@ public class BlockFlowing extends BlockFluids {
+             }
+             }
+             // CraftBukkit end
+-        } else if (i >= 0 && (i == 0 || this.g(world, blockposition.down(), iblockdata2))) {
++        } else if (i >= 0 && (i == 0 || this.isBlocking(iblockdata2))) { // Blossom - optimise fluids
+             Set set = this.f(world, blockposition);
+ 
+             k = i + b0;
 @@ -205,6 +208,17 @@ public class BlockFlowing extends BlockFluids {
      }
  
@@ -49,7 +58,14 @@ index 9c999d110..25c111113 100644
          int j = 1000;
          Iterator iterator = EnumDirection.EnumDirectionLimit.HORIZONTAL.iterator();
  
-@@ -221,7 +235,13 @@ public class BlockFlowing extends BlockFluids {
+@@ -215,13 +229,19 @@ public class BlockFlowing extends BlockFluids {
+                 BlockPosition blockposition1 = blockposition.shift(enumdirection1);
+                 IBlockData iblockdata = world.getType(blockposition1);
+ 
+-                if (!this.g(world, blockposition1, iblockdata) && (iblockdata.getBlock().getMaterial() != this.material || ((Integer) iblockdata.get(BlockFlowing.LEVEL)).intValue() > 0)) {
++                if (!this.isBlocking(iblockdata) && (iblockdata.getBlock().getMaterial() != this.material || ((Integer) iblockdata.get(BlockFlowing.LEVEL)).intValue() > 0)) { // Blossom - optimise fluids
+                     if (!this.g(world, blockposition1.down(), iblockdata)) {
+                         return i;
                      }
  
                      if (i < 4) {
@@ -64,7 +80,44 @@ index 9c999d110..25c111113 100644
  
                          if (k < j) {
                              j = k;
-@@ -316,16 +336,25 @@ public class BlockFlowing extends BlockFluids {
+@@ -244,10 +264,10 @@ public class BlockFlowing extends BlockFluids {
+             BlockPosition blockposition1 = blockposition.shift(enumdirection);
+             IBlockData iblockdata = world.getType(blockposition1);
+ 
+-            if (!this.g(world, blockposition1, iblockdata) && (iblockdata.getBlock().getMaterial() != this.material || ((Integer) iblockdata.get(BlockFlowing.LEVEL)).intValue() > 0)) {
++            if (!this.isBlocking(iblockdata) && (iblockdata.getBlock().getMaterial() != this.material || ((Integer) iblockdata.get(BlockFlowing.LEVEL)).intValue() > 0)) { // Blossom - optimise fluids
+                 int j;
+ 
+-                if (this.g(world, blockposition1.down(), world.getType(blockposition1.down()))) {
++                if (this.g(world, blockposition1.down(), iblockdata)) { // Blossom - optimise fluids
+                     j = this.a(world, blockposition1, 1, enumdirection.opposite());
+                 } else {
+                     j = 0;
+@@ -268,7 +288,13 @@ public class BlockFlowing extends BlockFluids {
+     }
+ 
+     private boolean g(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        Block block = world.getType(blockposition).getBlock();
++        // Blossom start - optimise fluids
++        return this.isBlocking(world.getType(blockposition));
++    }
++
++    private boolean isBlocking(IBlockData iblockdata) {
++        Block block = iblockdata.getBlock();
++        // Blossom end - optimise fluids
+         // Blossom start - waterproof redstone
+         if (me.samsuik.blossom.configuration.BlossomConfig.waterProofRedstone) {
+             return !(block == Blocks.AIR || block instanceof BlockFluids);
+@@ -299,7 +325,7 @@ public class BlockFlowing extends BlockFluids {
+     private boolean h(World world, BlockPosition blockposition, IBlockData iblockdata) {
+         Material material = iblockdata.getBlock().getMaterial();
+ 
+-        return material != this.material && material != Material.LAVA && !this.g(world, blockposition, iblockdata);
++        return material != this.material && material != Material.LAVA && !this.isBlocking(iblockdata); // Blossom - optimise fluids
+     }
+ 
+     public void onPlace(World world, BlockPosition blockposition, IBlockData iblockdata) {
+@@ -316,16 +342,25 @@ public class BlockFlowing extends BlockFluids {
          if (this.getMaterial() == Material.LAVA) {
              return world.worldProvider.o() ? world.paperSpigotConfig.lavaFlowSpeedNether : world.paperSpigotConfig.lavaFlowSpeedNormal;
          }
@@ -96,7 +149,7 @@ index 9c999d110..25c111113 100644
      /**
       * PaperSpigot - Data check method for fast draining
       */
-@@ -337,40 +366,24 @@ public class BlockFlowing extends BlockFluids {
+@@ -337,40 +372,24 @@ public class BlockFlowing extends BlockFluids {
      /**
       * PaperSpigot - Checks surrounding blocks to determine if block can be fast drained
       */
