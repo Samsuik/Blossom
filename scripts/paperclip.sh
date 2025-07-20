@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-basedir="$(cd "$1" && pwd -P)"
+basedir=`pwd`
 
 cp ./Blossom-Server/target/server*-SNAPSHOT.jar ./work/Paperclip/blossom-1.8.8.jar
 cp ./work/1.8.8/1.8.8.jar ./work/Paperclip/minecraft_server.1.8.8.jar
