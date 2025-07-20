@@ -1,0 +1,39 @@
+From 5bb8e559eb2cdd3fbdbf646af62d368ec42aac0f Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Mon, 21 Jul 2025 00:26:13 +0100
+Subject: [PATCH] separate tile entities
+
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 27944a0d1..3471d2ed7 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1738,6 +1738,13 @@ public abstract class World implements IBlockAccess {
+     public void scheduleUponLoading(Chunk chunk, BlockPosition blockposition, Block block, int i, int j) {} // Blossom
+ 
+     public void tickEntities() {
++        // Blossom start - separate tile entities
++        this.tickActualEntities();
++        this.tickTileEntities();
++    }
++
++    private void tickActualEntities() {
++        // Blossom end - separate tile entities
+         this.methodProfiler.a("entities");
+         this.methodProfiler.a("global");
+ 
+@@ -1881,6 +1888,11 @@ public abstract class World implements IBlockAccess {
+         guardEntityList = false; // Spigot
+ 
+         timings.entityTick.stopTiming(); // Spigot
++        // Blossom start - separate tile entities
++    }
++
++    private void tickTileEntities() {
++        // Blossom end - separate tile entities
+         this.methodProfiler.c("blockEntities");
+         timings.tileEntityTick.startTiming(); // Spigot
+         this.M = true;
+-- 
+2.50.1
+
