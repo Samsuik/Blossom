@@ -1,4 +1,4 @@
-From 3c6fc32b6a7a9b00dcb48e9b7aed39bbf390141f Mon Sep 17 00:00:00 2001
+From aca03f69a011751a59ed3b517c899beccec52ec0 Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Sun, 20 Jul 2025 10:34:47 +0100
 Subject: [PATCH] Reduce equipment change updates
@@ -41,7 +41,7 @@ index 09df308b6..4e8c4b9bb 100644
  
      public ItemStack[] getEquipment() {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index fa30106f1..8f5592ae5 100644
+index fa30106f1..c31456e0e 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -101,6 +101,13 @@ public abstract class EntityLiving extends Entity {
@@ -49,7 +49,7 @@ index fa30106f1..8f5592ae5 100644
      }
      // Spigot end
 +    // Blossom start - reduce equipment change updates
-+    private boolean equipmentChanged;
++    private boolean equipmentChanged = true;
 +
 +    protected final void markEquipmentChanged() {
 +        this.equipmentChanged = true;
@@ -67,12 +67,15 @@ index fa30106f1..8f5592ae5 100644
                  // CraftBukkit start
                  if(this instanceof EntityAnimal){
                      ((EntityAnimal)this).cq();
-@@ -1543,7 +1552,7 @@ public abstract class EntityLiving extends Entity {
+@@ -1543,7 +1552,10 @@ public abstract class EntityLiving extends Entity {
  
      public void t_() {
          super.t_();
 -        if (!this.world.isClientSide) {
-+        if (this.ticksLived % 20 == 0 || this.equipmentChanged || this instanceof EntityPlayer) { // Blossom - reduce equipment change updates
++        // Blossom start - reduce equipment change updates
++        if (this.ticksLived % 20 == 0 || this.equipmentChanged || this instanceof EntityPlayer) {
++            this.equipmentChanged = false;
++            // Blossom end - reduce equipment change updates
              int i = this.bv();
  
              if (i > 0) {
