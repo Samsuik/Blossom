@@ -1,14 +1,14 @@
-From 4fed804235cd4c83f2e3ae26308600db69c7d826 Mon Sep 17 00:00:00 2001
+From 173ff6fa97ed1c2a8c47a5deaef76867b9c82a6b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 56d45c98b..9d44f53c8 100644
+index 16f4f9e60..da348f09f 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -359,6 +359,18 @@ public abstract class Entity implements ICommandListener {
+@@ -362,6 +362,18 @@ public abstract class Entity implements ICommandListener {
              && !(this instanceof EntityPlayer);
      }
      // Blossom end - reduce entity checks
@@ -27,7 +27,7 @@ index 56d45c98b..9d44f53c8 100644
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -705,7 +717,7 @@ public abstract class Entity implements ICommandListener {
+@@ -708,7 +720,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -36,7 +36,7 @@ index 56d45c98b..9d44f53c8 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -898,7 +910,7 @@ public abstract class Entity implements ICommandListener {
+@@ -901,7 +913,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  

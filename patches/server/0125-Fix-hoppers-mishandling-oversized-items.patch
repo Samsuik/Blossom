@@ -1,0 +1,36 @@
+From 75ec740848407d3fad80c9440406f175a63b67e1 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sat, 19 Jul 2025 17:28:07 +0100
+Subject: [PATCH] Fix hoppers mishandling oversized items
+
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
+index 46d7b3cd5..3434f63b9 100644
+--- a/src/main/java/net/minecraft/server/TileEntityHopper.java
++++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
+@@ -652,7 +652,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+             }
+         }
+ 
+-        if (itemstack != null && itemstack.count == 0) {
++        if (itemstack != null && itemstack.count <= 0) { // Blossom - fix hoppers mishandling oversized items
+             itemstack = null;
+         }
+ 
+@@ -675,9 +675,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+ 
+             if (itemstack1 == null) {
+                 IGNORE_TILE_UPDATES = true; // Blossom
+-                iinventory.setItem(i, itemstack);
++                // Blossom start - fix hoppers mishandling oversized items
++                int itemsToMove = Math.min(itemstack.count, itemstack.getMaxStackSize());
++                iinventory.setItem(i, itemstack.cloneAndSubtract(itemsToMove));
+                 IGNORE_TILE_UPDATES = false; // Blossom
+-                itemstack = null;
++                // Blossom end - fix hoppers mishandling oversized items
+                 flag = true;
+             } else if (a(itemstack1, itemstack)) {
+                 int j = itemstack.getMaxStackSize() - itemstack1.count;
+-- 
+2.50.1
+

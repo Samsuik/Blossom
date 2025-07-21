@@ -1,11 +1,11 @@
-From fd37e52a9cd944748c8168bdad938a41fd5c79ec Mon Sep 17 00:00:00 2001
+From 7f9f5bc82d670b7b2bf57d9339ca5cf91c1474f8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 21:09:34 +0000
 Subject: [PATCH] Disable Mob Sounds
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 36f331e1d..6f22fde4a 100644
+index e8e5d9a0e..e0eefe14a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -259,4 +259,11 @@ public class BlossomConfig {
@@ -21,10 +21,10 @@ index 36f331e1d..6f22fde4a 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 0cda9a608..81f67d2b1 100644
+index 97e44dd4c..11b017f1d 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -832,7 +832,11 @@ public abstract class Entity implements ICommandListener {
+@@ -835,7 +835,11 @@ public abstract class Entity implements ICommandListener {
                          this.makeSound(this.P(), f, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
                      }
  
@@ -36,7 +36,7 @@ index 0cda9a608..81f67d2b1 100644
                      block.a(this.world, blockposition, this); // CraftBukkit moved from above
                  }
              }
-@@ -940,7 +944,7 @@ public abstract class Entity implements ICommandListener {
+@@ -943,7 +947,7 @@ public abstract class Entity implements ICommandListener {
      }
  
      public boolean R() {
@@ -71,5 +71,5 @@ index a72956075..49402ca7f 100644
          }
  
 -- 
-2.49.0
+2.50.1
 

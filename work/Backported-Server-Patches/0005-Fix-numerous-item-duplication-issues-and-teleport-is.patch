@@ -1,4 +1,4 @@
-From 8dcbe95f7b58a52a3a496ee7bfb283e4468d76e0 Mon Sep 17 00:00:00 2001
+From 3efbd26f4c1361cddb0e1d685eef12ae3b40958d Mon Sep 17 00:00:00 2001
 From: Aikar <aikar@aikar.co>
 Date: Sat, 25 Apr 2020 06:46:35 -0400
 Subject: [PATCH] Fix numerous item duplication issues and teleport issues
@@ -42,10 +42,10 @@ index 170f77632..7a5fb84f5 100644
              EntityPortalEnterEvent event = new EntityPortalEnterEvent(entity.getBukkitEntity(), new org.bukkit.Location(world.getWorld(), blockposition.getX(), blockposition.getY(), blockposition.getZ()));
              world.getServer().getPluginManager().callEvent(event);
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 6c0d3d991..253e405c7 100644
+index c45a57735..8edcaa6ad 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -1501,12 +1501,12 @@ public abstract class Entity implements ICommandListener {
+@@ -1504,12 +1504,12 @@ public abstract class Entity implements ICommandListener {
          if (itemstack.count != 0 && itemstack.getItem() != null) {
              // CraftBukkit start - Capture drops for death event
              if (this instanceof EntityLiving && ((EntityLiving) this).drops != null) {
@@ -61,7 +61,7 @@ index 6c0d3d991..253e405c7 100644
              entityitem.p();
              this.world.addEntity(entityitem);
              return entityitem;
-@@ -1997,6 +1997,12 @@ public abstract class Entity implements ICommandListener {
+@@ -2000,6 +2000,12 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void c(int i) {
@@ -74,7 +74,7 @@ index 6c0d3d991..253e405c7 100644
          if (!this.world.isClientSide && !this.dead) {
              this.world.methodProfiler.a("changeDimension");
              MinecraftServer minecraftserver = MinecraftServer.getServer();
-@@ -2056,6 +2062,11 @@ public abstract class Entity implements ICommandListener {
+@@ -2059,6 +2065,11 @@ public abstract class Entity implements ICommandListener {
              worldserver1.chunkProviderServer.forceChunkLoad = before;
              // CraftBukkit end
              this.world.methodProfiler.c("reloading");
@@ -86,7 +86,7 @@ index 6c0d3d991..253e405c7 100644
              Entity entity = EntityTypes.createEntityByName(EntityTypes.b(this), worldserver1);
  
              if (entity != null) {
-@@ -2072,10 +2083,6 @@ public abstract class Entity implements ICommandListener {
+@@ -2075,10 +2086,6 @@ public abstract class Entity implements ICommandListener {
                  // CraftBukkit start - Forward the CraftEntity to the new entity
                  this.getBukkitEntity().setHandle(entity);
                  entity.bukkitEntity = this.getBukkitEntity();
@@ -97,7 +97,7 @@ index 6c0d3d991..253e405c7 100644
                  // CraftBukkit end
              }
  
-@@ -2087,6 +2094,12 @@ public abstract class Entity implements ICommandListener {
+@@ -2090,6 +2097,12 @@ public abstract class Entity implements ICommandListener {
          }
      }
  
@@ -143,5 +143,5 @@ index db915033b..31d5fca06 100644
  
          return event;
 -- 
-2.40.0.windows.1
+2.50.1
 

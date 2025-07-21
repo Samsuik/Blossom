@@ -1,14 +1,14 @@
-From cb958d095f60cc221cbafaece3623bbdbf13b78e Mon Sep 17 00:00:00 2001
+From 407caea92f1b92e87977c3767f9609e1ef001621 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 11 Jun 2023 15:04:21 +0100
 Subject: [PATCH] Limit players that can see block breaking
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 785417121..b87c9dfea 100644
+index 74bb00350..042aac9db 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3525,12 +3525,20 @@ public abstract class World implements IBlockAccess {
+@@ -3535,12 +3535,20 @@ public abstract class World implements IBlockAccess {
      }
  
      public void c(int i, BlockPosition blockposition, int j) {
@@ -34,5 +34,5 @@ index 785417121..b87c9dfea 100644
  
      public Calendar Y() {
 -- 
-2.50.0
+2.50.1
 

@@ -1,4 +1,4 @@
-From 96a9a90be9c6c5d1ef58abd347089a582225f78f Mon Sep 17 00:00:00 2001
+From 7b28d857f8583773fd4fa1a7a616d7b515dcaa45 Mon Sep 17 00:00:00 2001
 From: Aikar <aikar@aikar.co>
 Date: Wed, 4 Jul 2018 02:10:36 -0400
 Subject: [PATCH] Store reference to current Chunk for Entity and Block
@@ -85,7 +85,7 @@ index 590fab670..193cfe147 100644
                  // Do not pass along players, as doing so can get them stuck outside of time.
                  // (which for example disables inventory icon updates and prevents block breaking)
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index c4bfd5fe6..6c0d3d991 100644
+index c4bfd5fe6..c45a57735 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -101,7 +101,7 @@ public abstract class Entity implements ICommandListener {
@@ -97,28 +97,30 @@ index c4bfd5fe6..6c0d3d991 100644
      // PaperSpigot start - EAR: Fix bug with teleporting entities
      public boolean isAddedToChunk() {
          int chunkX = MathHelper.floor(locX / 16.0D);
-@@ -153,6 +153,41 @@ public abstract class Entity implements ICommandListener {
+@@ -153,6 +153,44 @@ public abstract class Entity implements ICommandListener {
          this.die();
      }
  
 +    // Paper start
 +    private java.lang.ref.WeakReference<Chunk> currentChunk = null;
 +
-+    public void setCurrentChunk(Chunk chunk) {
++    public final void setCurrentChunk(Chunk chunk) {
 +        this.currentChunk = chunk != null ? new java.lang.ref.WeakReference<>(chunk) : null;
 +    }
++
 +    /**
 +     * Returns the entities current registered chunk. If the entity is not added to a chunk yet, it will return null
 +     */
-+    public Chunk getCurrentChunk() {
++    public final Chunk getCurrentChunk() {
 +        final Chunk chunk = currentChunk != null ? currentChunk.get() : null;
 +        return chunk != null && chunk.isLoaded() ? chunk : (isAddedToChunk0() ? world.getChunkIfLoaded(getChunkX(), getChunkZ()) : null);
 +    }
++
 +    /**
 +     * Returns the chunk at the location, using the entities local cache if avail
 +     * Will only return null if the location specified is not loaded
 +     */
-+    public Chunk getCurrentChunkAt(int x, int z) {
++    public final Chunk getCurrentChunkAt(int x, int z) {
 +        if (getChunkX() == x && getChunkZ() == z) {
 +            Chunk chunk = getCurrentChunk();
 +            if (chunk != null) {
@@ -127,12 +129,13 @@ index c4bfd5fe6..6c0d3d991 100644
 +        }
 +        return world.getChunkIfLoaded(x, z);
 +    }
++
 +    /**
 +     * Returns the chunk at the entities current location, using the entities local cache if avail
 +     * Will only return null if the location specified is not loaded
 +     */
-+    public Chunk getChunkAtLocation() {
-+        return getCurrentChunkAt((int)Math.floor(locX) >> 4, (int)Math.floor(locZ) >> 4);
++    public final Chunk getChunkAtLocation() {
++        return getCurrentChunkAt(MathHelper.floor(locX) >> 4, MathHelper.floor(locZ) >> 4);
 +    }
 +    // Paper end
 +
@@ -140,21 +143,27 @@ index c4bfd5fe6..6c0d3d991 100644
          this.id = Entity.entityCount++;
          this.j = 1.0D;
 diff --git a/src/main/java/net/minecraft/server/TileEntity.java b/src/main/java/net/minecraft/server/TileEntity.java
-index fdcbf4434..e8107fcc3 100644
+index fdcbf4434..48c6abf58 100644
 --- a/src/main/java/net/minecraft/server/TileEntity.java
 +++ b/src/main/java/net/minecraft/server/TileEntity.java
-@@ -22,6 +22,17 @@ public abstract class TileEntity {
+@@ -22,6 +22,23 @@ public abstract class TileEntity {
      private int h;
      protected Block e;
  
 +    // Paper start
-+    private java.lang.ref.WeakReference<Chunk> currentChunk = null;
-+    public Chunk getCurrentChunk() {
-+        final Chunk chunk = currentChunk != null ? currentChunk.get() : world.getChunkIfLoaded(position.getX() >> 4, position.getZ() >> 4);
-+        return chunk != null && chunk.isLoaded() ? chunk : null;
++    private Chunk currentChunk = null;
++
++    public final Chunk getCurrentChunk() {
++        final Chunk chunk = this.currentChunk;
++        return chunk != null && chunk.isLoaded() ? chunk : this.getChunkAtLocation();
 +    }
-+    public void setCurrentChunk(Chunk chunk) {
-+        this.currentChunk = chunk != null ? new java.lang.ref.WeakReference<>(chunk) : null;
++
++    public final void setCurrentChunk(Chunk chunk) {
++        this.currentChunk = chunk;
++    }
++
++    public final Chunk getChunkAtLocation() {
++        return this.world.getChunkIfLoaded(this.position.getX() >> 4, this.position.getZ() >> 4);
 +    }
 +    // Paper end
 +
@@ -162,5 +171,5 @@ index fdcbf4434..e8107fcc3 100644
          this.position = BlockPosition.ZERO;
          this.h = -1;
 -- 
-2.40.0.windows.1
+2.50.1
 

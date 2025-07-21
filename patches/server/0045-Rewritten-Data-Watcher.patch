@@ -1,4 +1,4 @@
-From 8b4168e0e920c2ee8b50f4c5f0bc9917800c0bd8 Mon Sep 17 00:00:00 2001
+From 63856c19f3fe458c0e340075299edeffd777569b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 6 Jul 2022 16:34:42 +0100
 Subject: [PATCH] Rewritten Data Watcher
@@ -243,10 +243,10 @@ index 1fbbfaaed..b0d0667a9 100644
          int i = (datawatcher_watchableobject.c() << 5 | datawatcher_watchableobject.a() & 31) & 255;
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 30b260985..08c96474f 100644
+index 6d76f1b00..abeb76e4a 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -301,7 +301,13 @@ public abstract class Entity implements ICommandListener {
+@@ -304,7 +304,13 @@ public abstract class Entity implements ICommandListener {
          }
          // Spigot end
  
@@ -261,5 +261,5 @@ index 30b260985..08c96474f 100644
          this.datawatcher.a(1, Short.valueOf((short) 300));
          this.datawatcher.a(3, Byte.valueOf((byte) 0));
 -- 
-2.50.0
+2.50.1
 

@@ -1,0 +1,24 @@
+From 09926eb927f61d00a9bd0b40b6e8d208a8323293 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 18 Jul 2023 20:05:38 +0100
+Subject: [PATCH] Prevent NaN and infinite lastYaw/lastPitch
+
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index de5092f51..ef1fddd1f 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -486,6 +486,10 @@ public abstract class Entity implements ICommandListener {
+ 
+         this.yaw = f % 360.0F;
+         this.pitch = f1 % 360.0F;
++        // Blossom start - prevent NaN and infinite lastYaw/lastPitch
++        this.lastYaw = this.yaw;
++        this.lastPitch = this.pitch;
++        // Blossom end
+     }
+ 
+     public void setPosition(double d0, double d1, double d2) {
+-- 
+2.50.1
+

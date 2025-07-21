@@ -1,14 +1,14 @@
-From 5af652026ff2606e010af01ec07d7d6796712e9a Mon Sep 17 00:00:00 2001
+From d5538711e07c612d9f306690e79a5dad84f9ed73 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:15:50 +0100
 Subject: [PATCH] Generic Entity Optimisations
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index e2d649132..6b433103b 100644
+index 089eefd05..5564f6188 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -861,7 +861,7 @@ public abstract class Entity implements ICommandListener {
+@@ -864,7 +864,7 @@ public abstract class Entity implements ICommandListener {
                  this.N = (float) ((double) this.N + (double) MathHelper.sqrt(d21 * d21 + d22 * d22 + d23 * d23) * 0.6D);
                  if (this.N > (float) this.h && block.getMaterial() != Material.AIR) {
                      this.h = (int) this.N + 1;
@@ -17,7 +17,7 @@ index e2d649132..6b433103b 100644
                          float f = MathHelper.sqrt(this.motX * this.motX * 0.20000000298023224D + this.motY * this.motY + this.motZ * this.motZ * 0.20000000298023224D) * 0.35F;
  
                          if (f > 1.0F) {
-@@ -967,7 +967,7 @@ public abstract class Entity implements ICommandListener {
+@@ -970,7 +970,7 @@ public abstract class Entity implements ICommandListener {
      protected void a(BlockPosition blockposition, Block block) {
          Block.StepSound block_stepsound = block.stepSound;
  
@@ -26,7 +26,7 @@ index e2d649132..6b433103b 100644
              block_stepsound = Blocks.SNOW_LAYER.stepSound;
              this.makeSound(block_stepsound.getStepSound(), block_stepsound.getVolume1() * 0.15F, block_stepsound.getVolume2());
          } else if (!block.getMaterial().isLiquid()) {
-@@ -1059,6 +1059,7 @@ public abstract class Entity implements ICommandListener {
+@@ -1062,6 +1062,7 @@ public abstract class Entity implements ICommandListener {
      }
  
      protected void X() {
@@ -34,7 +34,7 @@ index e2d649132..6b433103b 100644
          float f = MathHelper.sqrt(this.motX * this.motX * 0.20000000298023224D + this.motY * this.motY + this.motZ * this.motZ * 0.20000000298023224D) * 0.2F;
  
          if (f > 1.0F) {
-@@ -1087,7 +1088,7 @@ public abstract class Entity implements ICommandListener {
+@@ -1090,7 +1091,7 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void Y() {
@@ -65,5 +65,5 @@ index 8cc0cef0b..ad2a14e63 100644
  
          isTickingEffects = true; // CraftBukkit
 -- 
-2.40.0.windows.1
+2.50.1
 

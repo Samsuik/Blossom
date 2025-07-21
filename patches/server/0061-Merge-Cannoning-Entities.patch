@@ -1,4 +1,4 @@
-From 0610301d99a0bdfe2ecb7abd74b998dcde08d2b0 Mon Sep 17 00:00:00 2001
+From e431f91d7ca63d8a07f5fbcc50b64f4d4afc3b13 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -73,7 +73,7 @@ index 000000000..829a35358
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-index 6e7242de0..f4c03093e 100644
+index 49ca10990..494a52005 100644
 --- a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 @@ -132,7 +132,7 @@ public class BlossomExplosion extends Explosion {
@@ -95,7 +95,7 @@ index 6e7242de0..f4c03093e 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index ab652eb6b..6d8ce17e1 100644
+index c4127179d..110fbd6af 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -179,6 +179,61 @@ public abstract class Entity implements ICommandListener {
@@ -160,7 +160,7 @@ index ab652eb6b..6d8ce17e1 100644
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -358,6 +413,11 @@ public abstract class Entity implements ICommandListener {
+@@ -361,6 +416,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
@@ -318,7 +318,7 @@ index 5e045faef..448597881 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index b1d6dd8f6..37362a47a 100644
+index d9b58514c..7ee215ca0 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
@@ -367,5 +367,5 @@ index b1d6dd8f6..37362a47a 100644
                      entity.tickTimer.startTiming(); // Spigot
                      this.g(entity);
 -- 
-2.50.0
+2.50.1
 

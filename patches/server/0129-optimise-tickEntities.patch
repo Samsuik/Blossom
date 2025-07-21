@@ -1,0 +1,154 @@
+From 61574154946e03dbf258db22dcb14574abc57e4e Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Mon, 21 Jul 2025 00:26:13 +0100
+Subject: [PATCH] optimise tickEntities
+
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 2b199d90c..f1f9c92aa 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1738,6 +1738,13 @@ public abstract class World implements IBlockAccess {
+     public void scheduleUponLoading(Chunk chunk, BlockPosition blockposition, Block block, int i, int j) {} // Blossom
+ 
+     public void tickEntities() {
++        // Blossom start - optimise tickEntities; separate tile entities
++        this.tickActualEntities();
++        this.tickTileEntities();
++    }
++
++    private void tickActualEntities() {
++        // Blossom end - optimise tickEntities; separate tile entities
+         this.methodProfiler.a("entities");
+         this.methodProfiler.a("global");
+ 
+@@ -1747,8 +1754,11 @@ public abstract class World implements IBlockAccess {
+         CrashReport crashreport;
+         CrashReportSystemDetails crashreportsystemdetails;
+ 
+-        for (i = 0; i < this.k.size(); ++i) {
+-            entity = (Entity) this.k.get(i);
++        // Blossom start - optimise tickEntities
++        final List<Entity> shortLivedEntities = this.k;
++        for (i = 0; i < shortLivedEntities.size(); ++i) {
++            entity = (Entity) shortLivedEntities.get(i);
++            // Blossom end - optimise tickEntities
+             // CraftBukkit start - Fixed an NPE
+             if (entity == null) {
+                 continue;
+@@ -1771,7 +1781,7 @@ public abstract class World implements IBlockAccess {
+             }
+ 
+             if (entity.dead) {
+-                this.k.remove(i--);
++                shortLivedEntities.remove(i--); // Blossom - optimise tickEntities
+             }
+         }
+ 
+@@ -1814,10 +1824,12 @@ public abstract class World implements IBlockAccess {
+         // PaperSpigot start - Disable tick limiters
+         //if (tickPosition < 0) tickPosition = 0;
+         Entity previous = null; // Blossom
+-        for (tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
++        // Blossom start - optimise tickEntities
++        final List<Entity> entityList = this.entityList;
++        for (int tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
+             // PaperSpigot end
+-            tickPosition = (tickPosition < entityList.size()) ? tickPosition : 0;
+-            entity = (Entity) this.entityList.get(this.tickPosition);
++            entity = (Entity) entityList.get(tickPosition);
++            // Blossom end - optimise tickEntities
+             // CraftBukkit end
+             if (entity.vehicle != null) {
+                 if (!entity.vehicle.dead && entity.vehicle.passenger == entity) {
+@@ -1871,7 +1883,7 @@ public abstract class World implements IBlockAccess {
+                 // Paper end
+ 
+                 guardEntityList = false; // Spigot
+-                this.entityList.remove(this.tickPosition--); // CraftBukkit - Use field for loop variable
++                entityList.remove(tickPosition--); // Blossom - optimise tickEntities // CraftBukkit - Use field for loop variable
+                 guardEntityList = true; // Spigot
+                 this.b(entity);
+             }
+@@ -1881,6 +1893,11 @@ public abstract class World implements IBlockAccess {
+         guardEntityList = false; // Spigot
+ 
+         timings.entityTick.stopTiming(); // Spigot
++        // Blossom start - optimise tickEntities; separate tile entities
++    }
++
++    private void tickTileEntities() {
++        // Blossom end - optimise tickEntities; separate tile entities
+         this.methodProfiler.c("blockEntities");
+         timings.tileEntityTick.startTiming(); // Spigot
+         this.M = true;
+@@ -1894,15 +1911,15 @@ public abstract class World implements IBlockAccess {
+         // CraftBukkit end
+ 
+         // Spigot start
+-        int tilesThisCycle = 0;
+-        for (tileTickPosition = 0; tileTickPosition < tileEntityList.size(); tileTickPosition++) { // PaperSpigot - Disable tick limiters
+-            tileTickPosition = (tileTickPosition < tileEntityList.size()) ? tileTickPosition : 0;
+-            TileEntity tileentity = (TileEntity) this.tileEntityList.get(tileTickPosition);
++        // Blossom start - optimise tickEntities
++        final List<TileEntity> tileEntityList = this.tileEntityList;
++        for (int tileTickPosition = 0; tileTickPosition < tileEntityList.size(); tileTickPosition++) { // PaperSpigot - Disable tick limiters
++            TileEntity tileentity = (TileEntity) tileEntityList.get(tileTickPosition);
++            // Blossom end - optimise tickEntities
+             // Spigot start
+             if (tileentity == null) {
+                 getServer().getLogger().severe("Spigot has detected a null entity and has removed it, preventing a crash");
+-                tilesThisCycle--;
+-                this.tileEntityList.remove(tileTickPosition--);
++                tileEntityList.remove(tileTickPosition--); // Blossom - optimise tickEntities
+                 continue;
+             }
+             // Spigot end
+@@ -1920,8 +1937,7 @@ public abstract class World implements IBlockAccess {
+                         tileentity.tickTimer.stopTiming();
+                         System.err.println("TileEntity threw exception at " + tileentity.world.getWorld().getName() + ":" + tileentity.position.getX() + "," + tileentity.position.getY() + "," + tileentity.position.getZ());
+                         throwable2.printStackTrace();
+-                        tilesThisCycle--;
+-                        this.tileEntityList.remove(tileTickPosition--);
++                        tileEntityList.remove(tileTickPosition--); // Blossom - optimise tickEntities
+                         continue;
+                         // PaperSpigot end
+                     }
+@@ -1934,8 +1950,7 @@ public abstract class World implements IBlockAccess {
+             }
+ 
+             if (tileentity.x()) {
+-                tilesThisCycle--;
+-                this.tileEntityList.remove(tileTickPosition--);
++                tileEntityList.remove(tileTickPosition--); // Blossom - optimise tickEntities
+                 //this.h.remove(tileentity); // PaperSpigot - Remove unused list
+                 // Paper start
+                 if (chunk != null) {
+@@ -1957,9 +1972,12 @@ public abstract class World implements IBlockAccess {
+         // CraftBukkit end */
+ 
+         this.methodProfiler.c("pendingBlockEntities");
+-        if (!this.b.isEmpty()) {
+-            for (int l = 0; l < this.b.size(); ++l) {
+-                TileEntity tileentity1 = (TileEntity) this.b.get(l);
++        // Blossom start - optimise tickEntities
++        final List<TileEntity> pendingTileEntities = this.b;
++        if (!pendingTileEntities.isEmpty()) {
++            for (int l = 0; l < pendingTileEntities.size(); ++l) {
++                TileEntity tileentity1 = (TileEntity) pendingTileEntities.get(l);
++                // Blossom end - optimise tickEntities
+ 
+                 if (!tileentity1.x()) {
+                     /* CraftBukkit start - Order matters, moved down
+@@ -1979,7 +1997,7 @@ public abstract class World implements IBlockAccess {
+                 }
+             }
+ 
+-            this.b.clear();
++            pendingTileEntities.clear(); // Blossom - optimise tickEntities
+         }
+ 
+         timings.tileEntityPending.stopTiming(); // Spigot
+-- 
+2.50.1
+

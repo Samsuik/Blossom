@@ -1,0 +1,78 @@
+From a936ad15b81baa2660410d90bfc428e561581c21 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 15 Jul 2023 17:48:22 +0100
+Subject: [PATCH] Chunk Unload Delay
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index b1b6ccb5f..b80b9d9b0 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -519,4 +519,9 @@ public class BlossomConfig {
+         ensureInteractedBlockIsVisible = getBoolean("player.ensure-interacted-block-is-visible", true);
+     }
+ 
++    public static int delayChunkUnloads;
++    private static void DelayChunkUnload() {
++        delayChunkUnloads = getInt("chunk.chunk-unload-delay", 100);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index aa8abdcab..879be19f3 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -153,6 +153,7 @@ public class Chunk {
+     }
+     // CraftBukkit end
+     public final long chunkKey;
++    public long loadedTick; // Blossom
+ 
+     public Chunk(World world, int i, int j) {
+         this.sections = new ChunkSection[16];
+@@ -190,6 +191,7 @@ public class Chunk {
+             }
+         }
+         // Blossom end
++        this.loadedTick = MinecraftServer.currentTick; // Blossom - chunk unload delay
+     }
+ 
+     public org.bukkit.Chunk bukkitChunk;
+diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+index af2bf5fea..eb4bdfc4b 100644
+--- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+@@ -366,6 +366,15 @@ public class ChunkProviderServer implements IChunkProvider {
+     }
+ 
+     // Blossom start - optimise unloadQueue
++    private boolean canUnloadChunk(long chunkCoord) {
++        Chunk chunk = this.chunks.get(chunkCoord);
++        if (chunk == null) {
++            return true;
++        }
++        long totalTicksSinceLoading = MinecraftServer.currentTick - chunk.loadedTick;
++        return totalTicksSinceLoading >= me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads;
++    }
++
+     private it.unimi.dsi.fastutil.longs.LongArrayList getChunksToUnload(int maxUnloads) {
+         it.unimi.dsi.fastutil.longs.LongArrayList toUnload = new it.unimi.dsi.fastutil.longs.LongArrayList();
+ 
+@@ -373,8 +382,12 @@ public class ChunkProviderServer implements IChunkProvider {
+             LongIterator itr = this.unloadQueue.iterator();
+             for (int chunks = 0; chunks < maxUnloads && itr.hasNext(); chunks++) {
+                 long chunkCoord = itr.nextLong();
+-                itr.remove();
+-                toUnload.add(chunkCoord);
++                if (!this.canUnloadChunk(chunkCoord)) {
++                    chunks--;
++                } else {
++                    itr.remove();
++                    toUnload.add(chunkCoord);
++                }
+             }
+         }
+ 
+-- 
+2.50.1
+

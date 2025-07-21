@@ -1,0 +1,84 @@
+From b6f15711ca79ec4312a730656308ccdb1a0d9f87 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sun, 20 Jul 2025 10:34:47 +0100
+Subject: [PATCH] Reduce equipment change updates
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityArmorStand.java b/src/main/java/net/minecraft/server/EntityArmorStand.java
+index 55fb294b7..dbd4186b7 100644
+--- a/src/main/java/net/minecraft/server/EntityArmorStand.java
++++ b/src/main/java/net/minecraft/server/EntityArmorStand.java
+@@ -75,6 +75,7 @@ public class EntityArmorStand extends EntityLiving {
+ 
+     public void setEquipment(int i, ItemStack itemstack) {
+         this.items[i] = itemstack;
++        this.markEquipmentChanged(); // Blossom - reduce equipment change updates
+     }
+ 
+     public ItemStack[] getEquipment() {
+diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
+index 3f3c94cbe..2998d6d5b 100644
+--- a/src/main/java/net/minecraft/server/EntityHuman.java
++++ b/src/main/java/net/minecraft/server/EntityHuman.java
+@@ -1680,6 +1680,7 @@ public abstract class EntityHuman extends EntityLiving {
+ 
+     public void setEquipment(int i, ItemStack itemstack) {
+         this.inventory.armor[i] = itemstack;
++        this.markEquipmentChanged(); // Blossom - reduce equipment change updates
+     }
+ 
+     public abstract boolean isSpectator();
+diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
+index 09df308b6..4e8c4b9bb 100644
+--- a/src/main/java/net/minecraft/server/EntityInsentient.java
++++ b/src/main/java/net/minecraft/server/EntityInsentient.java
+@@ -584,6 +584,7 @@ public abstract class EntityInsentient extends EntityLiving {
+ 
+     public void setEquipment(int i, ItemStack itemstack) {
+         this.equipment[i] = itemstack;
++        this.markEquipmentChanged(); // Blossom - reduce equipment change updates
+     }
+ 
+     public ItemStack[] getEquipment() {
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index fa30106f1..c31456e0e 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -101,6 +101,13 @@ public abstract class EntityLiving extends Entity {
+         ++this.ticksFarFromPlayer; // Above all the floats
+     }
+     // Spigot end
++    // Blossom start - reduce equipment change updates
++    private boolean equipmentChanged = true;
++
++    protected final void markEquipmentChanged() {
++        this.equipmentChanged = true;
++    }
++    // Blossom start - reduce equipment change updates
+ 
+     public void G() {
+         this.damageEntity(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
+@@ -783,6 +790,8 @@ public abstract class EntityLiving extends Entity {
+                     this.hurtTicks = this.av = 10;
+                 }
+ 
++                this.markEquipmentChanged(); // Blossom - reduce equipment change updates
++
+                 // CraftBukkit start
+                 if(this instanceof EntityAnimal){
+                     ((EntityAnimal)this).cq();
+@@ -1543,7 +1552,10 @@ public abstract class EntityLiving extends Entity {
+ 
+     public void t_() {
+         super.t_();
+-        if (!this.world.isClientSide) {
++        // Blossom start - reduce equipment change updates
++        if (this.ticksLived % 20 == 0 || this.equipmentChanged || this instanceof EntityPlayer) {
++            this.equipmentChanged = false;
++            // Blossom end - reduce equipment change updates
+             int i = this.bv();
+ 
+             if (i > 0) {
+-- 
+2.50.1
+

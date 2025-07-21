@@ -1,4 +1,4 @@
-From 003465b0c4d8c293aeb15fcbf80bfe62d0613409 Mon Sep 17 00:00:00 2001
+From 566d0d83b6b49aedc278d14cc8b6a4485f3954bb Mon Sep 17 00:00:00 2001
 From: Spottedleaf <spottedleaf@users.noreply.github.com>
 Date: Fri, 4 Jun 2021 17:06:52 -0400
 Subject: [PATCH] Fix dangerous end portal logic
@@ -31,11 +31,11 @@ index 433d3c3eb..ef5ee0ce8 100644
  
      }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 253e405c7..702124a09 100644
+index 8edcaa6ad..b8c750a22 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -187,6 +187,29 @@ public abstract class Entity implements ICommandListener {
-         return getCurrentChunkAt((int)Math.floor(locX) >> 4, (int)Math.floor(locZ) >> 4);
+@@ -190,6 +190,29 @@ public abstract class Entity implements ICommandListener {
+         return getCurrentChunkAt(MathHelper.floor(locX) >> 4, MathHelper.floor(locZ) >> 4);
      }
      // Paper end
 +    // Paper start - make end portalling safe
@@ -64,7 +64,7 @@ index 253e405c7..702124a09 100644
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -354,6 +377,7 @@ public abstract class Entity implements ICommandListener {
+@@ -357,6 +380,7 @@ public abstract class Entity implements ICommandListener {
                  --this.portalCooldown;
              }
  
@@ -86,5 +86,5 @@ index a4e1b6c7c..aa00ce559 100644
      public IBlockData getType(BlockPosition blockposition)
      {
 -- 
-2.40.0.windows.1
+2.50.1
 
