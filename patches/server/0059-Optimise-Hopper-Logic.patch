@@ -1,4 +1,4 @@
-From 15337475aaba7756a450efd7a5b6baa932945530 Mon Sep 17 00:00:00 2001
+From ffa49681b12392f9daa1697989e66d8b0503b29d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -84,7 +84,7 @@ index 48c6abf58..c9e93fcdb 100644
          return this.d;
      }
 diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
-index 8d00cd0a2..f96961631 100644
+index 8d00cd0a2..f2bd10b45 100644
 --- a/src/main/java/net/minecraft/server/TileEntityHopper.java
 +++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
 @@ -44,6 +44,42 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
@@ -113,7 +113,7 @@ index 8d00cd0a2..f96961631 100644
 +        ITileInventory sourceContainer = this.sourceContainer;
 +        if (sourceContainer == null || sourceContainer.isRemoved()) {
 +            BlockPosition sourcePos = this.getPosition().up();
-+            IInventory iinventory = HopperHelper.getInventory(this.getWorld(), sourcePos);
++            IInventory iinventory = HopperHelper.getInventory(this.getWorld(), sourcePos, this.getCurrentChunk());
 +            if (iinventory instanceof ITileInventory && isContainerSafeToCache((ITileInventory) iinventory)) {
 +                sourceContainer = (ITileInventory) iinventory;
 +                this.sourceContainer = sourceContainer;
@@ -505,7 +505,7 @@ index 042aac9db..40ca0ef12 100644
              this.c.clear();
          }
 diff --git a/src/main/java/net/techcable/tacospigot/HopperHelper.java b/src/main/java/net/techcable/tacospigot/HopperHelper.java
-index 630a81bea..9000a9ddb 100644
+index 630a81bea..f08d7b7bf 100644
 --- a/src/main/java/net/techcable/tacospigot/HopperHelper.java
 +++ b/src/main/java/net/techcable/tacospigot/HopperHelper.java
 @@ -1,14 +1,6 @@
@@ -524,6 +524,25 @@ index 630a81bea..9000a9ddb 100644
  
  import org.bukkit.event.inventory.InventoryMoveItemEvent;
  
+@@ -24,7 +16,17 @@ public class HopperHelper {
+     }
+ 
+     public static IInventory getInventory(World world, BlockPosition position) {
+-        Block block = world.getType(position).getBlock();
++        // Blossom start - optimise hopper logic
++        return getInventory(world, position, world.getType(position));
++    }
++
++    public static IInventory getInventory(World world, BlockPosition position, Chunk chunk) {
++        return chunk != null ? getInventory(world, position, chunk.getBlockData(position)) : null;
++    }
++
++    private static IInventory getInventory(World world, BlockPosition position, IBlockData iblockdata) {
++        final Block block = iblockdata.getBlock();
++        // Blossom end - optimise hopper logic
+         if (block instanceof BlockChest) {
+             return ((BlockChest) block).f(world, position);
+         }
 -- 
 2.50.1
 
