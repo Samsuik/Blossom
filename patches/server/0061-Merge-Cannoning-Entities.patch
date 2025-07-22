@@ -1,4 +1,4 @@
-From e431f91d7ca63d8a07f5fbcc50b64f4d4afc3b13 Mon Sep 17 00:00:00 2001
+From 794d24691047e98e5de8afc3a9cd52035acd0674 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -73,10 +73,10 @@ index 000000000..829a35358
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-index 49ca10990..494a52005 100644
+index a043d96d4..3d754bb55 100644
 --- a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-@@ -132,7 +132,7 @@ public class BlossomExplosion extends Explosion {
+@@ -149,7 +149,7 @@ public final class BlossomExplosion extends Explosion {
      private int collectExplosionPotential() {
          List<Entity> entityList = world.entityList;
          int index = entityList.indexOf(source);
@@ -85,7 +85,7 @@ index 49ca10990..494a52005 100644
  
          for (int i = index + 1; i < entityList.size(); ++i) {
              Entity entity = entityList.get(i);
-@@ -141,7 +141,7 @@ public class BlossomExplosion extends Explosion {
+@@ -158,7 +158,7 @@ public final class BlossomExplosion extends Explosion {
                  break;
              }
  
@@ -300,16 +300,16 @@ index 2b94efe5c..0e1319f47 100644
              }
              this.die();
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 5e045faef..448597881 100644
+index 97cc040d3..e0a25e474 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -893,6 +893,13 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
                  worldserver.explosionDensityCache.clear(); // PaperSpigot - Optimize explosions
                  worldserver.minimal.clear(); // Blossom
-                 worldserver.densityCache.clear(); // Blossom
+                 worldserver.densityCache.clear(true); // Blossom - optimised explosions
 +                // Blossom start
 +                if (currentTick % 20 == 0) {
-+                    worldserver.mergeHistoryMap.values().removeIf((a) -> a.remove());
++                    worldserver.mergeHistoryMap.values().removeIf(hist -> hist.remove());
 +                }
 +                worldserver.mergeHistory = null;
 +                worldserver.mergingEntity = null;
@@ -318,7 +318,7 @@ index 5e045faef..448597881 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index d9b58514c..7ee215ca0 100644
+index 92fdd8374..be2f04485 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {

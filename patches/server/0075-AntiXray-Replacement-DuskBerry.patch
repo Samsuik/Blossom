@@ -1,4 +1,4 @@
-From 254b08554ce9e938fabfa9013fad55d8e5b9a81e Mon Sep 17 00:00:00 2001
+From 4ae78bd501b3d700cbf55007a31166419d80cad7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -327,7 +327,7 @@ index ab9a52e80..0f6c4871f 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
-index 60dc31dd7..c77a46cf1 100644
+index 23130ba96..7b48815ee 100644
 --- a/src/main/java/net/minecraft/server/BlockFlowing.java
 +++ b/src/main/java/net/minecraft/server/BlockFlowing.java
 @@ -94,7 +94,6 @@ public class BlockFlowing extends BlockFluids {
@@ -374,10 +374,10 @@ index 7fa061dd0..2261cc6c0 100644
                              arraylist1.addAll(chunk.tileEntities.values()); // CraftBukkit - Get tile entities directly from the chunk instead of the world
                              iterator1.remove();
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 2fd5ab14b..696480d9b 100644
+index 1a52be8a8..9929d73ad 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
-@@ -343,7 +343,7 @@ public class Explosion {
+@@ -348,7 +348,7 @@ public class Explosion {
                  blockposition = (BlockPosition) iterator.next();
                  Block block = this.world.getType(blockposition).getBlock();
  
@@ -426,7 +426,7 @@ index 27d09b102..9b1aeb5ee 100644
  
      public void a(BlockPosition blockposition) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index ed84b0a2e..00579836c 100644
+index 0cff00f7d..ad68ebe3f 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {
@@ -439,7 +439,7 @@ index ed84b0a2e..00579836c 100644
  
      public void a(BlockPosition blockposition, Block block, EnumDirection enumdirection) {
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 10cc04fe5..da93a6626 100644
+index 9bcc5799c..60c7c4d96 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -252,7 +252,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -487,5 +487,5 @@ index 8e86212aa..80628e946 100644
      public boolean zombieAggressiveTowardsVillager;
      private void zombieAggressiveTowardsVillager()
 -- 
-2.50.0
+2.50.1
 

@@ -1,4 +1,4 @@
-From 0c43d686d7fb7c555e2edfe76a7f41a66a6abba0 Mon Sep 17 00:00:00 2001
+From 40975dbf141a0a7c6ee0b89b9d029175fb38d35c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -197,7 +197,7 @@ index 000000000..cd249dbfd
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index f035df0cb..a886c8937 100644
+index a17e07910..47d367670 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -61,7 +61,7 @@ public class Block {
@@ -210,7 +210,7 @@ index f035df0cb..a886c8937 100644
      public float getBlastResistance() {
          return ((durability / 5.0f) + 0.3f) * 0.3f;
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 696480d9b..c7ea74c3e 100644
+index 9929d73ad..2bb218fc2 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
 @@ -176,6 +176,10 @@ public class Explosion {
@@ -224,9 +224,9 @@ index 696480d9b..c7ea74c3e 100644
  
          if (block != Blocks.AIR && strength - resistance > 0.0f) {
              long pack = BlockPosition.asLong(x, y, z);
-@@ -338,12 +342,19 @@ public class Explosion {
+@@ -343,12 +347,19 @@ public class Explosion {
              }
-             // CraftBukkit end
+             // Blossom end - optimised explosions
              iterator = this.blocks.iterator();
 +            boolean isTNT = source instanceof EntityTNTPrimed; // Blossom
  
@@ -273,7 +273,7 @@ index 3229add95..44ebffffe 100644
              return false;
          } else if (!entityhuman.a(blockposition.shift(enumdirection), enumdirection, itemstack)) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index d508018a4..e013ab636 100644
+index b1954785a..199831d69 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -910,6 +910,11 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
@@ -289,7 +289,7 @@ index d508018a4..e013ab636 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 717c7bdd7..53a93746b 100644
+index ad68ebe3f..20ec87911 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -173,6 +173,7 @@ public abstract class World implements IBlockAccess {

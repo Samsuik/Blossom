@@ -1,4 +1,4 @@
-From d81fb1125f5b5d9219d01e23becfd43891bdb531 Mon Sep 17 00:00:00 2001
+From 07003a5ad72fb55121b90a11cd306b200c0a7f86 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -22,10 +22,10 @@ index 3f41b5ba1..4e476cad7 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 new file mode 100644
-index 000000000..49ca10990
+index 000000000..a043d96d4
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,168 @@
 +package me.samsuik.blossom.explosions;
 +
 +import me.samsuik.blossom.configuration.BlossomConfig;
@@ -35,7 +35,7 @@ index 000000000..49ca10990
 +import java.util.Collections;
 +import java.util.List;
 +
-+public class BlossomExplosion extends Explosion {
++public final class BlossomExplosion extends Explosion {
 +
 +    public BlossomExplosion(World world, Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
 +        super(world, entity, d0, d1, d2, f, flag, flag1);
@@ -43,72 +43,89 @@ index 000000000..49ca10990
 +
 +    @Override
 +    public void a() {
-+        int potential = collectExplosionPotential();
++        int potential = this.collectExplosionPotential();
 +        List<Vec3D> positions = new ArrayList<>(potential);
-+        EntityTNTPrimed etp = new EntityTNTPrimed(world);
++        Entity source = this.source;
++        EntityTNTPrimed etp = new EntityTNTPrimed(this.world);
 +        etp.lastProperties(source);
 +        int wrapped = 0;
-+        AxisAlignedBB bounds = new AxisAlignedBB(posX, posY, posZ, posX, posY, posZ);
++        AxisAlignedBB bounds = new AxisAlignedBB(this.posX, this.posY, this.posZ, this.posX, this.posY, this.posZ);
 +
-+        for (int i = 0; i < potential; ++i) {
-+            // next position
++        for (int i = potential - 1; i >= 0; --i) {
++            boolean lastExplosion = i == 0;
++
++            // calculate explosion position and swing velocity
 +            Vec3D point = new Vec3D(source.locX, source.locY + (double) (source.length / 2.0F), source.locZ);
-+            impactEntity(etp, Collections.singletonList(point), size * 2.0f);
++            this.impactEntity(etp, Collections.singletonList(point), this.size * 2.0f);
 +            positions.add(point);
 +
-+            posX = point.a;
-+            posY = point.b;
-+            posZ = point.c;
++            this.posX = point.a;
++            this.posY = point.b;
++            this.posZ = point.c;
 +
-+            // affect blocks if necessary
++            // search for blocks to be destroyed later on
 +            if (wrapped < 16) {
-+                getBlocks().clear(); // clean slate
-+
 +                entities = false;
 +                super.a();
 +                entities = true;
-+
-+                if (i + 1 < potential) {
-+                    super.a(true);
-+                }
 +            }
 +
-+            // keep track of bounds for later optimisation
++            // keep track of bounds
 +            bounds = bounds.a(new AxisAlignedBB(point.a, point.b, point.c, point.a, point.b, point.c));
 +
 +            if (wrapped < 7) {
 +                if (etp.motX == source.lastMotX || etp.motX * source.lastMotX < 0) wrapped |= 1 << 0;
 +                if (etp.motY == source.lastMotY || etp.motY * source.lastMotY < 0) wrapped |= 1 << 1;
 +                if (etp.motZ == source.lastMotZ || etp.motZ * source.lastMotZ < 0) wrapped |= 1 << 2;
-+            } else if (getBlocks().isEmpty() && BlossomConfig.avoidRedundantBlockSearches) {
++            } else if (this.getBlocks().isEmpty() && BlossomConfig.avoidRedundantBlockSearches) {
 +                // wrapped and no blocks to be found, should be safe to ditch
 +                wrapped++;
 +            } else {
 +                wrapped = 7;
 +            }
 +
-+            // calculate next position
-+            if (i + 1 < potential) {
++            // affect entities
++            if (lastExplosion || !this.getBlocks().isEmpty()) {
++                if (positions.size() == 1) {
++                    this.locateAndImpactEntities(positions.get(0), this.size * 2.0f);
++                } else {
++                    this.locateAndImpactEntities(positions, bounds, this.size * 2.0f);
++                }
++                bounds = new AxisAlignedBB(this.posX, this.posY, this.posZ, this.posX, this.posY, this.posZ);
++                positions.clear();
++            }
++
++            if (!lastExplosion) {
++                // break blocks and call events
++                super.a(true);
++
++                // send particles
 +                if (!this.wasCanceled) {
-+                    world.notifyPlayersOfExplosion(this, posX, posY, posZ, size);
++                    world.notifyPlayersOfExplosion(this, this.posX, this.posY, this.posZ, this.size);
 +                }
 +
++                this.getBlocks().clear();
++
++                // update source position and velocity
 +                source.lastProperties(source);
 +
 +                source.motX = etp.motX;
 +                source.motY = etp.motY;
 +                source.motZ = etp.motZ;
 +
++                // calculate next position
 +                source.motY -= 0.04f;
 +                source.move(source.motX, source.motY, source.motZ);
-+                continue;
-+            }
 +
-+            // affect entities
-+            if (potential == 1) {
-+                locateAndImpactEntities(positions.get(0), size * 2.0f);
-+            } else {
-+                locateAndImpactEntities(positions, bounds, size * 2.0f);
++                source.motX *= 0.9800000190734863D;
++                source.motY *= 0.9800000190734863D;
++                source.motZ *= 0.9800000190734863D;
++
++                if (source.onGround) {
++                    source.motX *= 0.699999988079071D;
++                    source.motZ *= 0.699999988079071D;
++                    source.motY *= -0.5D;
++                }
 +            }
 +        }
 +    }
@@ -142,7 +159,7 @@ index 000000000..49ca10990
 +        for (int i = 0; i < entities.size(); i++) {
 +            Entity entity = entities.get(i);
 +
-+            if (entity.dead || entity.aW()) {
++            if (entity.dead || entity.aW() || entity == this.source) {
 +                continue;
 +            }
 +
@@ -151,8 +168,8 @@ index 000000000..49ca10990
 +            double z = entity.locZ - centre.c;
 +            double s = x * x + y * y + z * z;
 +
-+            if (s < incDistSqr && !world.densityCache.isObscured(entity, centre)) {
-+                impactEntity(entity, locations, maxDistance);
++            if (s < incDistSqr + 1.0e-7 && !this.world.densityCache.isObscured(entity, centre)) {
++                this.impactEntity(entity, locations, maxDistance);
 +            }
 +        }
 +    }
@@ -179,44 +196,59 @@ index 000000000..49ca10990
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
 new file mode 100644
-index 000000000..00dc1f22a
+index 000000000..ff4ef16c9
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,163 @@
 +package me.samsuik.blossom.explosions.cache;
 +
 +import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 +import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
++import it.unimi.dsi.fastutil.objects.Object2FloatMap;
++import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 +import net.minecraft.server.*;
 +
-+public class DensityCache {
++import java.util.Objects;
 +
-+    private final Int2ObjectMap<Density> densityMap = new Int2ObjectOpenHashMap<>();
++public final class DensityCache {
++    private static final float MISSING_DENSITY = -1.0f;
 +
-+    public boolean isObscured(Entity entity, Vec3D vec3d) {
-+        return retrieveDensity(entity, vec3d) == 0.0f;
++    private final Object2FloatMap<ExplosionDensityKey> explosionDensity = new Object2FloatOpenHashMap<>();
++    private final Int2ObjectMap<Density> blockDensity = new Int2ObjectOpenHashMap<>();
++
++    public DensityCache() {
++        this.explosionDensity.defaultReturnValue(MISSING_DENSITY);
 +    }
 +
-+    public float retrieveDensity(Entity entity, Vec3D vec3d) {
-+        int key = createDensityKey(entity, vec3d);
-+        Density data = densityMap.get(key);
++    public boolean isObscured(Entity entity, Vec3D vec3d) {
++        return this.getExplosionDensity(entity, vec3d) == 0.0f;
++    }
 +
++    public float getExplosionDensity(Entity entity, Vec3D vec3d) {
++        int key = blockDensityKey(entity, vec3d);
++        Density data = this.blockDensity.get(key);
 +        if (data != null && data.has(entity.getBoundingBox(), vec3d)) {
 +            return data.density;
 +        }
 +
-+        float density = calculateDensity(entity.world, vec3d, data, entity.getBoundingBox());
++        AxisAlignedBB entityAABB = entity.getBoundingBox();
++        ExplosionDensityKey densityKey = new ExplosionDensityKey(entity, vec3d);
++        float density = this.explosionDensity.getFloat(densityKey);
++        if (density == MISSING_DENSITY) {
++            density = this.calculateBlockDensity(entity.world, vec3d, data, entityAABB);
++            this.explosionDensity.put(densityKey, density);
++        }
 +
 +        if (data == null && (density == 0.0 || density == 1.0f)) {
-+            densityMap.put(key, new Density(entity.getBoundingBox(), vec3d, density));
++            blockDensity.put(key, new Density(entityAABB, vec3d, density));
 +        } else if (data != null && data.density == density) {
-+            data.expand(entity.getBoundingBox(), vec3d);
++            data.expand(entityAABB, vec3d);
 +        }
 +
 +        return density;
 +    }
 +
-+    private float calculateDensity(World world, Vec3D vec3d, Density data, AxisAlignedBB bb) {
++    private float calculateBlockDensity(World world, Vec3D vec3d, Density data, AxisAlignedBB bb) {
 +        int i = 0;
 +        int j = 0;
 +
@@ -226,7 +258,7 @@ index 000000000..00dc1f22a
 +            double z = bb.c + vector[2];
 +
 +            if (data != null && data.has(x, y, z)) {
-+                i += data.density;
++                i += (int) data.density;
 +            } else if (world.rayTraceStripped(new Vec3D(x, y, z), vec3d) == null) {
 +                ++i;
 +            }
@@ -237,11 +269,14 @@ index 000000000..00dc1f22a
 +        return (float) i / (float) j;
 +    }
 +
-+    public void clear() {
-+        densityMap.clear();
++    public void clear(boolean fullClear) {
++        if (fullClear) {
++            this.explosionDensity.clear();
++        }
++        this.blockDensity.clear();
 +    }
 +
-+    private static int createDensityKey(Entity entity, Vec3D vec3d) {
++    private static int blockDensityKey(Entity entity, Vec3D vec3d) {
 +        int hash         = MathHelper.floor(vec3d.a);
 +        hash = 31 * hash ^ MathHelper.floor(vec3d.b);
 +        hash = 31 * hash ^ MathHelper.floor(vec3d.c);
@@ -251,7 +286,41 @@ index 000000000..00dc1f22a
 +        return hash;
 +    }
 +
-+    private static class Density {
++    private static final class ExplosionDensityKey {
++        private final double entityPosX;
++        private final double entityPosY;
++        private final double entityPosZ;
++        private final Vec3D explosionPosition;
++
++        private ExplosionDensityKey(Entity entity, Vec3D explosionPosition) {
++            this.entityPosX = entity.locX;
++            this.entityPosY = entity.locY;
++            this.entityPosZ = entity.locZ;
++            this.explosionPosition = explosionPosition;
++        }
++
++        @Override
++        public boolean equals(Object object) {
++            if (!(object instanceof ExplosionDensityKey)) return false;
++
++            ExplosionDensityKey cacheKey = (ExplosionDensityKey) object;
++            return Double.compare(entityPosX, cacheKey.entityPosX) == 0
++                && Double.compare(entityPosY, cacheKey.entityPosY) == 0
++                && Double.compare(entityPosZ, cacheKey.entityPosZ) == 0
++                && Objects.equals(explosionPosition, cacheKey.explosionPosition);
++        }
++
++        @Override
++        public int hashCode() {
++            int result = Double.hashCode(entityPosX);
++            result = 31 * result + Double.hashCode(entityPosY);
++            result = 31 * result + Double.hashCode(entityPosZ);
++            result = 31 * result + Objects.hashCode(explosionPosition);
++            return result;
++        }
++    }
++
++    private static final class Density {
 +        private AxisAlignedBB source;
 +        private AxisAlignedBB entity;
 +        final float density;
@@ -293,7 +362,6 @@ index 000000000..00dc1f22a
 +            return new AxisAlignedBB(p.a, p.b, p.c, p.a, p.b, p.c);
 +        }
 +    }
-+
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/cache/ExplosionVectors.java b/src/main/java/me/samsuik/blossom/explosions/cache/ExplosionVectors.java
 new file mode 100644
@@ -492,7 +560,7 @@ index 44f961d15..2b94efe5c 100644
      // PaperSpigot start - TNT source location API
      public EntityTNTPrimed(World world) {
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 4b288ae8b..2fd5ab14b 100644
+index 4b288ae8b..1a52be8a8 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
 @@ -19,16 +19,17 @@ import org.bukkit.event.block.BlockExplodeEvent;
@@ -568,7 +636,7 @@ index 4b288ae8b..2fd5ab14b 100644
 -                            d6 += d2 * 0.30000001192092896D;
 -                        }
 -                    }
-+        // Blossom start
++        // Blossom start - optimised explosions
 +        double maxDistance = size * 2.0f;
 +        BlockPosition blockPos = new BlockPosition(posX, posY, posZ);
 +        Chunk chunk = world.getChunkAt(blockPos.getX() >> 4, blockPos.getZ() >> 4);
@@ -583,7 +651,7 @@ index 4b288ae8b..2fd5ab14b 100644
 +        }
 +
 +        // Special case: explosions inside blocks on legacy versions cannot affect entities.
-+        if (!block.isInsideBlock(world, blockPos, posX, posY, posZ) && entities) {
++        if (entities && !block.isInsideBlock(world, blockPos, posX, posY, posZ)) {
 +            locateAndImpactEntities(new Vec3D(posX, posY, posZ), maxDistance);
 +        }
 +    }
@@ -792,7 +860,7 @@ index 4b288ae8b..2fd5ab14b 100644
 +                x /= distance;
 +                y /= distance;
 +                z /= distance;
-+                double density = world.densityCache.retrieveDensity(entity, vec3d);
++                double density = world.densityCache.getExplosionDensity(entity, vec3d);
 +                double exposure = (1.0D - (distance / maxDistance)) * density;
 +
 +                if (!entity.isCannoningEntity) {
@@ -820,7 +888,7 @@ index 4b288ae8b..2fd5ab14b 100644
 +            this.k.put((EntityHuman) entity, new Vec3D(x * exp, y * exp, z * exp));
 +        }
      }
-+    // Blossom end
++    // Blossom end - optimised explosions
  
      public void a(boolean flag) {
          // PaperSpigot start - Configurable TNT explosion volume.
@@ -833,7 +901,19 @@ index 4b288ae8b..2fd5ab14b 100644
              for (int i1 = this.blocks.size() - 1; i1 >= 0; i1--) {
                  BlockPosition cpos = (BlockPosition) this.blocks.get(i1);
                  org.bukkit.block.Block bblock = bworld.getBlockAt(cpos.getX(), cpos.getY(), cpos.getZ());
-@@ -267,27 +344,7 @@ public class Explosion {
+@@ -260,6 +337,11 @@ public class Explosion {
+                 return;
+             }
+             // CraftBukkit end
++            // Blossom start - optimised explosions
++            if (!this.blocks.isEmpty()) {
++                this.world.densityCache.clear(!this.world.paperSpigotConfig.optimizeExplosions);
++            }
++            // Blossom end - optimised explosions
+             iterator = this.blocks.iterator();
+ 
+             while (iterator.hasNext()) {
+@@ -267,27 +349,7 @@ public class Explosion {
                  Block block = this.world.getType(blockposition).getBlock();
  
                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
@@ -863,19 +943,19 @@ index 4b288ae8b..2fd5ab14b 100644
                  if (block.getMaterial() != Material.AIR) {
                      if (block.a(this)) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 6bfb8b641..5e045faef 100644
+index 6bfb8b641..97cc040d3 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -892,6 +892,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
                  this.methodProfiler.b();
                  worldserver.explosionDensityCache.clear(); // PaperSpigot - Optimize explosions
                  worldserver.minimal.clear(); // Blossom
-+                worldserver.densityCache.clear(); // Blossom
++                worldserver.densityCache.clear(true); // Blossom - optimised explosions
              // } // CraftBukkit
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 35079ee61..74bb00350 100644
+index 35079ee61..8ea4079b9 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -898,7 +978,7 @@ index 35079ee61..74bb00350 100644
          return false;
      }
  
-+    public void notifyPlayersOfExplosion(Explosion explosion, double d0, double d1, double d2, float f) {}
++    public void notifyPlayersOfExplosion(Explosion explosion, double d0, double d1, double d2, float f) {} // Blossom - optimised explosions
 +
      public Explosion explode(Entity entity, double d0, double d1, double d2, float f, boolean flag) {
          return this.createExplosion(entity, d0, d1, d2, f, false, flag);
@@ -906,14 +986,14 @@ index 35079ee61..74bb00350 100644
  
      public Explosion createExplosion(Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
 -        Explosion explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
-+        // Blossom start
++        // Blossom start - optimised explosions
 +        Explosion explosion;
 +        if (entity instanceof EntityTNTPrimed && !((EntityTNTPrimed) entity).isRogue) {
 +            explosion = new me.samsuik.blossom.explosions.BlossomExplosion(this, entity, d0, d1, d2, f, flag, flag1);
 +        } else {
 +            explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
 +        }
-+        // Blossom end
++        // Blossom end - optimised explosions
  
          explosion.a();
          explosion.a(true);
