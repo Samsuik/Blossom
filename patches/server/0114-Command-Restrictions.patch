@@ -1,20 +1,22 @@
-From b8e5d46e9541ecfaaf59c4ea7b52de9f576790ac Mon Sep 17 00:00:00 2001
+From 21805522292b0c7cae5d389370ef66a2e59f4ce3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 27 Jul 2023 20:03:36 +0100
 Subject: [PATCH] Command Restrictions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7daa4e268..fc340055d 100644
+index 7daa4e268..78dda3b49 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -564,4 +564,11 @@ public class BlossomConfig {
+@@ -564,4 +564,13 @@ public class BlossomConfig {
          throttlePlacement = getBoolean("player.throttle-block-placement", false);
      }
  
++    public static boolean blockCrashCommands;
 +    public static int commandDelay;
 +    public static boolean pluginCommandLabels;
 +    private static void Commands() {
++        blockCrashCommands = getBoolean("player.commands.block-crash-commands", false);
 +        commandDelay = getInt("player.commands.delay-ms", 300);
 +        pluginCommandLabels = getBoolean("player.commands.plugin-labels", false);
 +    }
@@ -22,12 +24,13 @@ index 7daa4e268..fc340055d 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/utils/commands/IllegalCommands.java b/src/main/java/me/samsuik/blossom/utils/commands/IllegalCommands.java
 new file mode 100644
-index 000000000..bcf95ff21
+index 000000000..23c6d37f7
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/utils/commands/IllegalCommands.java
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,141 @@
 +package me.samsuik.blossom.utils.commands;
 +
++import me.samsuik.blossom.configuration.BlossomConfig;
 +import org.bukkit.Bukkit;
 +import org.bukkit.command.Command;
 +import org.bukkit.command.PluginCommandYamlParser;
@@ -102,6 +105,14 @@ index 000000000..bcf95ff21
 +
 +    public static boolean isValidCommand(String full) {
 +        String command = getCommand(full);
++        if (!me.samsuik.blossom.configuration.BlossomConfig.pluginCommandLabels && command.contains(":")) {
++            return false;
++        }
++
++        if (!BlossomConfig.blockCrashCommands) {
++            return true;
++        }
++
 +        if (WORLD_EDIT_COMMANDS.contains(command)) {
 +            return EVALUATION.test(full) && WORLD_EDIT_URL.test(full)
 +                && OVER_EXPANSION.test(full) && STENCIL_FILE_PATH.test(full);
@@ -111,7 +122,7 @@ index 000000000..bcf95ff21
 +            return HGD_READ_FILE.test(full);
 +        }
 +
-+        return me.samsuik.blossom.configuration.BlossomConfig.pluginCommandLabels || !command.contains(":");
++        return true;
 +    }
 +
 +    private static String getCommand(String full) {
@@ -120,6 +131,10 @@ index 000000000..bcf95ff21
 +    }
 +
 +    public static void filterCommands() {
++        if (!BlossomConfig.blockCrashCommands) {
++            return;
++        }
++
 +        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
 +            if (plugin.getName().equals("Multiverse-Core")) {
 +                filterCommands(MV_COMMANDS, plugin);
