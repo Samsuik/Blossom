@@ -1,0 +1,119 @@
+From 9f8355c1317d30c049bb2f5b6932a8cfb65b91f7 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Wed, 23 Jul 2025 23:16:57 +0100
+Subject: [PATCH] Provide a EmptyTimingHandler when timings is disabled
+
+Should reduce the overhead timings has when disabled.
+
+diff --git a/src/main/java/co/aikar/timings/TimingHandler.java b/src/main/java/co/aikar/timings/TimingHandler.java
+index 4918a17c..ee44ec50 100644
+--- a/src/main/java/co/aikar/timings/TimingHandler.java
++++ b/src/main/java/co/aikar/timings/TimingHandler.java
+@@ -32,7 +32,7 @@ import co.aikar.util.MRUMapCache;
+ import java.util.Map;
+ import java.util.logging.Level;
+ 
+-class TimingHandler implements Timing {
++public class TimingHandler implements Timing { // Blossom
+ 
+     private static int idPool = 1;
+     final int id = idPool++;
+@@ -52,7 +52,7 @@ class TimingHandler implements Timing {
+     boolean enabled;
+     TimingHandler parent;
+ 
+-    TimingHandler(TimingIdentifier id) {
++    public TimingHandler(TimingIdentifier id) { // Blossom
+         if (id.name.startsWith("##")) {
+             verbose = true;
+             this.name = id.name.substring(3);
+@@ -72,7 +72,7 @@ class TimingHandler implements Timing {
+         enabled = Timings.timingsEnabled && (!verbose || Timings.verboseEnabled);
+     }
+ 
+-    void processTick(boolean violated) {
++    public void processTick(boolean violated) { // Blossom
+         if (timingDepth != 0 || record.curTickCount == 0) {
+             timingDepth = 0;
+             start = 0;
+diff --git a/src/main/java/co/aikar/timings/TimingIdentifier.java b/src/main/java/co/aikar/timings/TimingIdentifier.java
+index 623dda49..5f286209 100644
+--- a/src/main/java/co/aikar/timings/TimingIdentifier.java
++++ b/src/main/java/co/aikar/timings/TimingIdentifier.java
+@@ -35,7 +35,7 @@ import java.util.Map;
+  *
+  * This class uses interned strings giving us the ability to do an identity check instead of equals() on the strings
+  */
+-final class TimingIdentifier {
++public final class TimingIdentifier { // Blossom
+     /**
+      * Holds all groups. Autoloads on request for a group by name.
+      */
+@@ -54,7 +54,7 @@ final class TimingIdentifier {
+     final boolean protect;
+     private final int hashCode;
+ 
+-    TimingIdentifier(String group, String name, Timing groupHandler, boolean protect) {
++    public TimingIdentifier(String group, String name, Timing groupHandler, boolean protect) { // Blossom
+         this.group = group != null ? group.intern() : DEFAULT_GROUP.name;
+         this.name = name.intern();
+         this.groupHandler = groupHandler != null ? groupHandler.getTimingHandler() : null;
+diff --git a/src/main/java/co/aikar/timings/TimingsManager.java b/src/main/java/co/aikar/timings/TimingsManager.java
+index 67c39df8..a8c39de4 100644
+--- a/src/main/java/co/aikar/timings/TimingsManager.java
++++ b/src/main/java/co/aikar/timings/TimingsManager.java
+@@ -25,6 +25,7 @@ package co.aikar.timings;
+ 
+ import com.google.common.base.Function;
+ import com.google.common.collect.EvictingQueue;
++import me.samsuik.blossom.utils.EmptyTimingHandler;
+ import org.bukkit.Bukkit;
+ import org.bukkit.Server;
+ import org.bukkit.command.Command;
+@@ -142,6 +143,11 @@ public final class TimingsManager {
+     }
+ 
+     static TimingHandler getHandler(String group, String name, Timing parent, boolean protect) {
++        // Blossom start
++        if (!Timings.isTimingsEnabled()) {
++            return EmptyTimingHandler.INSTANCE;
++        }
++        // Blossom end
+         return TIMING_MAP.get(new TimingIdentifier(group, name, parent, protect));
+     }
+ 
+diff --git a/src/main/java/me/samsuik/blossom/utils/EmptyTimingHandler.java b/src/main/java/me/samsuik/blossom/utils/EmptyTimingHandler.java
+new file mode 100644
+index 00000000..23d70dca
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/utils/EmptyTimingHandler.java
+@@ -0,0 +1,26 @@
++package me.samsuik.blossom.utils;
++
++import co.aikar.timings.*;
++
++public final class EmptyTimingHandler extends TimingHandler {
++    private static final TimingIdentifier IDENTIFIER = new TimingIdentifier("", "", null, false);
++    public static final EmptyTimingHandler INSTANCE = new EmptyTimingHandler();
++
++    private EmptyTimingHandler() {
++        super(IDENTIFIER);
++    }
++
++    @Override
++    public void processTick(boolean violated) {}
++
++    @Override
++    public void startTimingIfSync() {}
++
++    @Override
++    public void stopTimingIfSync() {}
++
++    public void startTiming() {}
++
++    @Override
++    public void stopTiming() {}
++}
+-- 
+2.50.1
+

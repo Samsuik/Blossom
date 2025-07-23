@@ -1,4 +1,4 @@
-From 59f71684101bf7ba58d3ccde0050b72b1414757b Mon Sep 17 00:00:00 2001
+From 376251c84ab99cb964298be799dadc5b68b08e20 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:10:11 +0100
 Subject: [PATCH] mc dev imports
@@ -55,6 +55,475 @@ index 000000000..9ef9bfec0
 +
 +    public boolean equals(Object object) {
 +        return object instanceof IAttribute && this.b.equals(((IAttribute) object).getName());
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeInstance.java b/src/main/java/net/minecraft/server/AttributeInstance.java
+new file mode 100644
+index 000000000..c730d7740
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/AttributeInstance.java
+@@ -0,0 +1,27 @@
++package net.minecraft.server;
++
++import java.util.Collection;
++import java.util.UUID;
++
++public interface AttributeInstance {
++
++    IAttribute getAttribute();
++
++    double b();
++
++    void setValue(double d0);
++
++    Collection<AttributeModifier> a(int i);
++
++    Collection<AttributeModifier> c();
++
++    boolean a(AttributeModifier attributemodifier);
++
++    AttributeModifier a(UUID uuid);
++
++    void b(AttributeModifier attributemodifier);
++
++    void c(AttributeModifier attributemodifier);
++
++    double getValue();
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeMapBase.java b/src/main/java/net/minecraft/server/AttributeMapBase.java
+new file mode 100644
+index 000000000..6b7aabc79
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/AttributeMapBase.java
+@@ -0,0 +1,80 @@
++package net.minecraft.server;
++
++import com.google.common.collect.HashMultimap;
++import com.google.common.collect.Maps;
++import com.google.common.collect.Multimap;
++import java.util.Collection;
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Map.Entry;
++
++public abstract class AttributeMapBase {
++
++    protected final Map<IAttribute, AttributeInstance> a = Maps.newHashMap();
++    protected final Map<String, AttributeInstance> b = new InsensitiveStringMap();
++    protected final Multimap<IAttribute, IAttribute> c = HashMultimap.create();
++
++    public AttributeMapBase() {}
++
++    public AttributeInstance a(IAttribute iattribute) {
++        return (AttributeInstance) this.a.get(iattribute);
++    }
++
++    public AttributeInstance a(String s) {
++        return (AttributeInstance) this.b.get(s);
++    }
++
++    public AttributeInstance b(IAttribute iattribute) {
++        if (this.b.containsKey(iattribute.getName())) {
++            throw new IllegalArgumentException("Attribute is already registered!");
++        } else {
++            AttributeInstance attributeinstance = this.c(iattribute);
++
++            this.b.put(iattribute.getName(), attributeinstance);
++            this.a.put(iattribute, attributeinstance);
++
++            for (IAttribute iattribute1 = iattribute.d(); iattribute1 != null; iattribute1 = iattribute1.d()) {
++                this.c.put(iattribute1, iattribute);
++            }
++
++            return attributeinstance;
++        }
++    }
++
++    protected abstract AttributeInstance c(IAttribute iattribute);
++
++    public Collection<AttributeInstance> a() {
++        return this.b.values();
++    }
++
++    public void a(AttributeInstance attributeinstance) {}
++
++    public void a(Multimap<String, AttributeModifier> multimap) {
++        Iterator iterator = multimap.entries().iterator();
++
++        while (iterator.hasNext()) {
++            Entry entry = (Entry) iterator.next();
++            AttributeInstance attributeinstance = this.a((String) entry.getKey());
++
++            if (attributeinstance != null) {
++                attributeinstance.c((AttributeModifier) entry.getValue());
++            }
++        }
++
++    }
++
++    public void b(Multimap<String, AttributeModifier> multimap) {
++        Iterator iterator = multimap.entries().iterator();
++
++        while (iterator.hasNext()) {
++            Entry entry = (Entry) iterator.next();
++            AttributeInstance attributeinstance = this.a((String) entry.getKey());
++
++            if (attributeinstance != null) {
++                attributeinstance.c((AttributeModifier) entry.getValue());
++                attributeinstance.b((AttributeModifier) entry.getValue());
++            }
++        }
++
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeMapServer.java b/src/main/java/net/minecraft/server/AttributeMapServer.java
+new file mode 100644
+index 000000000..97726c995
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/AttributeMapServer.java
+@@ -0,0 +1,89 @@
++package net.minecraft.server;
++
++import com.google.common.collect.Sets;
++import java.util.Collection;
++import java.util.HashSet;
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Set;
++
++public class AttributeMapServer extends AttributeMapBase {
++
++    private final Set<AttributeInstance> e = Sets.newHashSet();
++    protected final Map<String, AttributeInstance> d = new InsensitiveStringMap();
++
++    public AttributeMapServer() {}
++
++    public AttributeModifiable e(IAttribute iattribute) {
++        return (AttributeModifiable) super.a(iattribute);
++    }
++
++    public AttributeModifiable b(String s) {
++        AttributeInstance attributeinstance = super.a(s);
++
++        if (attributeinstance == null) {
++            attributeinstance = (AttributeInstance) this.d.get(s);
++        }
++
++        return (AttributeModifiable) attributeinstance;
++    }
++
++    public AttributeInstance b(IAttribute iattribute) {
++        AttributeInstance attributeinstance = super.b(iattribute);
++
++        if (iattribute instanceof AttributeRanged && ((AttributeRanged) iattribute).g() != null) {
++            this.d.put(((AttributeRanged) iattribute).g(), attributeinstance);
++        }
++
++        return attributeinstance;
++    }
++
++    protected AttributeInstance c(IAttribute iattribute) {
++        return new AttributeModifiable(this, iattribute);
++    }
++
++    public void a(AttributeInstance attributeinstance) {
++        if (attributeinstance.getAttribute().c()) {
++            this.e.add(attributeinstance);
++        }
++
++        Iterator iterator = this.c.get(attributeinstance.getAttribute()).iterator();
++
++        while (iterator.hasNext()) {
++            IAttribute iattribute = (IAttribute) iterator.next();
++            AttributeModifiable attributemodifiable = this.e(iattribute);
++
++            if (attributemodifiable != null) {
++                attributemodifiable.f();
++            }
++        }
++
++    }
++
++    public Set<AttributeInstance> getAttributes() {
++        return this.e;
++    }
++
++    public Collection<AttributeInstance> c() {
++        HashSet hashset = Sets.newHashSet();
++        Iterator iterator = this.a().iterator();
++
++        while (iterator.hasNext()) {
++            AttributeInstance attributeinstance = (AttributeInstance) iterator.next();
++
++            if (attributeinstance.getAttribute().c()) {
++                hashset.add(attributeinstance);
++            }
++        }
++
++        return hashset;
++    }
++
++    public AttributeInstance a(String s) {
++        return this.b(s);
++    }
++
++    public AttributeInstance a(IAttribute iattribute) {
++        return this.e(iattribute);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeModifiable.java b/src/main/java/net/minecraft/server/AttributeModifiable.java
+new file mode 100644
+index 000000000..37aaf1be2
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/AttributeModifiable.java
+@@ -0,0 +1,161 @@
++package net.minecraft.server;
++
++import com.google.common.collect.Maps;
++import com.google.common.collect.Sets;
++import java.util.Collection;
++import java.util.HashSet;
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++
++public class AttributeModifiable implements AttributeInstance {
++
++    private final AttributeMapBase a;
++    private final IAttribute b;
++    private final Map<Integer, Set<AttributeModifier>> c = Maps.newHashMap();
++    private final Map<String, Set<AttributeModifier>> d = Maps.newHashMap();
++    private final Map<UUID, AttributeModifier> e = Maps.newHashMap();
++    private double f;
++    private boolean g = true;
++    private double h;
++
++    public AttributeModifiable(AttributeMapBase attributemapbase, IAttribute iattribute) {
++        this.a = attributemapbase;
++        this.b = iattribute;
++        this.f = iattribute.b();
++
++        for (int i = 0; i < 3; ++i) {
++            this.c.put(Integer.valueOf(i), Sets.newHashSet());
++        }
++
++    }
++
++    public IAttribute getAttribute() {
++        return this.b;
++    }
++
++    public double b() {
++        return this.f;
++    }
++
++    public void setValue(double d0) {
++        if (d0 != this.b()) {
++            this.f = d0;
++            this.f();
++        }
++    }
++
++    public Collection<AttributeModifier> a(int i) {
++        return (Collection) this.c.get(Integer.valueOf(i));
++    }
++
++    public Collection<AttributeModifier> c() {
++        HashSet hashset = Sets.newHashSet();
++
++        for (int i = 0; i < 3; ++i) {
++            hashset.addAll(this.a(i));
++        }
++
++        return hashset;
++    }
++
++    public AttributeModifier a(UUID uuid) {
++        return (AttributeModifier) this.e.get(uuid);
++    }
++
++    public boolean a(AttributeModifier attributemodifier) {
++        return this.e.get(attributemodifier.a()) != null;
++    }
++
++    public void b(AttributeModifier attributemodifier) {
++        if (this.a(attributemodifier.a()) != null) {
++            throw new IllegalArgumentException("Modifier is already applied on this attribute!");
++        } else {
++            Set object = (Set) this.d.get(attributemodifier.b()); // Blossom - decompile fix
++
++            if (object == null) {
++                object = Sets.newHashSet();
++                this.d.put(attributemodifier.b(), object);
++            }
++
++            ((Set) this.c.get(Integer.valueOf(attributemodifier.c()))).add(attributemodifier);
++            ((Set) object).add(attributemodifier);
++            this.e.put(attributemodifier.a(), attributemodifier);
++            this.f();
++        }
++    }
++
++    protected void f() {
++        this.g = true;
++        this.a.a((AttributeInstance) this);
++    }
++
++    public void c(AttributeModifier attributemodifier) {
++        for (int i = 0; i < 3; ++i) {
++            Set set = (Set) this.c.get(Integer.valueOf(i));
++
++            set.remove(attributemodifier);
++        }
++
++        Set set1 = (Set) this.d.get(attributemodifier.b());
++
++        if (set1 != null) {
++            set1.remove(attributemodifier);
++            if (set1.isEmpty()) {
++                this.d.remove(attributemodifier.b());
++            }
++        }
++
++        this.e.remove(attributemodifier.a());
++        this.f();
++    }
++
++    public double getValue() {
++        if (this.g) {
++            this.h = this.g();
++            this.g = false;
++        }
++
++        return this.h;
++    }
++
++    private double g() {
++        double d0 = this.b();
++
++        AttributeModifier attributemodifier;
++
++        for (Iterator iterator = this.b(0).iterator(); iterator.hasNext(); d0 += attributemodifier.d()) {
++            attributemodifier = (AttributeModifier) iterator.next();
++        }
++
++        double d1 = d0;
++
++        Iterator iterator1;
++        AttributeModifier attributemodifier1;
++
++        for (iterator1 = this.b(1).iterator(); iterator1.hasNext(); d1 += d0 * attributemodifier1.d()) {
++            attributemodifier1 = (AttributeModifier) iterator1.next();
++        }
++
++        for (iterator1 = this.b(2).iterator(); iterator1.hasNext(); d1 *= 1.0D + attributemodifier1.d()) {
++            attributemodifier1 = (AttributeModifier) iterator1.next();
++        }
++
++        return this.b.a(d1);
++    }
++
++    private Collection<AttributeModifier> b(int i) {
++        HashSet hashset = Sets.newHashSet(this.a(i));
++
++        for (IAttribute iattribute = this.b.d(); iattribute != null; iattribute = iattribute.d()) {
++            AttributeInstance attributeinstance = this.a.a(iattribute);
++
++            if (attributeinstance != null) {
++                hashset.addAll(attributeinstance.a(i));
++            }
++        }
++
++        return hashset;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeModifier.java b/src/main/java/net/minecraft/server/AttributeModifier.java
+new file mode 100644
+index 000000000..da33bb6f2
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/AttributeModifier.java
+@@ -0,0 +1,82 @@
++package net.minecraft.server;
++
++import io.netty.util.internal.ThreadLocalRandom;
++import java.util.Random;
++import java.util.UUID;
++import org.apache.commons.lang3.Validate;
++
++public class AttributeModifier {
++
++    private final double a;
++    private final int b;
++    private final String c;
++    private final UUID d;
++    private boolean e;
++
++    public AttributeModifier(String s, double d0, int i) {
++        this(MathHelper.a((Random) ThreadLocalRandom.current()), s, d0, i);
++    }
++
++    public AttributeModifier(UUID uuid, String s, double d0, int i) {
++        this.e = true;
++        this.d = uuid;
++        this.c = s;
++        this.a = d0;
++        this.b = i;
++        Validate.notEmpty(s, "Modifier name cannot be empty", new Object[0]);
++        Validate.inclusiveBetween(0L, 2L, (long) i, "Invalid operation");
++    }
++
++    public UUID a() {
++        return this.d;
++    }
++
++    public String b() {
++        return this.c;
++    }
++
++    public int c() {
++        return this.b;
++    }
++
++    public double d() {
++        return this.a;
++    }
++
++    public boolean e() {
++        return this.e;
++    }
++
++    public AttributeModifier a(boolean flag) {
++        this.e = flag;
++        return this;
++    }
++
++    public boolean equals(Object object) {
++        if (this == object) {
++            return true;
++        } else if (object != null && this.getClass() == object.getClass()) {
++            AttributeModifier attributemodifier = (AttributeModifier) object;
++
++            if (this.d != null) {
++                if (!this.d.equals(attributemodifier.d)) {
++                    return false;
++                }
++            } else if (attributemodifier.d != null) {
++                return false;
++            }
++
++            return true;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return this.d != null ? this.d.hashCode() : 0;
++    }
++
++    public String toString() {
++        return "AttributeModifier{amount=" + this.a + ", operation=" + this.b + ", name=\'" + this.c + '\'' + ", id=" + this.d + ", serialize=" + this.e + '}';
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/AxisAlignedBB.java b/src/main/java/net/minecraft/server/AxisAlignedBB.java
@@ -4372,6 +4841,26 @@ index 000000000..1c89c9058
 +        }
 +    }
 +}
+diff --git a/src/main/java/net/minecraft/server/IAttribute.java b/src/main/java/net/minecraft/server/IAttribute.java
+new file mode 100644
+index 000000000..e76405d14
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/IAttribute.java
+@@ -0,0 +1,14 @@
++package net.minecraft.server;
++
++public interface IAttribute {
++
++    String getName();
++
++    double a(double d0);
++
++    double b();
++
++    boolean c();
++
++    IAttribute d();
++}
 diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
 new file mode 100644
 index 000000000..3c3ab0c59
@@ -4426,6 +4915,85 @@ index 000000000..6dc5cbcee
 +    void a(ChestLock chestlock);
 +
 +    ChestLock i();
++}
+diff --git a/src/main/java/net/minecraft/server/InsensitiveStringMap.java b/src/main/java/net/minecraft/server/InsensitiveStringMap.java
+new file mode 100644
+index 000000000..efb86ed3d
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/InsensitiveStringMap.java
+@@ -0,0 +1,73 @@
++package net.minecraft.server;
++
++import com.google.common.collect.Maps;
++import java.util.Collection;
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Set;
++
++public class InsensitiveStringMap<V> implements Map<String, V> {
++
++    private final Map<String, V> a = Maps.newLinkedHashMap();
++
++    public InsensitiveStringMap() {}
++
++    public int size() {
++        return this.a.size();
++    }
++
++    public boolean isEmpty() {
++        return this.a.isEmpty();
++    }
++
++    public boolean containsKey(Object object) {
++        return this.a.containsKey(object.toString().toLowerCase());
++    }
++
++    public boolean containsValue(Object object) {
++        return this.a.containsKey(object);
++    }
++
++    public V get(Object object) {
++        return this.a.get(object.toString().toLowerCase());
++    }
++
++    public V a(String s, V v0) {
++        return this.a.put(s.toLowerCase(), v0);
++    }
++
++    public V remove(Object object) {
++        return this.a.remove(object.toString().toLowerCase());
++    }
++
++    public void putAll(Map<? extends String, ? extends V> map) {
++        Iterator iterator = map.entrySet().iterator();
++
++        while (iterator.hasNext()) {
++            Entry entry = (Entry) iterator.next();
++
++            this.a((String) entry.getKey(), (V) entry.getValue()); // Blossom - decompile fix
++        }
++
++    }
++
++    public void clear() {
++        this.a.clear();
++    }
++
++    public Set<String> keySet() {
++        return this.a.keySet();
++    }
++
++    public Collection<V> values() {
++        return this.a.values();
++    }
++
++    public Set<Entry<String, V>> entrySet() {
++        return this.a.entrySet();
++    }
++
++    public V put(String s, V v0) { // Blossom - decompile fix
++        return this.a(s, v0); // Blossom - decompile fix
++    }
 +}
 diff --git a/src/main/java/net/minecraft/server/InventoryUtils.java b/src/main/java/net/minecraft/server/InventoryUtils.java
 new file mode 100644

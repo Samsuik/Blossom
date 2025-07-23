@@ -1,0 +1,144 @@
+From a2e6c76d3572c4e619edc9b2ada88269ea1df069 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Wed, 23 Jul 2025 17:04:02 +0100
+Subject: [PATCH] optimise entity attributes
+
+
+diff --git a/src/main/java/net/minecraft/server/AttributeBase.java b/src/main/java/net/minecraft/server/AttributeBase.java
+index a679b2d0f..896f6c7fa 100644
+--- a/src/main/java/net/minecraft/server/AttributeBase.java
++++ b/src/main/java/net/minecraft/server/AttributeBase.java
+@@ -6,11 +6,20 @@ public abstract class AttributeBase implements IAttribute {
+     private final String b;
+     private final double c;
+     private boolean d;
++    // Blossom start - optimise attributes
++    private final String lowerCaseName;
++
++    @Override
++    public final String getLowerCaseName() {
++        return this.lowerCaseName;
++    }
++    // Blossom end - optimise attributes
+ 
+     protected AttributeBase(IAttribute iattribute, String s, double d0) {
+         this.a = iattribute;
+         this.b = s;
+         this.c = Double.isNaN(d0) ? 0.0 : d0; // Blossom
++        this.lowerCaseName = s == null ? null : s.toLowerCase(); // Blossom - optimise attributes
+         if (s == null) {
+             throw new IllegalArgumentException("Name cannot be null!");
+         }
+diff --git a/src/main/java/net/minecraft/server/AttributeMapBase.java b/src/main/java/net/minecraft/server/AttributeMapBase.java
+index 6b7aabc79..185239845 100644
+--- a/src/main/java/net/minecraft/server/AttributeMapBase.java
++++ b/src/main/java/net/minecraft/server/AttributeMapBase.java
+@@ -11,7 +11,7 @@ import java.util.Map.Entry;
+ public abstract class AttributeMapBase {
+ 
+     protected final Map<IAttribute, AttributeInstance> a = Maps.newHashMap();
+-    protected final Map<String, AttributeInstance> b = new InsensitiveStringMap();
++    protected final InsensitiveStringMap<AttributeInstance> b = new InsensitiveStringMap<>(); // Blossom - optimise attributes
+     protected final Multimap<IAttribute, IAttribute> c = HashMultimap.create();
+ 
+     public AttributeMapBase() {}
+@@ -25,12 +25,15 @@ public abstract class AttributeMapBase {
+     }
+ 
+     public AttributeInstance b(IAttribute iattribute) {
+-        if (this.b.containsKey(iattribute.getName())) {
++        // Blossom start - optimise attributes
++        final String lowerCaseName = iattribute.getLowerCaseName();
++        if (this.b.containsKeyLowerCase(lowerCaseName)) {
++            // Blossom end - optimise attributes
+             throw new IllegalArgumentException("Attribute is already registered!");
+         } else {
+             AttributeInstance attributeinstance = this.c(iattribute);
+ 
+-            this.b.put(iattribute.getName(), attributeinstance);
++            this.b.putLowerCase(lowerCaseName, attributeinstance); // Blossom - optimise attributes
+             this.a.put(iattribute, attributeinstance);
+ 
+             for (IAttribute iattribute1 = iattribute.d(); iattribute1 != null; iattribute1 = iattribute1.d()) {
+diff --git a/src/main/java/net/minecraft/server/AttributeMapServer.java b/src/main/java/net/minecraft/server/AttributeMapServer.java
+index 97726c995..74dbaf2bd 100644
+--- a/src/main/java/net/minecraft/server/AttributeMapServer.java
++++ b/src/main/java/net/minecraft/server/AttributeMapServer.java
+@@ -32,7 +32,7 @@ public class AttributeMapServer extends AttributeMapBase {
+         AttributeInstance attributeinstance = super.b(iattribute);
+ 
+         if (iattribute instanceof AttributeRanged && ((AttributeRanged) iattribute).g() != null) {
+-            this.d.put(((AttributeRanged) iattribute).g(), attributeinstance);
++            this.d.put(((AttributeRanged) iattribute).getLowerCaseDescriptiveName(), attributeinstance); // Blossom - optimise attributes
+         }
+ 
+         return attributeinstance;
+diff --git a/src/main/java/net/minecraft/server/AttributeRanged.java b/src/main/java/net/minecraft/server/AttributeRanged.java
+index f68bdb9bf..6cf16be4a 100644
+--- a/src/main/java/net/minecraft/server/AttributeRanged.java
++++ b/src/main/java/net/minecraft/server/AttributeRanged.java
+@@ -5,6 +5,13 @@ public class AttributeRanged extends AttributeBase {
+     private final double a;
+     public double b; // Spigot
+     private String c;
++    // Blossom start - optimise attributes
++    private String lowerCaseDescriptiveName;
++
++    public final String getLowerCaseDescriptiveName() {
++        return this.lowerCaseDescriptiveName;
++    }
++    // Blossom end - optimise attributes
+ 
+     public AttributeRanged(IAttribute iattribute, String s, double d0, double d1, double d2) {
+         super(iattribute, s, d0);
+@@ -21,6 +28,7 @@ public class AttributeRanged extends AttributeBase {
+ 
+     public AttributeRanged a(String s) {
+         this.c = s;
++        this.lowerCaseDescriptiveName = s == null ? null : s.toLowerCase(); // Blossom - optimise attributes
+         return this;
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/IAttribute.java b/src/main/java/net/minecraft/server/IAttribute.java
+index e76405d14..65e08876a 100644
+--- a/src/main/java/net/minecraft/server/IAttribute.java
++++ b/src/main/java/net/minecraft/server/IAttribute.java
+@@ -11,4 +11,10 @@ public interface IAttribute {
+     boolean c();
+ 
+     IAttribute d();
++
++    // Blossom start - optimise attributes
++    default String getLowerCaseName() {
++        return this.getName().toLowerCase();
++    }
++    // Blossom end - optimise attributes
+ }
+diff --git a/src/main/java/net/minecraft/server/InsensitiveStringMap.java b/src/main/java/net/minecraft/server/InsensitiveStringMap.java
+index efb86ed3d..f79b05d5f 100644
+--- a/src/main/java/net/minecraft/server/InsensitiveStringMap.java
++++ b/src/main/java/net/minecraft/server/InsensitiveStringMap.java
+@@ -12,6 +12,20 @@ public class InsensitiveStringMap<V> implements Map<String, V> {
+ 
+     public InsensitiveStringMap() {}
+ 
++    // Blossom start - optimise attributes
++    public final V getLowerCase(final String string) {
++        return this.a.get(string);
++    }
++
++    public final V putLowerCase(final String string, final V val) {
++        return this.a.put(string, val);
++    }
++
++    public final boolean containsKeyLowerCase(final String string) {
++        return this.a.containsKey(string);
++    }
++    // Blossom end - optimise attributes
++
+     public int size() {
+         return this.a.size();
+     }
+-- 
+2.50.1
+
