@@ -1,4 +1,4 @@
-From 14b9dae7fd6fdfca88263e15fdd27b2a5ce26b4f Mon Sep 17 00:00:00 2001
+From b6aad5697c1d6f66bf3777d4ccc8cd7d0a9347b2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -348,6 +348,22 @@ index 3592951f9..e78eabb05 100644
          return super.a(world, blockposition, iblockdata);
      }
  
+diff --git a/src/main/java/net/minecraft/server/BlockPistonMoving.java b/src/main/java/net/minecraft/server/BlockPistonMoving.java
+index 80a5ee63d..1eb17d087 100644
+--- a/src/main/java/net/minecraft/server/BlockPistonMoving.java
++++ b/src/main/java/net/minecraft/server/BlockPistonMoving.java
+@@ -94,10 +94,7 @@ public class BlockPistonMoving extends BlockContainer {
+     }
+ 
+     public void doPhysics(World world, BlockPosition blockposition, IBlockData iblockdata, Block block) {
+-        if (!world.isClientSide) {
+-            world.getTileEntity(blockposition);
+-        }
+-
++        // Blossom - rewrite and optimise block collisions
+     }
+ 
+     public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
 diff --git a/src/main/java/net/minecraft/server/BlockSkull.java b/src/main/java/net/minecraft/server/BlockSkull.java
 index 95a104903..7f4ba92fb 100644
 --- a/src/main/java/net/minecraft/server/BlockSkull.java
@@ -798,7 +814,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index e90a247ce..2b00efb82 100644
+index 3760ae6e6..d21d282a3 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;

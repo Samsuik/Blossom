@@ -1,4 +1,4 @@
-From 56ce5c06fb97e138204b93bedbfa9e3b24dd092a Mon Sep 17 00:00:00 2001
+From e592de9bf0ac3a4521de70bb054edb510df966cb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:31:07 +0100
 Subject: [PATCH] Disable Player Suffocation Teleport
@@ -19,12 +19,12 @@ index 8c56aebaa..e89cedc81 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index cee1155bd..823e8515a 100644
+index 6b842df2a..3f649bf87 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -83,7 +83,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
-     public int movementTick = 0; // Blossom
-     // Blossom start - bind entities to player ticking
+     public int movementTick = 0; // Blossom - lag compensated block breaking
+     // Blossom start - tick thrown potions with the player
      public final List<Entity> boundEntities = new ArrayList<>();
 -    
 +

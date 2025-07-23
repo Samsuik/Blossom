@@ -1,35 +1,35 @@
-From c4d6dd4be02e443d00792ce19483b84302f34579 Mon Sep 17 00:00:00 2001
+From a8698f2ff33c893f946df3350cd1e8ef0d659374 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 11 Jun 2023 16:55:53 +0100
-Subject: [PATCH] Trust client block breaking
+Subject: [PATCH] Lag compensated block breaking
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 102e6bc7d..7fa061dd0 100644
+index 102e6bc7d..fb07f8a17 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -80,6 +80,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
      }
      // Spigot end
      public final boolean realPlayer; // Blossom - optimise entity tracker
-+    public int movementTick = 0; // Blossom
++    public int movementTick = 0; // Blossom - lag compensated block breaking
  
      public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
          super(worldserver, gameprofile);
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 11e5a7fc6..12dae07f0 100644
+index 11e5a7fc6..6d6303654 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -432,6 +432,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              this.h = true;
              if (!this.player.viewingCredits) {
-+                this.player.movementTick++; // Blossom
++                this.player.movementTick++; // Blossom - lag compensated block breaking
                  double d0 = this.player.locX;
                  double d1 = this.player.locY;
                  double d2 = this.player.locZ;
 diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
-index 404641a2f..27d09b102 100644
+index 404641a2f..f941b7da6 100644
 --- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
 +++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
 @@ -15,6 +15,8 @@ public class PlayerInteractManager {
@@ -45,8 +45,8 @@ index 404641a2f..27d09b102 100644
  
              // this.world.douseFire((EntityHuman) null, blockposition, enumdirection); // CraftBukkit - Moved down
              this.lastDigTick = this.currentTick;
-+            this.lastPlayerDigTick = this.player.movementTick; // Blossom
-+            this.startBreaking = System.currentTimeMillis(); // Blossom
++            this.lastPlayerDigTick = this.player.movementTick; // Blossom - lag compensated block breaking
++            this.startBreaking = System.currentTimeMillis(); // Blossom - lag compensated block breaking
              float f = 1.0F;
  
              // CraftBukkit start - Swings at air do *NOT* exist.
@@ -55,7 +55,7 @@ index 404641a2f..27d09b102 100644
  
              if (block.getMaterial() != Material.AIR) {
 -                float f = block.getDamage(this.player, this.player.world, blockposition) * (float) (i + 1);
-+                // Blossom start - trust based block breaking
++                // Blossom start - lag compensated block breaking
 +                long timeInTicks = (System.currentTimeMillis() - this.startBreaking) / 50L;
 +                int playerDigTicks = this.player.movementTick - this.lastPlayerDigTick;
 +                float damagePerTick = block.getDamage(this.player, this.player.world, blockposition);
@@ -65,10 +65,10 @@ index 404641a2f..27d09b102 100644
 +                float compensation = 20f / Math.min((float) MinecraftServer.getServer().tps1.getAverage(), 20f) - 1f;
 +
 +                if (timeInTicks + 1 >= requiredTicks - compensation || playerDigTicks >= requiredTicks) {
-+                    // Blossom end
++                    // Blossom end - lag compensated block breaking
                      this.d = false;
                      this.world.c(this.player.getId(), blockposition, -1);
                      this.breakBlock(blockposition);
 -- 
-2.50.0
+2.50.1
 

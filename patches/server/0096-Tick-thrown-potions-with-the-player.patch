@@ -1,8 +1,10 @@
-From 68b339fec84a739a16abdeb0ae0acdee998b6c01 Mon Sep 17 00:00:00 2001
+From db863c229da0ad7e26f9ab72b17b9d759dddf18b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
-Subject: [PATCH] Player Bound Potion Ticking
+Subject: [PATCH] Tick thrown potions with the player
 
+Keeps potion ticking in sync with the player that threw them. This helps
+a lot with poor connections and low tps.
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 index dec290a83..8c56aebaa 100644
@@ -33,14 +35,14 @@ index da348f09f..de5092f51 100644
      public int getId() {
          return this.id;
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 2261cc6c0..cee1155bd 100644
+index 0e9b8b603..6b842df2a 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -81,6 +81,36 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
      // Spigot end
      public final boolean realPlayer; // Blossom - optimise entity tracker
-     public int movementTick = 0; // Blossom
-+    // Blossom start - bind entities to player ticking
+     public int movementTick = 0; // Blossom - lag compensated block breaking
++    // Blossom start - tick thrown potions with the player
 +    public final List<Entity> boundEntities = new ArrayList<>();
 +    
 +    public void tickBoundEntities() {
@@ -69,7 +71,7 @@ index 2261cc6c0..cee1155bd 100644
 +        }
 +        boundEntities.clear();
 +    }
-+    // Blossom end
++    // Blossom end - tick thrown potions with the player
  
      public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
          super(worldserver, gameprofile);
@@ -112,21 +114,21 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 6f00cb6c8..2b199d90c 100644
+index 20ec87911..fe3541b39 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {
              entity.dead = true;
              return false;
          } else {
-+            // Blossom start
++            // Blossom start - tick thrown potions with the player
 +            if (me.samsuik.blossom.configuration.BlossomConfig.playerBoundPotions && entity instanceof EntityPotion) {
 +                EntityPotion potion = (EntityPotion) entity;
 +                if (potion.getShooter() instanceof EntityPlayer) {
 +                    ((EntityPlayer) potion.getShooter()).bindEntity(potion);
 +                }
 +            }
-+            // Blossom end
++            // Blossom end - tick thrown potions with the player
              if (entity instanceof EntityHuman) {
                  EntityHuman entityhuman = (EntityHuman) entity;
  
