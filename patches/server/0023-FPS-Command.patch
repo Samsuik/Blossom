@@ -1,4 +1,4 @@
-From 471066d49af0d85e62fe133bdf955664018b0d29 Mon Sep 17 00:00:00 2001
+From 7d3e575822b00852701534eadb6787387648a29b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 18:08:16 +0100
 Subject: [PATCH] FPS Command
@@ -93,7 +93,7 @@ index 000000000..410f91574
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e7b53edd0..759708624 100644
+index 3eec2ce55..d2cae0493 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -3,6 +3,9 @@ package me.samsuik.blossom.configuration;
@@ -115,8 +115,8 @@ index e7b53edd0..759708624 100644
 +        commands.put("sandvisibility", new VisualCommand(Visuals.VisualType.SAND_VISIBILITY, "sandtoggle"));
 +        commands.put("minimal", new VisualCommand(Visuals.VisualType.MINIMAL, "minimaltnt", "tntlag"));
  
-         version = getInt("config-version", 2);
-         set("config-version", 2);
+         version = getInt("config-version", 3);
+         set("config-version", 3);
 -- 
-2.49.0
+2.50.1
 

@@ -1,4 +1,4 @@
-From 2654e49b0f63b3caadfc79dd62bd105360fd120f Mon Sep 17 00:00:00 2001
+From 2d2dfd013e4c4e23306f488922837be70e7bddc6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -145,7 +145,7 @@ index 000000000..4ac129dc9
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 new file mode 100644
-index 000000000..a14d8e115
+index 000000000..2fadc5298
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -0,0 +1,122 @@
@@ -202,8 +202,8 @@ index 000000000..a14d8e115
 +        commands.put("blossom", new BlossomCommand());
 +        commands.put("config", new ConfigCommand());
 +
-+        version = getInt("config-version", 2);
-+        set("config-version", 2);
++        version = getInt("config-version", 3);
++        set("config-version", 3);
 +        readConfig(BlossomConfig.class, null);
 +    }
 +
@@ -352,7 +352,7 @@ index 088beb22b..8b4554d6c 100644
              DedicatedServer.LOGGER.info("Generating keypair");
              this.a(MinecraftEncryption.b());
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 55564c181..9883c0a9b 100644
+index ae1fc6005..0c01b78ab 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -164,6 +164,7 @@ public abstract class World implements IBlockAccess {
@@ -427,5 +427,5 @@ index 569a8846b..8366a2933 100644
                  MinecraftServer.main(options);
              } catch (Throwable t) {
 -- 
-2.49.0
+2.50.1
 

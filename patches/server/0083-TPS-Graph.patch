@@ -1,4 +1,4 @@
-From d270435ad30c57b8859040c077f2fabd99683c89 Mon Sep 17 00:00:00 2001
+From 09b481457d67cdb1c5bccf1a03139db33b81ba6f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 13:26:34 +0100
 Subject: [PATCH] TPS Graph
@@ -84,7 +84,7 @@ index 000000000..b7d741908
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ad8693587..fb3ab5717 100644
+index 752c62bf4..da9d53bfd 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
@@ -101,8 +101,8 @@ index ad8693587..fb3ab5717 100644
          commands.put("minimal", new VisualCommand(Visuals.VisualType.MINIMAL, "minimaltnt", "tntlag"));
 +        commands.put("tps", new TPSCommand());
  
-         version = getInt("config-version", 2);
-         set("config-version", 2);
+         version = getInt("config-version", 3);
+         set("config-version", 3);
 diff --git a/src/main/java/me/samsuik/blossom/utils/tps/TPSGraph.java b/src/main/java/me/samsuik/blossom/utils/tps/TPSGraph.java
 new file mode 100644
 index 000000000..9b29241ce
@@ -393,7 +393,7 @@ index 000000000..f25d1aca2
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 579bf3ce5..3e28eab9d 100644
+index 686ec097e..fc884ecf8 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -559,6 +559,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs

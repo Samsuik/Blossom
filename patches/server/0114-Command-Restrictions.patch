@@ -1,14 +1,14 @@
-From 21805522292b0c7cae5d389370ef66a2e59f4ce3 Mon Sep 17 00:00:00 2001
+From ccf369047bce6ea1e3908f60733ccd78f65d3c70 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 27 Jul 2023 20:03:36 +0100
 Subject: [PATCH] Command Restrictions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7daa4e268..78dda3b49 100644
+index 83f3beb71..e2530a8ff 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -564,4 +564,13 @@ public class BlossomConfig {
+@@ -570,4 +570,13 @@ public class BlossomConfig {
          throttlePlacement = getBoolean("player.throttle-block-placement", false);
      }
  
@@ -170,7 +170,7 @@ index 000000000..23c6d37f7
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 67247ef81..d46df74cf 100644
+index 62e092d24..ab761b379 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -107,6 +107,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList

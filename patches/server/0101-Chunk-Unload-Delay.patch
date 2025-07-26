@@ -1,20 +1,26 @@
-From 695c97b1ee97c880aa1d2ca957dc78f84ab8c209 Mon Sep 17 00:00:00 2001
+From 2138ed5167b1907af024ef1c1ed73e108c392431 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index b1b6ccb5f..b80b9d9b0 100644
+index 5ac47d297..20cbc94fe 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -519,4 +519,9 @@ public class BlossomConfig {
+@@ -519,4 +519,15 @@ public class BlossomConfig {
          ensureInteractedBlockIsVisible = getBoolean("player.ensure-interacted-block-is-visible", true);
      }
  
-+    public static int delayChunkUnloads;
-+    private static void DelayChunkUnload() {
-+        delayChunkUnloads = getInt("chunk.chunk-unload-delay", 100);
++    public static int chunkUnloadDelay;
++    private static void ChunkUnloadDelay() {
++        int defaultDelay = 5000; // ms
++        if (version < 3) {
++            defaultDelay = config.getInt("chunk.chunk-unload-delay");
++            set("chunk.chunk-unload-delay", null);
++            defaultDelay *= 50; // old chunk unload delay is in ticks
++        }
++        chunkUnloadDelay = getInt("chunk.chunk-unload-delay", defaultDelay) / 50;
 +    }
 +
  }
@@ -51,7 +57,7 @@ index b06df8a74..7f63c35fc 100644
  
      public org.bukkit.Chunk bukkitChunk;
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index 6d9cd017a..1e6656584 100644
+index 6d9cd017a..a538ed171 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
 @@ -366,6 +366,15 @@ public class ChunkProviderServer implements IChunkProvider {
@@ -64,7 +70,7 @@ index 6d9cd017a..1e6656584 100644
 +            return true;
 +        }
 +        long totalTicksSinceLoading = this.world.getTime() - chunk.loadedTick;
-+        return totalTicksSinceLoading >= me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads;
++        return totalTicksSinceLoading >= me.samsuik.blossom.configuration.BlossomConfig.chunkUnloadDelay;
 +    }
 +
      private it.unimi.dsi.fastutil.longs.LongArrayList getChunksToUnload(int maxUnloads) {
