@@ -1,14 +1,14 @@
-From 2d3da4cc63154848bf2c362c67e5696751f10a5d Mon Sep 17 00:00:00 2001
+From 62eb8414e88ee9558dc70ae7618a23c90f080b3e Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Mon, 21 Jul 2025 00:26:13 +0100
 Subject: [PATCH] optimise tickEntities
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index c502b1bed..157f3309f 100644
+index 0d8e70cba..b50b0a19c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -1742,6 +1742,13 @@ public abstract class World implements IBlockAccess {
+@@ -1743,6 +1743,13 @@ public abstract class World implements IBlockAccess {
      public void scheduleUponLoading(Chunk chunk, BlockPosition blockposition, Block block, int i, int j) {} // Blossom
  
      public void tickEntities() {
@@ -22,7 +22,7 @@ index c502b1bed..157f3309f 100644
          this.methodProfiler.a("entities");
          this.methodProfiler.a("global");
  
-@@ -1751,8 +1758,11 @@ public abstract class World implements IBlockAccess {
+@@ -1752,8 +1759,11 @@ public abstract class World implements IBlockAccess {
          CrashReport crashreport;
          CrashReportSystemDetails crashreportsystemdetails;
  
@@ -36,7 +36,7 @@ index c502b1bed..157f3309f 100644
              // CraftBukkit start - Fixed an NPE
              if (entity == null) {
                  continue;
-@@ -1775,7 +1785,7 @@ public abstract class World implements IBlockAccess {
+@@ -1776,7 +1786,7 @@ public abstract class World implements IBlockAccess {
              }
  
              if (entity.dead) {
@@ -45,7 +45,7 @@ index c502b1bed..157f3309f 100644
              }
          }
  
-@@ -1818,10 +1828,12 @@ public abstract class World implements IBlockAccess {
+@@ -1819,10 +1829,12 @@ public abstract class World implements IBlockAccess {
          // PaperSpigot start - Disable tick limiters
          //if (tickPosition < 0) tickPosition = 0;
          Entity previous = null; // Blossom
@@ -61,7 +61,7 @@ index c502b1bed..157f3309f 100644
              // CraftBukkit end
              if (entity.vehicle != null) {
                  if (!entity.vehicle.dead && entity.vehicle.passenger == entity) {
-@@ -1875,7 +1887,7 @@ public abstract class World implements IBlockAccess {
+@@ -1876,7 +1888,7 @@ public abstract class World implements IBlockAccess {
                  // Paper end
  
                  guardEntityList = false; // Spigot
@@ -70,7 +70,7 @@ index c502b1bed..157f3309f 100644
                  guardEntityList = true; // Spigot
                  this.b(entity);
              }
-@@ -1885,6 +1897,11 @@ public abstract class World implements IBlockAccess {
+@@ -1886,6 +1898,11 @@ public abstract class World implements IBlockAccess {
          guardEntityList = false; // Spigot
  
          timings.entityTick.stopTiming(); // Spigot
@@ -82,7 +82,7 @@ index c502b1bed..157f3309f 100644
          this.methodProfiler.c("blockEntities");
          timings.tileEntityTick.startTiming(); // Spigot
          this.M = true;
-@@ -1898,15 +1915,15 @@ public abstract class World implements IBlockAccess {
+@@ -1899,15 +1916,15 @@ public abstract class World implements IBlockAccess {
          // CraftBukkit end
  
          // Spigot start
@@ -104,7 +104,7 @@ index c502b1bed..157f3309f 100644
                  continue;
              }
              // Spigot end
-@@ -1924,8 +1941,7 @@ public abstract class World implements IBlockAccess {
+@@ -1925,8 +1942,7 @@ public abstract class World implements IBlockAccess {
                          tileentity.tickTimer.stopTiming();
                          System.err.println("TileEntity threw exception at " + tileentity.world.getWorld().getName() + ":" + tileentity.position.getX() + "," + tileentity.position.getY() + "," + tileentity.position.getZ());
                          throwable2.printStackTrace();
@@ -114,7 +114,7 @@ index c502b1bed..157f3309f 100644
                          continue;
                          // PaperSpigot end
                      }
-@@ -1938,8 +1954,7 @@ public abstract class World implements IBlockAccess {
+@@ -1939,8 +1955,7 @@ public abstract class World implements IBlockAccess {
              }
  
              if (tileentity.x()) {
@@ -124,7 +124,7 @@ index c502b1bed..157f3309f 100644
                  //this.h.remove(tileentity); // PaperSpigot - Remove unused list
                  // Paper start
                  if (chunk != null) {
-@@ -1961,9 +1976,12 @@ public abstract class World implements IBlockAccess {
+@@ -1962,9 +1977,12 @@ public abstract class World implements IBlockAccess {
          // CraftBukkit end */
  
          this.methodProfiler.c("pendingBlockEntities");
@@ -140,7 +140,7 @@ index c502b1bed..157f3309f 100644
  
                  if (!tileentity1.x()) {
                      /* CraftBukkit start - Order matters, moved down
-@@ -1983,7 +2001,7 @@ public abstract class World implements IBlockAccess {
+@@ -1984,7 +2002,7 @@ public abstract class World implements IBlockAccess {
                  }
              }
  

@@ -1,4 +1,4 @@
-From a936ad15b81baa2660410d90bfc428e561581c21 Mon Sep 17 00:00:00 2001
+From 695c97b1ee97c880aa1d2ca957dc78f84ab8c209 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
@@ -18,15 +18,27 @@ index b1b6ccb5f..b80b9d9b0 100644
 +    }
 +
  }
+diff --git a/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
+index 8efefded0..228df0c91 100644
+--- a/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
++++ b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
+@@ -27,6 +27,7 @@ public final class SectionChunkCache {
+                 Chunk chunk;
+                 if (loadChunks) {
+                     chunk = ((ChunkProviderServer) world.N()).getChunkAt(chunkX, chunkZ);
++                    chunk.loadedTick = world.getTime(); // Blossom - chunk unload delay
+                 } else {
+                     chunk = world.getChunkIfLoaded(chunkX, chunkZ);
+                 }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index aa8abdcab..879be19f3 100644
+index b06df8a74..7f63c35fc 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -153,6 +153,7 @@ public class Chunk {
      }
      // CraftBukkit end
-     public final long chunkKey;
-+    public long loadedTick; // Blossom
+     public final long chunkKey; // Blossom - cache chunk retrieval
++    public long loadedTick; // Blossom - chunk unload delay
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
@@ -34,12 +46,12 @@ index aa8abdcab..879be19f3 100644
              }
          }
          // Blossom end
-+        this.loadedTick = MinecraftServer.currentTick; // Blossom - chunk unload delay
++        this.loadedTick = world.getTime(); // Blossom - chunk unload delay
      }
  
      public org.bukkit.Chunk bukkitChunk;
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index af2bf5fea..eb4bdfc4b 100644
+index 6d9cd017a..1e6656584 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
 @@ -366,6 +366,15 @@ public class ChunkProviderServer implements IChunkProvider {
@@ -51,7 +63,7 @@ index af2bf5fea..eb4bdfc4b 100644
 +        if (chunk == null) {
 +            return true;
 +        }
-+        long totalTicksSinceLoading = MinecraftServer.currentTick - chunk.loadedTick;
++        long totalTicksSinceLoading = this.world.getTime() - chunk.loadedTick;
 +        return totalTicksSinceLoading >= me.samsuik.blossom.configuration.BlossomConfig.delayChunkUnloads;
 +    }
 +
@@ -73,6 +85,20 @@ index af2bf5fea..eb4bdfc4b 100644
              }
          }
  
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index c502b1bed..0d8e70cba 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1545,7 +1545,8 @@ public abstract class World implements IBlockAccess {
+                 {
+                     // PaperSpigot start
+                     if (entity.loadChunks) {
+-                        chunk = ((ChunkProviderServer) entity.world.chunkProvider).getChunkAt(chunkx, chunkz);
++                        chunk = ((ChunkProviderServer) this.chunkProvider).getChunkAt(chunkx, chunkz); // Blossom - chunk unload delay; NEVER attempt to load chunks in a different world
++                        chunk.loadedTick = this.getTime(); // Blossom - chunk unload delay
+                     } else {
+                         entity.inUnloadedChunk = true; // PaperSpigot - Remove entities in unloaded chunks
+                         continue;
 -- 
 2.50.1
 

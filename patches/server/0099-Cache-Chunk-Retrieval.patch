@@ -1,4 +1,4 @@
-From b45ebaad93fb33ac47c7bca4f9921a7e725dbbd2 Mon Sep 17 00:00:00 2001
+From b0ef6f13fca5b7b55c4f28dbc98c0bd468de68b5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -36,14 +36,14 @@ index 000000000..23282b120
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index b9a11edee..aa8abdcab 100644
+index b9a11edee..b06df8a74 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -152,6 +152,7 @@ public class Chunk {
          this.neighbors &= ~(0x1 << (x * 5 + 12 + z));
      }
      // CraftBukkit end
-+    public final long chunkKey;
++    public final long chunkKey; // Blossom - cache chunk retrieval
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
@@ -56,7 +56,7 @@ index b9a11edee..aa8abdcab 100644
  
          for (int k = 0; k < this.entitySlices.length; ++k) {
 diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
-index 243e3bfa1..d0f55a7ff 100644
+index 243e3bfa1..06d08092f 100644
 --- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
 +++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
 @@ -38,7 +38,7 @@ public class ChunkProviderServer implements IChunkProvider {
@@ -64,7 +64,7 @@ index 243e3bfa1..d0f55a7ff 100644
      private IChunkLoader chunkLoader;
      public boolean forceChunkLoad = false; // CraftBukkit - true -> false
 -    public Long2ObjectMap<Chunk> chunks = new Long2ObjectOpenHashMap<Chunk>(4096, 0.5f); // TacoSpigot - use trove Long2ObjectOpenHashMap instead of craftbukkit implementation (using inital capacity and load factor chosen by Amaranth in an old impl)
-+    public Long2ObjectMap<Chunk> chunks = new me.samsuik.blossom.chunk.ServerChunkMap(4096, 0.5f); // Blossom // TacoSpigot - use trove Long2ObjectOpenHashMap instead of craftbukkit implementation (using inital capacity and load factor chosen by Amaranth in an old impl)
++    public Long2ObjectMap<Chunk> chunks = new me.samsuik.blossom.chunk.ServerChunkMap(4096, 0.5f); // Blossom - cache chunk retrieval // TacoSpigot - use trove Long2ObjectOpenHashMap instead of craftbukkit implementation (using inital capacity and load factor chosen by Amaranth in an old impl)
      public WorldServer world;
  
      public ChunkProviderServer(WorldServer worldserver, IChunkLoader ichunkloader, IChunkProvider ichunkprovider) {
