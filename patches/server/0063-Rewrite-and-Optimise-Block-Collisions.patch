@@ -1,4 +1,4 @@
-From f550eed7c5aa088b940d292cf932f828e73a4d80 Mon Sep 17 00:00:00 2001
+From 2751792d04eed1f45b707dc49def5e0882a497b3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -24,7 +24,7 @@ index c50f3e1c9..a65306dc9 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
 new file mode 100644
-index 000000000..eeebd47f8
+index 000000000..8efefded0
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
 @@ -0,0 +1,57 @@
@@ -56,7 +56,7 @@ index 000000000..eeebd47f8
 +            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
 +                Chunk chunk;
 +                if (loadChunks) {
-+                    chunk = world.getChunkAt(chunkX, chunkZ);
++                    chunk = ((ChunkProviderServer) world.N()).getChunkAt(chunkX, chunkZ);
 +                } else {
 +                    chunk = world.getChunkIfLoaded(chunkX, chunkZ);
 +                }
@@ -632,11 +632,11 @@ index 907c57b8c..7ea958149 100644
          IBlockData iblockdata = (IBlockData) Block.d.a(this.blockIds[j << 8 | k << 4 | i]);
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 110fbd6af..e4f431d27 100644
+index 43afbcd4b..3ab881f09 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -672,6 +672,120 @@ public abstract class Entity implements ICommandListener {
-         // Blossom end
+         // Blossom end - fix chunk loading
      }
  
 +    protected void move_cannon(double moveX, double moveY, double moveZ) {

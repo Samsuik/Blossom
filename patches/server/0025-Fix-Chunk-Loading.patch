@@ -1,4 +1,4 @@
-From 320fdf7bb6d17681abc27437aec89a0c693f25e2 Mon Sep 17 00:00:00 2001
+From 6deda25fffade500d7d6e8c542c4910caafeb4ca Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 21 Sep 2020 21:46:25 +0100
 Subject: [PATCH] Fix Chunk Loading
@@ -6,14 +6,14 @@ Subject: [PATCH] Fix Chunk Loading
 Fixed an oversight with loading surrounding chunks that caused entities to not load any chunks if the entity was travelling to the south or east.
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index e8e4fa969..97e44dd4c 100644
+index e8e4fa969..0f1a9e73b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -485,11 +485,31 @@ public abstract class Entity implements ICommandListener {
       * PaperSpigot - Load surrounding chunks the entity is moving through
       */
      public void loadChunks() {
-+        // Blossom start - Fix Load Chunks
++        // Blossom start - fix chunk loading
 +        /*
 +        This implementation is flawed, as it does not work properly in south and east directions.
 +        The reason for this is because the motion would be negative in those directions which
@@ -34,10 +34,10 @@ index e8e4fa969..97e44dd4c 100644
              }
          }
 +        */
-+        int chunkX = org.bukkit.util.NumberConversions.floor(locX) >> 4;
-+        int chunkZ = org.bukkit.util.NumberConversions.floor(locZ) >> 4;
++        int chunkX = MathHelper.floor(this.locX) >> 4;
++        int chunkZ = MathHelper.floor(this.locZ) >> 4;
 +        ((ChunkProviderServer) world.chunkProvider).getChunkAt(chunkX, chunkZ);
-+        // Blossom end
++        // Blossom end - fix chunk loading
      }
  
  
