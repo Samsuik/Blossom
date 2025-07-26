@@ -1,4 +1,4 @@
-From 4d0804d4005dc462d1f267e23c6f471a83e99f11 Mon Sep 17 00:00:00 2001
+From 156a5f661644765575723ac52b0b9e62e05265c2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -805,10 +805,10 @@ index 2158f65fe..b1adf2603 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 0757cad84..a8cfe21c6 100644
+index affccaef2..7469d41ee 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -110,7 +110,7 @@ public class EntityFallingBlock extends Entity {
+@@ -111,7 +111,7 @@ public class EntityFallingBlock extends Entity {
              }
  
              this.motY -= 0.03999999910593033D;
@@ -818,12 +818,12 @@ index 0757cad84..a8cfe21c6 100644
              // PaperSpigot start - Remove entities in unloaded chunks
              if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedFallingBlocks) {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 38a7df7c5..8d2cdbdd7 100644
+index 955c1f0a1..7709269bf 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -108,7 +108,7 @@ public class EntityTNTPrimed extends Entity {
-         this.lastY = this.locY;
+@@ -109,7 +109,7 @@ public class EntityTNTPrimed extends Entity {
          this.lastZ = this.locZ;
+         this.storePosition(); // Blossom - optimised explosions
          this.motY -= 0.03999999910593033D;
 -        this.move(this.motX, this.motY, this.motZ);
 +        this.move_cannon(this.motX, this.motY, this.motZ); // Blossom
@@ -852,7 +852,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 3760ae6e6..08544f2b9 100644
+index b35934a43..078d7e49e 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;

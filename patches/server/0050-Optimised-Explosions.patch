@@ -1,11 +1,11 @@
-From 9a8ca65627b7f994913af1c4971b9ff8ca498c92 Mon Sep 17 00:00:00 2001
+From 04207da6c06f95ac27a61e0b3ee1c9a17bf2e865 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 3f41b5ba1..4e476cad7 100644
+index e754337a0..86872886e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -347,4 +347,11 @@ public class BlossomConfig {
@@ -510,7 +510,7 @@ index 3d1e583f3..815ba72d0 100644
              entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
              world.addEntity(entitytntprimed);
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index abeb76e4a..c4127179d 100644
+index d56c007df..70970ccd4 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -132,6 +132,33 @@ public abstract class Entity implements ICommandListener {
@@ -547,8 +547,20 @@ index abeb76e4a..c4127179d 100644
      public BlockPosition blockposition = BlockPosition.ZERO;
      public BlockPosition lastPosition;
      public boolean isInLava;
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index e3bfd8683..2b82cd435 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -69,6 +69,7 @@ public class EntityFallingBlock extends Entity {
+             this.lastX = this.locX;
+             this.lastY = this.locY;
+             this.lastZ = this.locZ;
++            this.storePosition(); // Blossom - optimised explosions
+             BlockPosition blockposition;
+ 
+             if (this.ticksLived++ == 0) {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 44f961d15..2b94efe5c 100644
+index 44f961d15..7093bc2f8 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -9,6 +9,7 @@ public class EntityTNTPrimed extends Entity {
@@ -559,6 +571,14 @@ index 44f961d15..2b94efe5c 100644
  
      // PaperSpigot start - TNT source location API
      public EntityTNTPrimed(World world) {
+@@ -55,6 +56,7 @@ public class EntityTNTPrimed extends Entity {
+         this.lastX = this.locX;
+         this.lastY = this.locY;
+         this.lastZ = this.locZ;
++        this.storePosition(); // Blossom - optimised explosions
+         this.motY -= 0.03999999910593033D;
+         this.move(this.motX, this.motY, this.motZ);
+ 
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
 index 4b288ae8b..1a52be8a8 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
@@ -984,7 +1004,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 35079ee61..8ea4079b9 100644
+index 35079ee61..920872a3f 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -995,15 +1015,7 @@ index 35079ee61..8ea4079b9 100644
  
      protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
          this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
-@@ -1862,6 +1863,7 @@ public abstract class World implements IBlockAccess {
-             // PaperSpigot end
-         } else {
-             // CraftBukkit end
-+            entity.storePosition(); // Blossom
-             entity.P = entity.locX;
-             entity.Q = entity.locY;
-             entity.R = entity.locZ;
-@@ -2210,12 +2212,21 @@ public abstract class World implements IBlockAccess {
+@@ -2210,12 +2211,21 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  

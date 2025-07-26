@@ -1,4 +1,4 @@
-From 6f863a353bb9a956644b3fc10a9f88dfaea206a8 Mon Sep 17 00:00:00 2001
+From 8934b9e7058d950050f6257b15451d31b11bdc06 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -53,7 +53,7 @@ index b1adf2603..6f6c9d84d 100644
              moveX *= 0.25D;
              moveY *= 0.05000000074505806D;
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 06a6ae31d..3844ca8d3 100644
+index 7469d41ee..7c0239900 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -86,6 +86,21 @@ public class EntityFallingBlock extends Entity {
@@ -78,20 +78,19 @@ index 06a6ae31d..3844ca8d3 100644
  
      public void t_() {
          Block block = this.block.getBlock();
-@@ -98,6 +113,12 @@ public class EntityFallingBlock extends Entity {
-             this.lastZ = this.locZ;
-             BlockPosition blockposition;
- 
+@@ -93,6 +108,11 @@ public class EntityFallingBlock extends Entity {
+         if (block.getMaterial() == Material.AIR) {
+             this.die();
+         } else {
 +            // Blossom start - defence patches
 +            if (me.samsuik.blossom.configuration.BlossomConfig.disableLeftShooting && (this.motX != 0.0 || this.motZ != 0.0)) {
 +                this.preventLeftShooting();
 +            }
 +            // Blossom end - defence patches
-+
-             if (this.ticksLived++ == 0) {
-                 blockposition = new BlockPosition(this);
-                 if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
-@@ -140,7 +161,7 @@ public class EntityFallingBlock extends Entity {
+             this.lastX = this.locX;
+             this.lastY = this.locY;
+             this.lastZ = this.locZ;
+@@ -141,7 +161,7 @@ public class EntityFallingBlock extends Entity {
                      if (this.world.getType(blockposition).getBlock() != Blocks.PISTON_EXTENSION) {
                          this.die();
                          if (!this.e) {
@@ -101,10 +100,10 @@ index 06a6ae31d..3844ca8d3 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 08544f2b9..275a066a6 100644
+index 078d7e49e..eaff9be97 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3289,11 +3289,16 @@ public abstract class World implements IBlockAccess {
+@@ -3288,11 +3288,16 @@ public abstract class World implements IBlockAccess {
      }
  
      public boolean a(Block block, BlockPosition blockposition, boolean flag, EnumDirection enumdirection, Entity entity, ItemStack itemstack) {

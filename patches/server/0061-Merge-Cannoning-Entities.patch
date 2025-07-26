@@ -1,4 +1,4 @@
-From 3f63c98a61e399207d547d01ab8ff0ce75e6548a Mon Sep 17 00:00:00 2001
+From 2635c6bfd6d513b0b12955cfae0e549c7c63257c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -186,7 +186,7 @@ index 70970ccd4..2158f65fe 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index e3bfd8683..d4ba2520e 100644
+index 2b82cd435..affccaef2 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -48,6 +48,7 @@ public class EntityFallingBlock extends Entity {
@@ -230,7 +230,7 @@ index e3bfd8683..d4ba2520e 100644
      public void t_() {
          Block block = this.block.getBlock();
  
-@@ -119,6 +146,7 @@ public class EntityFallingBlock extends Entity {
+@@ -120,6 +147,7 @@ public class EntityFallingBlock extends Entity {
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);
                                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
@@ -239,7 +239,7 @@ index e3bfd8683..d4ba2520e 100644
                                  if (block instanceof BlockFalling) {
                                      ((BlockFalling) block).a_(this.world, blockposition);
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 2b94efe5c..93e3036af 100644
+index 7093bc2f8..955c1f0a1 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -39,6 +39,7 @@ public class EntityTNTPrimed extends Entity {
@@ -307,7 +307,7 @@ index 2b94efe5c..93e3036af 100644
      public void t_() {
          if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
          this.lastX = this.locX;
-@@ -85,6 +136,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -86,6 +137,7 @@ public class EntityTNTPrimed extends Entity {
              // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
              // this.die();
              if (!this.world.isClientSide) {
@@ -334,7 +334,7 @@ index 97cc040d3..e0a25e474 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 92fdd8374..be2f04485 100644
+index e4ff9f145..19dad43e6 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
