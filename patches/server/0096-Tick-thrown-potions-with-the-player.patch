@@ -1,4 +1,4 @@
-From db863c229da0ad7e26f9ab72b17b9d759dddf18b Mon Sep 17 00:00:00 2001
+From 6e16c7b79d0ecaf994990ec1352310a0eba78c28 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -114,7 +114,7 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 20ec87911..fe3541b39 100644
+index 06563f772..c502b1bed 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {
@@ -132,7 +132,7 @@ index 20ec87911..fe3541b39 100644
              if (entity instanceof EntityHuman) {
                  EntityHuman entityhuman = (EntityHuman) entity;
  
-@@ -1821,7 +1829,7 @@ public abstract class World implements IBlockAccess {
+@@ -1825,7 +1833,7 @@ public abstract class World implements IBlockAccess {
              }
  
              this.methodProfiler.a("tick");

@@ -1,4 +1,4 @@
-From b6aad5697c1d6f66bf3777d4ccc8cd7d0a9347b2 Mon Sep 17 00:00:00 2001
+From f550eed7c5aa088b940d292cf932f828e73a4d80 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -24,43 +24,66 @@ index c50f3e1c9..a65306dc9 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
 new file mode 100644
-index 000000000..6b43d6bd7
+index 000000000..eeebd47f8
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/utils/SectionChunkCache.java
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,57 @@
 +package me.samsuik.blossom.utils;
 +
 +import net.minecraft.server.*;
 +
-+public class SectionChunkCache {
++public final class SectionChunkCache {
++    private static final IBlockData AIR = Blocks.AIR.getBlockData();
 +
 +    private final Chunk[][] chunks;
 +    private final int baseX, baseZ;
 +
 +    public SectionChunkCache(World world, AxisAlignedBB bb) {
++        this(world, bb, false);
++    }
++
++    public SectionChunkCache(World world, AxisAlignedBB bb, boolean loadChunks) {
 +        int minChunkX = MathHelper.floor(bb.a) >> 4;
 +        int minChunkZ = MathHelper.floor(bb.c) >> 4;
 +        int maxChunkX = MathHelper.floor(bb.d) >> 4;
 +        int maxChunkZ = MathHelper.floor(bb.f) >> 4;
 +
-+        chunks = new Chunk[maxChunkX - minChunkX + 1][maxChunkZ - minChunkZ + 1];
-+
-+        baseX = minChunkX;
-+        baseZ = minChunkZ;
++        this.chunks = new Chunk[maxChunkX - minChunkX + 1][maxChunkZ - minChunkZ + 1];
++        this.baseX = minChunkX;
++        this.baseZ = minChunkZ;
 +
 +        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
 +            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
-+                chunks[chunkX - baseX][chunkZ - baseZ] = world.getChunkAt(chunkX, chunkZ);
++                Chunk chunk;
++                if (loadChunks) {
++                    chunk = world.getChunkAt(chunkX, chunkZ);
++                } else {
++                    chunk = world.getChunkIfLoaded(chunkX, chunkZ);
++                }
++                this.chunks[chunkX - minChunkX][chunkZ - minChunkZ] = chunk;
 +            }
 +        }
 +    }
 +
 +    public IBlockData getType(int x, int y, int z) {
-+        Chunk chunk = chunks[(x >> 4) - baseX][(z >> 4) - baseZ];
-+        ChunkSection section = chunk.getSections()[y >> 4];
-+        return section != null ? section.getType(x & 15, y & 15, z & 15) : Blocks.AIR.getBlockData();
++        if (y >= 0 && y <= 255) {
++            final ChunkSection section = this.getSection(x, y, z);
++            if (section != null) {
++                return section.getType(x & 15, y & 15, z & 15);
++            }
++        }
++        return AIR;
 +    }
 +
++    public char getRawUnsafe(int x, int y, int z) {
++        ChunkSection section = this.getSection(x, y, z);
++        return section != null ? section.getRaw(x & 15, y & 15, z & 15) : 0;
++    }
++
++    private ChunkSection getSection(int x, int y, int z) {
++        Chunk chunk = this.chunks[(x >> 4) - this.baseX][(z >> 4) - this.baseZ];
++        return chunk != null ? chunk.getSections()[y >> 4] : null;
++    }
 +}
 diff --git a/src/main/java/net/minecraft/server/AxisAlignedBB.java b/src/main/java/net/minecraft/server/AxisAlignedBB.java
 index 431097ec3..ab5fe46dc 100644
@@ -593,6 +616,21 @@ index 88131b507..5deed1646 100644
          return super.a(world, blockposition, iblockdata);
      }
  
+diff --git a/src/main/java/net/minecraft/server/ChunkSection.java b/src/main/java/net/minecraft/server/ChunkSection.java
+index 907c57b8c..7ea958149 100644
+--- a/src/main/java/net/minecraft/server/ChunkSection.java
++++ b/src/main/java/net/minecraft/server/ChunkSection.java
+@@ -32,6 +32,10 @@ public class ChunkSection {
+     }
+     // CraftBukkit end
+ 
++    public final char getRaw(int i, int j, int k) {
++        return this.blockIds[j << 8 | k << 4 | i];
++    }
++
+     public IBlockData getType(int i, int j, int k) {
+         IBlockData iblockdata = (IBlockData) Block.d.a(this.blockIds[j << 8 | k << 4 | i]);
+ 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
 index 110fbd6af..e4f431d27 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
@@ -814,7 +852,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 3760ae6e6..d21d282a3 100644
+index 3760ae6e6..08544f2b9 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
@@ -825,25 +863,25 @@ index 3760ae6e6..d21d282a3 100644
  import org.bukkit.Bukkit;
  import org.bukkit.block.BlockState;
  import org.bukkit.craftbukkit.CraftServer;
-@@ -1357,6 +1358,154 @@ public abstract class World implements IBlockAccess {
+@@ -1357,8 +1358,160 @@ public abstract class World implements IBlockAccess {
          this.u.add(iworldaccess);
      }
  
 +    // Blossom start - rewrite and optimise block collisions
 +    private static final double EPSILON = 1.0e-7;
 +
-+    public void testShapesOnX(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++    public final void testShapesOnX(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
 +        int minY = Math.max(MathHelper.floor(bb.b - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
 +        int maxY = Math.min(MathHelper.floor(bb.e), 255) + 1;
 +        int minZ = MathHelper.floor(bb.c);
 +        int maxZ = MathHelper.floor(bb.f) + 1;
-+        SectionChunkCache cache = new SectionChunkCache(this, scan);
++        SectionChunkCache cache = new SectionChunkCache(this, scan, entity.loadChunks);
 +
 +        if (dir > 0.0) {
 +            int minX = MathHelper.floor(bb.d + EPSILON);
 +            int maxX = MathHelper.floor(bb.d + dir) + 1;
 +            for (int x = minX; x < maxX; ++x) {
-+                if (traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
++                if (this.traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
 +                    break;
 +                }
 +            }
@@ -851,25 +889,25 @@ index 3760ae6e6..d21d282a3 100644
 +            int minX = MathHelper.floor(bb.a + dir);
 +            int maxX = MathHelper.floor(bb.a - EPSILON);
 +            for (int x = maxX; x >= minX; --x) {
-+                if (traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
++                if (this.traverseChunkX(entity, list, scan, cache, x, minY, maxY, minZ, maxZ)) {
 +                    break;
 +                }
 +            }
 +        }
 +    }
 +
-+    public void testShapesOnY(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++    public final void testShapesOnY(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
 +        int minX = MathHelper.floor(bb.a);
 +        int maxX = MathHelper.floor(bb.d) + 1;
 +        int minZ = MathHelper.floor(bb.c);
 +        int maxZ = MathHelper.floor(bb.f) + 1;
-+        SectionChunkCache cache = new SectionChunkCache(this, scan);
++        SectionChunkCache cache = new SectionChunkCache(this, scan, entity.loadChunks);
 +
 +        if (dir > 0.0) {
 +            int minY = Math.max(MathHelper.floor(bb.e + EPSILON), 0);
 +            int maxY = Math.min(MathHelper.floor(bb.e + dir), 255) + 1;
 +            for (int y = minY; y < maxY; ++y) {
-+                if (traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
++                if (this.traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
 +                    break;
 +                }
 +            }
@@ -877,25 +915,25 @@ index 3760ae6e6..d21d282a3 100644
 +            int minY = Math.max(MathHelper.floor(bb.b + dir - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
 +            int maxY = Math.min(MathHelper.floor(bb.b - EPSILON), 255);
 +            for (int y = maxY; y >= minY; --y) {
-+                if (traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
++                if (this.traverseChunkY(entity, list, scan, cache, y, minX, maxX, minZ, maxZ)) {
 +                    break;
 +                }
 +            }
 +        }
 +    }
 +
-+    public void testShapesOnZ(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
++    public final void testShapesOnZ(List<AxisAlignedBB> list, AxisAlignedBB bb, AxisAlignedBB scan, Entity entity, double dir) {
 +        int minX = MathHelper.floor(bb.a);
 +        int maxX = MathHelper.floor(bb.d) + 1;
 +        int minY = Math.max(MathHelper.floor(bb.b - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 0.5 : 0)), 0);
 +        int maxY = Math.min(MathHelper.floor(bb.e), 255) + 1;
-+        SectionChunkCache cache = new SectionChunkCache(this, scan);
++        SectionChunkCache cache = new SectionChunkCache(this, scan, entity.loadChunks);
 +
 +        if (dir > 0.0) {
 +            int minZ = MathHelper.floor(bb.f + EPSILON);
 +            int maxZ = MathHelper.floor(bb.f + dir) + 1;
 +            for (int z = minZ; z < maxZ; ++z) {
-+                if (traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
++                if (this.traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
 +                    break;
 +                }
 +            }
@@ -903,7 +941,7 @@ index 3760ae6e6..d21d282a3 100644
 +            int minZ = MathHelper.floor(bb.c + dir);
 +            int maxZ = MathHelper.floor(bb.c - EPSILON);
 +            for (int z = maxZ; z >= minZ; --z) {
-+                if (traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
++                if (this.traverseChunkZ(entity, list, scan, cache, z, minX, maxX, minY, maxY)) {
 +                    break;
 +                }
 +            }
@@ -913,7 +951,7 @@ index 3760ae6e6..d21d282a3 100644
 +    private boolean traverseChunkX(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int x, int minY, int maxY, int minZ, int maxZ) {
 +        for (int z = minZ; z < maxZ; ++z) {
 +            for (int y = minY; y < maxY; ++y) {
-+                collideWithBlock(entity, shapes, scan, cache, x, y, z);
++                this.collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
@@ -923,7 +961,7 @@ index 3760ae6e6..d21d282a3 100644
 +    private boolean traverseChunkY(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int y, int minX, int maxX, int minZ, int maxZ) {
 +        for (int x = minX; x < maxX; ++x) {
 +            for (int z = minZ; z < maxZ; ++z) {
-+                collideWithBlock(entity, shapes, scan, cache, x, y, z);
++                this.collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
@@ -933,7 +971,7 @@ index 3760ae6e6..d21d282a3 100644
 +    private boolean traverseChunkZ(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int z, int minX, int maxX, int minY, int maxY) {
 +        for (int x = minX; x < maxX; ++x) {
 +            for (int y = minY; y < maxY; ++y) {
-+                collideWithBlock(entity, shapes, scan, cache, x, y, z);
++                this.collideWithBlock(entity, shapes, scan, cache, x, y, z);
 +            }
 +        }
 +
@@ -941,11 +979,15 @@ index 3760ae6e6..d21d282a3 100644
 +    }
 +
 +    private void collideWithBlock(Entity entity, List<AxisAlignedBB> shapes, AxisAlignedBB scan, SectionChunkCache cache, int x, int y, int z) {
-+        IBlockData iblockdata = cache.getType(x, y, z);
++        char rawId = cache.getRawUnsafe(x, y, z);
++        if (rawId != 0) {
++            IBlockData iblockdata = Block.d.getRaw(rawId);
++            if (iblockdata == null) {
++                return;
++            }
 +
-+        if (iblockdata != null) {
 +            AxisAlignedBB entityBB = entity.getBoundingBox();
-+            if (paper_isForcedFullBlock(entity, iblockdata)) {
++            if (this.paper_isForcedFullBlock(entity, iblockdata)) {
 +                AxisAlignedBB bb = AxisAlignedBB.a(x, y, z, x + 1.0, y + 1.0, z + 1.0);
 +                if (scan.b(bb) && !entityBB.b(bb)) {
 +                    shapes.add(bb);
@@ -955,7 +997,7 @@ index 3760ae6e6..d21d282a3 100644
 +
 +            if (iblockdata.isShapeDynamic()) {
 +                iblockdata.getBlock().a(this, new BlockPosition(x, y, z), iblockdata, scan, shapes, entity);
-+                // inserted bbs may be inside the entity bb which would cause the collision to fail
++                // inserted bbs may be inside the entity bb which can cause the collision to fail
 +                for (int i = 0; i < shapes.size(); i++) {
 +                    AxisAlignedBB bb = shapes.get(i);
 +                    if (entityBB.b(bb)) shapes.remove(i--);
@@ -964,7 +1006,7 @@ index 3760ae6e6..d21d282a3 100644
 +                List<AxisAlignedBB> shape = iblockdata.shape();
 +                //noinspection ForLoopReplaceableByForEach
 +                for (int i = 0, shapeSize = shape.size(); i < shapeSize; i++) {
-+                    final AxisAlignedBB moved = shape.get(i).c(x, y, z);
++                    AxisAlignedBB moved = shape.get(i).c(x, y, z);
 +                    if (scan.b(moved) && !entityBB.b(moved)) shapes.add(moved);
 +                }
 +            }
@@ -978,37 +1020,40 @@ index 3760ae6e6..d21d282a3 100644
 +    // Blossom end - rewrite and optimise block collisions
 +
      public List<AxisAlignedBB> getCubes(Entity entity, AxisAlignedBB axisalignedbb) {
-         ArrayList arraylist = Lists.newArrayList();
+-        ArrayList arraylist = Lists.newArrayList();
++        List<AxisAlignedBB> arraylist = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2); // Blossom - rewrite and optimise block collisions
          int i = MathHelper.floor(axisalignedbb.a);
-@@ -1372,7 +1521,7 @@ public abstract class World implements IBlockAccess {
+         int j = MathHelper.floor(axisalignedbb.d + 1.0D);
+         int k = MathHelper.floor(axisalignedbb.b);
+@@ -1372,7 +1525,7 @@ public abstract class World implements IBlockAccess {
          BlockPosition.MutableBlockPosition blockposition_mutableblockposition = new BlockPosition.MutableBlockPosition();
  
          // Spigot start
 -        int ystart = ( ( k - 1 ) < 0 ) ? 0 : ( k - 1 );
-+        int ystart = Math.max(k - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 1 : 0), 0); // Blossom
++        int ystart = Math.max(k - (me.samsuik.blossom.configuration.BlossomConfig.extendedCollisionSearch ? 1 : 0), 0); // Blossom - rewrite and optimise block collisions
          for ( int chunkx = ( i >> 4 ); chunkx <= ( ( j - 1 ) >> 4 ); chunkx++ )
          {
              int cx = chunkx << 4;
-@@ -1403,7 +1552,7 @@ public abstract class World implements IBlockAccess {
+@@ -1403,7 +1556,7 @@ public abstract class World implements IBlockAccess {
                      {
                          for ( int y = ystart; y < l; y++ )
                          {
 -                            BlockPosition blockposition = new BlockPosition( x, y, z );
-+                            blockposition_mutableblockposition.setValues(x, y, z); // Blossom
++                            blockposition_mutableblockposition.setValues(x, y, z); // Blossom - rewrite and optimise block collisions
  
                              if (flag && flag1) {
                                  entity.h(false);
-@@ -1412,21 +1561,21 @@ public abstract class World implements IBlockAccess {
+@@ -1412,21 +1565,21 @@ public abstract class World implements IBlockAccess {
                              }
  
                              IBlockData block;
 -                            if (!this.getWorldBorder().a(blockposition) && flag1) {
-+                            if (!this.getWorldBorder().a(blockposition_mutableblockposition) && flag1) { // Blossom
++                            if (!this.getWorldBorder().a(blockposition_mutableblockposition) && flag1) { // Blossom - rewrite and optimise block collisions
                                  block = Blocks.STONE.getBlockData();
                              } else
                              {
 -                                block = chunk.getBlockData( blockposition );
-+                                block = chunk.getBlockData( blockposition_mutableblockposition ); // Blossom
++                                block = chunk.getBlockData(blockposition_mutableblockposition); // Blossom - rewrite and optimise block collisions
                              }
                              if ( block != null )
                              {
@@ -1020,7 +1065,7 @@ index 3760ae6e6..d21d282a3 100644
                                      if (axisalignedbb.b(aabb)) arraylist.add(aabb);
                                  } else {
 -                                    b.a(this, blockposition, block, axisalignedbb, arraylist, entity);
-+                                    b.testShape(this, blockposition_mutableblockposition, block, axisalignedbb, arraylist, entity); // Blossom
++                                    b.testShape(this, blockposition_mutableblockposition, block, axisalignedbb, arraylist, entity); // Blossom - rewrite and optimise block collisions
                                  }
                                  // PaperSpigot end
                              }

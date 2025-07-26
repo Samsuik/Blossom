@@ -1,4 +1,4 @@
-From 9d280531329bc83e3b7332f8e0ed20dc049997b9 Mon Sep 17 00:00:00 2001
+From b6103e5751ba7c13c903f554f12c8c27a7bc8cfc Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
@@ -115,78 +115,92 @@ index 87a2d7b90..8ee5e4b10 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/RegistryID.java b/src/main/java/net/minecraft/server/RegistryID.java
-index d9d458239..8615bf01b 100644
+index d9d458239..c3621cede 100644
 --- a/src/main/java/net/minecraft/server/RegistryID.java
 +++ b/src/main/java/net/minecraft/server/RegistryID.java
-@@ -9,32 +9,59 @@ import java.util.List;
+@@ -9,32 +9,73 @@ import java.util.List;
  
  public class RegistryID<T> implements Registry<T> {
  
 -    private final IdentityHashMap<T, Integer> a = new IdentityHashMap(512);
 -    private final List<T> b = Lists.newArrayList();
-+    // Blossom start
-+    private short[] indexes = new short[0];
++    // Blossom start - heavily optimise game registries
++    private char[] indexes = new char[0];
 +    private T[] storage = (T[]) new Object[0];
++
++    public final T getRaw(final char id) {
++        return this.storage[id];
++    }
++    // Blossom end - heavily optimise game registries
  
      public RegistryID() {}
  
      public void a(T t0, int i) {
 -        this.a.put(t0, Integer.valueOf(i));
-+        // Eh- huh... what even is this?!
-+        if (i >= storage.length) {
-+            storage = java.util.Arrays.copyOf(storage, i + 1);
++        // Blossom start - heavily optimise game registries
++        final int oldId = i;
++        if (i < 0 && (i = Character.MAX_VALUE + i) >= 0) {
++            MinecraftServer.LOGGER.warn("negative index added to registry was remapped ({} -> {})", oldId, i);
 +        }
-+
-+        storage[i] = t0;
  
 -        while (this.b.size() <= i) {
 -            this.b.add(null);
-+        int hash = t0.hashCode();
-+        if (hash >= indexes.length) {
-+            assert hash < Short.MAX_VALUE : String.format("(%d->%s->%d) index too high", hash, t0, i);
-+            indexes = java.util.Arrays.copyOf(indexes, hash + 1);
++        assert t0 != null : String.format("null entries cannot be added to this registry (%d)", i);
++        assert i >= 0 : String.format("negative index was unable to be remapped (%d)", i);
++        assert i < Character.MAX_VALUE : String.format("(%d<>%d, %s) index is greater than 327677", t0.hashCode(), i, t0);
++
++        // ensure storage and index capacity
++        if (i >= this.storage.length) {
++            this.storage = java.util.Arrays.copyOf(this.storage, i + 1);
          }
  
 -        this.b.set(i, t0);
-+        indexes[hash] = (short) i;
++        final int hash = t0.hashCode();
++        if (hash >= this.indexes.length) {
++            this.indexes = java.util.Arrays.copyOf(this.indexes, hash + 1);
++        }
++
++        // add to registry
++        this.storage[i] = t0;
++        this.indexes[hash] = (char) i;
++        // Blossom end - heavily optimise game registries
      }
  
      public int b(T t0) {
 -        Integer integer = (Integer) this.a.get(t0);
 -
 -        return integer == null ? -1 : integer.intValue();
-+        // todo: merge into return below, git didn't want to update the patch for some reason
-+        if (t0 == null) return -1;
-+        return indexes[t0.hashCode()];
++        return t0 == null ? -1 : this.indexes[t0.hashCode()]; // Blossom - heavily optimise game registries
      }
  
      public final T a(int i) {
 -        return i >= 0 && i < this.b.size() ? this.b.get(i) : null;
-+        return i >= 0 && i < storage.length ? storage[i] : null;
++        return i >= 0 && i < this.storage.length ? this.storage[i] : null; // Blossom - heavily optimise game registries
      }
  
      public Iterator<T> iterator() {
 -        return Iterators.filter(this.b.iterator(), Predicates.notNull());
++        // Blossom start - heavily optimise game registries
 +        return new Iterator<T>() {
 +            private int index = -1;
 +
 +            @Override
 +            public boolean hasNext() {
-+                while (++index < storage.length) {
++                final T[] storage = RegistryID.this.storage;
++                while (++this.index < storage.length) {
 +                    if (storage[index] != null) {
 +                        return true;
 +                    }
 +                }
-+
 +                return false;
 +            }
 +
 +            @Override
 +            public T next() {
-+                return storage[index];
++                return RegistryID.this.storage[index];
 +            }
 +        };
-+        // Blossom end
++        // Blossom end - heavily optimise game registries
      }
  }
 -- 

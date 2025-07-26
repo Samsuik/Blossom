@@ -1,4 +1,4 @@
-From 3811b37cda6c98cd22fc84b25e532692dd9beb2d Mon Sep 17 00:00:00 2001
+From 4ba2cbac3311171436121a1179bbd94b92235c9b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 19:04:35 +0100
 Subject: [PATCH] Allow Disabling Light Updates
@@ -21,7 +21,7 @@ index 05f19e97c..2f1d87fa7 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 448597881..579bf3ce5 100644
+index e0a25e474..686ec097e 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -116,6 +116,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
@@ -47,10 +47,10 @@ index 448597881..579bf3ce5 100644
          SpigotTimings.minecraftSchedulerTimer.stopTiming(); // Spigot
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 5e9064214..0b2dfcad1 100644
+index 275a066a6..8d6c75521 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3035,6 +3035,7 @@ public abstract class World implements IBlockAccess {
+@@ -3039,6 +3039,7 @@ public abstract class World implements IBlockAccess {
       * PaperSpigot - Asynchronous lighting updates
       */
      public boolean updateLight(final EnumSkyBlock enumskyblock, final BlockPosition position) {
