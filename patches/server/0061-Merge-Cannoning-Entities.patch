@@ -1,4 +1,4 @@
-From 4bb3d46d82343209e02b32f105c252ddf7a83596 Mon Sep 17 00:00:00 2001
+From 3f63c98a61e399207d547d01ab8ff0ce75e6548a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -186,14 +186,14 @@ index 70970ccd4..2158f65fe 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index e3bfd8683..0757cad84 100644
+index e3bfd8683..d4ba2520e 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -48,6 +48,7 @@ public class EntityFallingBlock extends Entity {
          this.lastY = d1;
          this.lastZ = d2;
          this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
-+        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
++        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
      }
  
      protected boolean s_() {
@@ -234,19 +234,19 @@ index e3bfd8683..0757cad84 100644
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);
                                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
-+                                this.respawn(); // Blossom
++                                this.respawn(); // Blossom - merge cannoning entities
                                  // CraftBukkit end
                                  if (block instanceof BlockFalling) {
                                      ((BlockFalling) block).a_(this.world, blockposition);
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 2b94efe5c..38a7df7c5 100644
+index 2b94efe5c..93e3036af 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -39,6 +39,7 @@ public class EntityTNTPrimed extends Entity {
          this.lastZ = d2;
          this.source = entityliving;
          if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
-+        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
++        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
      }
  
      protected void h() {}
@@ -311,7 +311,7 @@ index 2b94efe5c..38a7df7c5 100644
              // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
              // this.die();
              if (!this.world.isClientSide) {
-+                this.respawn(); // Blossom
++                this.respawn(); // Blossom - merge cannoning entities
                  this.explode();
              }
              this.die();

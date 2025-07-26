@@ -1,11 +1,11 @@
-From 0f9fc35876bc38c39e8e645dea56f3080a91265a Mon Sep 17 00:00:00 2001
+From bf38fc27621a08e89ed657cc47f432f6849747bb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index cfac865bb..91233ab10 100644
+index 11d662c91..f29e9b4a4 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -368,6 +368,18 @@ public abstract class Entity implements ICommandListener {
@@ -46,25 +46,25 @@ index cfac865bb..91233ab10 100644
  
                  for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index c9b13591f..d6224f445 100644
+index 566fa58b7..6a7ad2c04 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -49,6 +49,7 @@ public class EntityFallingBlock extends Entity {
          this.lastZ = d2;
          this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
-         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
+         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
 +        this.callEastWestPatchEvent(); // Blossom - add east west patch event
      }
  
      protected boolean s_() {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 83c1ada0e..c9cf07cd5 100644
+index 09a3659ea..c43f1106e 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -40,6 +40,7 @@ public class EntityTNTPrimed extends Entity {
          this.source = entityliving;
          if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
-         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom
+         this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
 +        this.callEastWestPatchEvent(); // Blossom - add east west patch event
      }
  

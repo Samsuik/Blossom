@@ -1,4 +1,4 @@
-From 7a2c84a79ae762572601d8076dbf8ee342c6a5f6 Mon Sep 17 00:00:00 2001
+From f6b42c71838f61daa8d943ec938d216ceca7328d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -339,7 +339,7 @@ index 23130ba96..7b48815ee 100644
                  }
              }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index b78cda0fa..edf902c78 100644
+index 53da5be6d..5170e52ad 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -123,7 +123,7 @@ public class EntityFallingBlock extends Entity {
@@ -357,7 +357,7 @@ index b78cda0fa..edf902c78 100644
                                  this.world.setTypeAndData(blockposition, this.block, 3);
 -                                world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
 +                                // world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Blossom // Spigot
-                                 this.respawn(); // Blossom
+                                 this.respawn(); // Blossom - merge cannoning entities
                                  // CraftBukkit end
                                  if (block instanceof BlockFalling) {
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java

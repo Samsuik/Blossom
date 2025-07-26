@@ -1,4 +1,4 @@
-From c190d5a92a3ec4c6780d7586ade1068f86d8f832 Mon Sep 17 00:00:00 2001
+From 6f863a353bb9a956644b3fc10a9f88dfaea206a8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -53,28 +53,28 @@ index b1adf2603..6f6c9d84d 100644
              moveX *= 0.25D;
              moveY *= 0.05000000074505806D;
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index a8cfe21c6..8f3898ed8 100644
+index 06a6ae31d..3844ca8d3 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -86,6 +86,21 @@ public class EntityFallingBlock extends Entity {
          }
      }
      // Blossom end - merge cannoning entities
-+    // Blossom start
-+    public void preventLeftShooting() {
-+        double changeX = Math.abs(motX) - Math.abs(lastMotX);
-+        double changeZ = Math.abs(motZ) - Math.abs(lastMotZ);
-+        double travelX = Math.abs(sourceLoc.getX() - locX);
-+        double travelZ = Math.abs(sourceLoc.getZ() - locZ);
++    // Blossom start - defence patches
++    private void preventLeftShooting() {
++        double changeX = Math.abs(this.motX) - Math.abs(this.lastMotX);
++        double changeZ = Math.abs(this.motZ) - Math.abs(this.lastMotZ);
++        double travelX = Math.abs(this.sourceLoc.getX() - this.locX);
++        double travelZ = Math.abs(this.sourceLoc.getZ() - this.locZ);
 +
 +        if (changeX > 0.0 && travelZ > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
-+            motX = 0.0;
++            this.motX = 0.0;
 +        }
 +        if (changeZ > 0.0 && travelX > me.samsuik.blossom.configuration.BlossomConfig.leftShootingThreshold) {
-+            motZ = 0.0;
++            this.motZ = 0.0;
 +        }
 +    }
-+    // Blossom end
++    // Blossom end - defence patches
  
      public void t_() {
          Block block = this.block.getBlock();
@@ -82,11 +82,11 @@ index a8cfe21c6..8f3898ed8 100644
              this.lastZ = this.locZ;
              BlockPosition blockposition;
  
-+            // Blossom start
-+            if (me.samsuik.blossom.configuration.BlossomConfig.disableLeftShooting && (motX != 0.0 || motZ != 0.0)) {
-+                preventLeftShooting();
++            // Blossom start - defence patches
++            if (me.samsuik.blossom.configuration.BlossomConfig.disableLeftShooting && (this.motX != 0.0 || this.motZ != 0.0)) {
++                this.preventLeftShooting();
 +            }
-+            // Blossom end
++            // Blossom end - defence patches
 +
              if (this.ticksLived++ == 0) {
                  blockposition = new BlockPosition(this);
