@@ -1,11 +1,11 @@
-From efc56a7b39b8ca781b74391802ff1b012e00a659 Mon Sep 17 00:00:00 2001
+From f14d9a21c84b2168e55a3b25f90b395113ad03e2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 16:32:15 +0100
-Subject: [PATCH] Send Empty Chunk Sections
+Subject: [PATCH] Reduce client skylight lag spikes
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fc6d0f7f9..b9774bf07 100644
+index e90972270..64f21f0be 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -319,4 +319,9 @@ public class BlossomConfig {
@@ -19,7 +19,7 @@ index fc6d0f7f9..b9774bf07 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 2fbe39515..95ec20b9d 100644
+index 26eb46e5b..2df4f544b 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -180,6 +180,14 @@ public class Chunk {
@@ -27,54 +27,53 @@ index 2fbe39515..95ec20b9d 100644
              this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
          }
 +
-+        // Blossom start - send empty chunk sections
++        // Blossom start - reduce client skylight lag
 +        if (me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
 +            for (int k = 0; k < this.sections.length; ++k) {
 +                this.sections[k] = new ChunkSection(k << 4, !world.worldProvider.o());
 +            }
 +        }
-+        // Blossom end
++        // Blossom end - reduce client skylight lag
      }
  
      public org.bukkit.Chunk bukkitChunk;
-@@ -1417,9 +1425,16 @@ public class Chunk {
+@@ -1417,9 +1425,15 @@ public class Chunk {
              Chunk.c.warn("Could not set level chunk sections, array length is " + achunksection.length + " instead of " + this.sections.length);
          } else {
              for (int i = 0; i < this.sections.length; ++i) {
 -                this.sections[i] = achunksection[i];
 -            }
-+                // Blossom start - send empty chunk sections
++                // Blossom start - reduce client skylight lag
 +                ChunkSection section = achunksection[i];
- 
 +                if (section == null && me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
 +                    section = new ChunkSection(i << 4, !world.worldProvider.o());
 +                }
-+
+ 
 +                this.sections[i] = section;
-+                // Blossom end
++                // Blossom end - reduce client skylight lag
 +            }
          }
      }
  
 diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
-index bfda7fb0e..3f5e89f51 100644
+index bfda7fb0e..b7b44d2eb 100644
 --- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
 +++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
 @@ -83,6 +83,14 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
          for (j = 0; j < achunksection.length; ++j) {
              ChunkSection chunksection = achunksection[j];
  
-+            // Blossom start - fun
++            // Blossom start - reduce client skylight lag
 +            if (chunksection != null && flag && me.samsuik.blossom.configuration.BlossomConfig.sendEmptyChunkSections) {
 +                packetplayoutmapchunk_chunkmap.b |= 1 << j;
 +                arraylist.add(chunksection);
 +                continue;
 +            }
-+            // Blossom end
++            // Blossom end - reduce client skylight lag
 +
              if (chunksection != null && (!flag || !chunksection.a()) && (i & 1 << j) != 0) {
                  packetplayoutmapchunk_chunkmap.b |= 1 << j;
                  arraylist.add(chunksection);
 -- 
-2.49.0
+2.50.1
 

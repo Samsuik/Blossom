@@ -1,4 +1,4 @@
-From 2138ed5167b1907af024ef1c1ed73e108c392431 Mon Sep 17 00:00:00 2001
+From 65b1ed3008cab8c8481eaacb70e64d150a70fcbc Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
@@ -37,7 +37,7 @@ index 8efefded0..228df0c91 100644
                      chunk = world.getChunkIfLoaded(chunkX, chunkZ);
                  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index b06df8a74..7f63c35fc 100644
+index e3b9aa4ec..69c32b45e 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -153,6 +153,7 @@ public class Chunk {
@@ -51,7 +51,7 @@ index b06df8a74..7f63c35fc 100644
 @@ -190,6 +191,7 @@ public class Chunk {
              }
          }
-         // Blossom end
+         // Blossom end - reduce client skylight lag
 +        this.loadedTick = world.getTime(); // Blossom - chunk unload delay
      }
  
