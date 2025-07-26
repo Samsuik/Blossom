@@ -1,4 +1,4 @@
-From 8934b9e7058d950050f6257b15451d31b11bdc06 Mon Sep 17 00:00:00 2001
+From c486a7d7a3a3e7ef26d8bdb94fc7c10b42183884 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -40,10 +40,10 @@ index 331bafa03..83da9eb38 100644
          } else if (entity.motY < 0.0D) {
              entity.motY = -entity.motY;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index b1adf2603..6f6c9d84d 100644
+index 99de02eb4..87b12177d 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -695,7 +695,7 @@ public abstract class Entity implements ICommandListener {
+@@ -698,7 +698,7 @@ public abstract class Entity implements ICommandListener {
          }
          // CraftBukkit end
  

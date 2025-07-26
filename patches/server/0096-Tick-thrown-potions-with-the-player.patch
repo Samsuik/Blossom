@@ -1,4 +1,4 @@
-From 950ff831bdc2dc96c729d8162f073ae94ffce1ef Mon Sep 17 00:00:00 2001
+From b444bfeb04a55786f6de8fa9a5f0fb9d95c3a38e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -23,10 +23,10 @@ index 0f3e5d584..a3ee56307 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 91233ab10..e1426109a 100644
+index d94cfbfdc..7b5ff5659 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -289,6 +289,7 @@ public abstract class Entity implements ICommandListener {
+@@ -292,6 +292,7 @@ public abstract class Entity implements ICommandListener {
          return true; // possibly?
      }
      // Blossom end
@@ -114,7 +114,7 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 06563f772..c502b1bed 100644
+index 5b34a37d9..fdd7f2c38 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {

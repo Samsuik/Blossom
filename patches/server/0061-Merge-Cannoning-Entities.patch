@@ -1,4 +1,4 @@
-From 2635c6bfd6d513b0b12955cfae0e549c7c63257c Mon Sep 17 00:00:00 2001
+From 90fcc215a9a3fa3a7d1570caa47a368edba612d2 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -22,10 +22,10 @@ index e2e456662..657475f29 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/entity/MergeHistory.java b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
 new file mode 100644
-index 000000000..6bd865b93
+index 000000000..1aee13a98
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,49 @@
 +package me.samsuik.blossom.entity;
 +
 +import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -41,12 +41,8 @@ index 000000000..6bd865b93
 +        return MinecraftServer.currentTick - this.firstMerge;
 +    }
 +
-+    public boolean mergeOnSpawn() {
-+        return this.ticksSinceFirstMerge() >= 200;
-+    }
-+
-+    public boolean storeHistory() {
-+        return this.spawnLocations.size() >= 2;
++    public boolean hasMerged() {
++        return this.spawnLocations.size() > 1;
 +    }
 +
 +    public long spawnLocation() {
@@ -58,12 +54,12 @@ index 000000000..6bd865b93
 +        this.spawnLocation = packed;
 +    }
 +
-+    public boolean includes(long packed) {
-+        return this.spawnLocations.contains(packed);
++    public boolean canMerge(long packed) {
++        return this.ticksSinceFirstMerge() >= 200 && this.spawnLocations.contains(packed);
 +    }
 +
-+    public void merge(MergeHistory history) {
-+        if (this.spawnLocations.isEmpty()) {
++    public void merge(MergeHistory history, boolean alive) {
++        if (alive || this.spawnLocations.isEmpty()) {
 +            this.spawnLocations.addAll(history.spawnLocations);
 +        } else {
 +            this.spawnLocations.retainAll(history.spawnLocations);
@@ -102,10 +98,10 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 70970ccd4..2158f65fe 100644
+index 70970ccd4..16548323c 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -179,6 +179,67 @@ public abstract class Entity implements ICommandListener {
+@@ -179,6 +179,70 @@ public abstract class Entity implements ICommandListener {
          this.lastPosition = pos;
      }
      // Blossom end
@@ -125,16 +121,19 @@ index 70970ccd4..2158f65fe 100644
 +        }
 +
 +        // If the entity has just spawned then try merging more aggressively
-+        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && this.mergeHistory.mergeOnSpawn() && this.ticksLived == 1) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && !this.mergeHistory.hasMerged() && this.ticksLived == 1) {
 +            long spawnLocation = this.mergeHistory.spawnLocation();
 +            me.samsuik.blossom.entity.MergeHistory activeMergeHistory = this.world.mergeHistory;
-+            if (activeMergeHistory != null && activeMergeHistory.includes(spawnLocation) && this.isSafeToMergeWith(this.world.mergingEntity)) {
-+                this.mergeInto(world.mergingEntity);
++            if (activeMergeHistory != null && activeMergeHistory.canMerge(spawnLocation) && this.isSafeToMergeWith(this.world.mergingEntity)) {
++                this.mergeInto(this.world.mergingEntity);
 +                return true;
 +            } else {
-+                this.world.mergeHistory = world.mergeHistoryMap.get(spawnLocation);
++                activeMergeHistory = this.world.mergeHistoryMap.get(spawnLocation);
++                if (activeMergeHistory != null) {
++                    activeMergeHistory.update();
++                }
++                this.world.mergeHistory = activeMergeHistory;
 +                this.world.mergingEntity = this;
-+                this.mergeHistory.update();
 +            }
 +        }
 +
@@ -148,7 +147,7 @@ index 70970ccd4..2158f65fe 100644
 +    }
 +
 +    protected void mergeInto(Entity entity) {
-+        entity.mergeHistory.merge(this.mergeHistory);
++        entity.mergeHistory.merge(this.mergeHistory, true);
 +        entity.stacked += this.stacked;
 +        die();
 +    }
@@ -162,23 +161,23 @@ index 70970ccd4..2158f65fe 100644
 +    }
 +
 +    private void storeMergeHistoryInWorld() {
-+        long packed = this.mergeHistory.spawnLocation();
-+        if (this.world.mergeHistoryMap.containsKey(packed)) {
-+            this.world.mergeHistoryMap.get(packed).merge(this.mergeHistory);
++        long spawnLocation = this.mergeHistory.spawnLocation();
++        if (this.world.mergeHistoryMap.containsKey(spawnLocation)) {
++            this.world.mergeHistoryMap.get(spawnLocation).merge(this.mergeHistory, false);
 +        } else {
-+            this.world.mergeHistoryMap.put(packed, this.mergeHistory);
++            this.world.mergeHistoryMap.put(spawnLocation, this.mergeHistory);
 +        }
 +    }
 +    // Blossom end - merge cannoning entities
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -361,6 +422,11 @@ public abstract class Entity implements ICommandListener {
+@@ -361,6 +425,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
 +        // Blossom start - merge cannoning entities
-+        if (this.mergeHistory.storeHistory()) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && this.mergeHistory.hasMerged()) {
 +            this.storeMergeHistoryInWorld();
 +        }
 +        // Blossom end - merge cannoning entities

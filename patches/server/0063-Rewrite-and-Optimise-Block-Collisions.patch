@@ -1,4 +1,4 @@
-From 156a5f661644765575723ac52b0b9e62e05265c2 Mon Sep 17 00:00:00 2001
+From b97642273ddb4230e7a98f730afe0956a38b3762 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -632,10 +632,10 @@ index 907c57b8c..7ea958149 100644
          IBlockData iblockdata = (IBlockData) Block.d.a(this.blockIds[j << 8 | k << 4 | i]);
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 2158f65fe..b1adf2603 100644
+index 16548323c..99de02eb4 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -678,6 +678,120 @@ public abstract class Entity implements ICommandListener {
+@@ -681,6 +681,120 @@ public abstract class Entity implements ICommandListener {
          // Blossom end - fix chunk loading
      }
  
@@ -756,7 +756,7 @@ index 2158f65fe..b1adf2603 100644
  
      public void move(double d0, double d1, double d2) {
          if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
-@@ -789,11 +903,11 @@ public abstract class Entity implements ICommandListener {
+@@ -792,11 +906,11 @@ public abstract class Entity implements ICommandListener {
              Iterator iterator1;
  
              if(this.world.tacoSpigotConfig.fixEastWest && Math.abs(d0) > Math.abs(d2)) { //TacoSpigot - fix east/west cannoning by calculating the z movement before x if the x velocity is greater
@@ -772,7 +772,7 @@ index 2158f65fe..b1adf2603 100644
  
                  this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
  
-@@ -806,21 +920,21 @@ public abstract class Entity implements ICommandListener {
+@@ -809,21 +923,21 @@ public abstract class Entity implements ICommandListener {
                  this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
  
              } else {
