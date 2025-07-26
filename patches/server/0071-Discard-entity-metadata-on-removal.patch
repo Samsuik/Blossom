@@ -1,22 +1,22 @@
-From 715551b1c4c0ec60bf4756838b65162ca5ec024a Mon Sep 17 00:00:00 2001
+From 658482d413ae1e992a1e486e3e199fa4d14c7711 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 21 Jun 2023 19:33:11 +0100
 Subject: [PATCH] Discard entity metadata on removal
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index b82f61338..2616df95d 100644
+index 6f6c9d84d..880607aba 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -421,6 +421,11 @@ public abstract class Entity implements ICommandListener {
-             storeMergeHistoryInWorld();
+@@ -427,6 +427,11 @@ public abstract class Entity implements ICommandListener {
+             this.storeMergeHistoryInWorld();
          }
-         // Blossom end
+         // Blossom end - merge cannoning entities
 +        // Blossom start - remove all entity metadata on removal
 +        if (bukkitEntity != null) {
 +            bukkitEntity.removeAllMetaData();
 +        }
-+        // Blossom end
++        // Blossom end - remove all entity metadata on removal
          this.dead = true;
      }
  

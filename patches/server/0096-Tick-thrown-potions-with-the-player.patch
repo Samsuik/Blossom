@@ -1,4 +1,4 @@
-From 6e16c7b79d0ecaf994990ec1352310a0eba78c28 Mon Sep 17 00:00:00 2001
+From 950ff831bdc2dc96c729d8162f073ae94ffce1ef Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -7,7 +7,7 @@ Keeps potion ticking in sync with the player that threw them. This helps
 a lot with poor connections and low tps.
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index dec290a83..8c56aebaa 100644
+index 0f3e5d584..a3ee56307 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -503,5 +503,10 @@ public class BlossomConfig {
@@ -23,10 +23,10 @@ index dec290a83..8c56aebaa 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index da348f09f..de5092f51 100644
+index 91233ab10..e1426109a 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -283,6 +283,7 @@ public abstract class Entity implements ICommandListener {
+@@ -289,6 +289,7 @@ public abstract class Entity implements ICommandListener {
          return true; // possibly?
      }
      // Blossom end

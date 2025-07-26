@@ -1,11 +1,11 @@
-From 794d24691047e98e5de8afc3a9cd52035acd0674 Mon Sep 17 00:00:00 2001
+From 4bb3d46d82343209e02b32f105c252ddf7a83596 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7182a2718..b773b1936 100644
+index e2e456662..657475f29 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -366,4 +366,11 @@ public class BlossomConfig {
@@ -22,55 +22,62 @@ index 7182a2718..b773b1936 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/entity/MergeHistory.java b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
 new file mode 100644
-index 000000000..829a35358
+index 000000000..6bd865b93
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,53 @@
 +package me.samsuik.blossom.entity;
 +
 +import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 +import net.minecraft.server.MinecraftServer;
 +
-+public class MergeHistory {
-+
++public final class MergeHistory {
 +    private final LongOpenHashSet spawnLocations = new LongOpenHashSet();
 +    private long spawnLocation;
++    private final int firstMerge = MinecraftServer.currentTick;
 +    private int lastUsed = MinecraftServer.currentTick;
 +
++    private int ticksSinceFirstMerge() {
++        return MinecraftServer.currentTick - this.firstMerge;
++    }
++
 +    public boolean mergeOnSpawn() {
-+        return spawnLocations.size() >= 1;
++        return this.ticksSinceFirstMerge() >= 200;
 +    }
 +
 +    public boolean storeHistory() {
-+        return spawnLocations.size() >= 2;
++        return this.spawnLocations.size() >= 2;
 +    }
 +
 +    public long spawnLocation() {
-+        return spawnLocation;
++        return this.spawnLocation;
 +    }
 +
 +    public void spawnLocation(long packed) {
-+        spawnLocations.add(packed);
-+        spawnLocation = packed;
++        this.spawnLocations.add(packed);
++        this.spawnLocation = packed;
 +    }
 +
 +    public boolean includes(long packed) {
-+        return spawnLocations.contains(packed);
++        return this.spawnLocations.contains(packed);
 +    }
 +
 +    public void merge(MergeHistory history) {
-+        spawnLocations.addAll(history.spawnLocations);
++        if (this.spawnLocations.isEmpty()) {
++            this.spawnLocations.addAll(history.spawnLocations);
++        } else {
++            this.spawnLocations.retainAll(history.spawnLocations);
++        }
 +        history.spawnLocations.clear();
 +    }
 +
 +    public void update() {
-+        lastUsed = MinecraftServer.currentTick;
++        this.lastUsed = MinecraftServer.currentTick;
 +    }
 +
 +    public boolean remove() {
-+        return MinecraftServer.currentTick - lastUsed >= 200;
++        return MinecraftServer.currentTick - this.lastUsed >= 200;
 +    }
-+
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
 index a043d96d4..3d754bb55 100644
@@ -95,14 +102,14 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index c4127179d..110fbd6af 100644
+index 70970ccd4..2158f65fe 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -179,6 +179,61 @@ public abstract class Entity implements ICommandListener {
+@@ -179,6 +179,67 @@ public abstract class Entity implements ICommandListener {
          this.lastPosition = pos;
      }
      // Blossom end
-+    // Blossom start
++    // Blossom start - merge cannoning entities
 +    protected final me.samsuik.blossom.entity.MergeHistory mergeHistory = new me.samsuik.blossom.entity.MergeHistory();
 +    protected int stacked = 1;
 +
@@ -111,17 +118,23 @@ index c4127179d..110fbd6af 100644
 +    }
 +
 +    public final boolean tryMergeInto(Entity entity) {
-+        if (isLastPosition(entity) && isSafeToMergeWith(entity)) {
-+            mergeInto(entity);
++        // Attempt to merge entities with the same OOE, position and momentum
++        if (this.isLastPosition(entity) && this.isSafeToMergeWith(entity)) {
++            this.mergeInto(entity);
 +            return true;
-+        } else if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && mergeHistory.mergeOnSpawn() && ticksLived == 1) {
-+            long spawnLocation = mergeHistory.spawnLocation();
-+            if (world.mergeHistory != null && world.mergeHistory.includes(spawnLocation) && isSafeToMergeWith(world.mergingEntity)) {
-+                mergeInto(world.mergingEntity);
++        }
++
++        // If the entity has just spawned then try merging more aggressively
++        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && this.mergeHistory.mergeOnSpawn() && this.ticksLived == 1) {
++            long spawnLocation = this.mergeHistory.spawnLocation();
++            me.samsuik.blossom.entity.MergeHistory activeMergeHistory = this.world.mergeHistory;
++            if (activeMergeHistory != null && activeMergeHistory.includes(spawnLocation) && this.isSafeToMergeWith(this.world.mergingEntity)) {
++                this.mergeInto(world.mergingEntity);
 +                return true;
 +            } else {
-+                world.mergeHistory = world.mergeHistoryMap.get(spawnLocation);
-+                world.mergingEntity = this;
++                this.world.mergeHistory = world.mergeHistoryMap.get(spawnLocation);
++                this.world.mergingEntity = this;
++                this.mergeHistory.update();
 +            }
 +        }
 +
@@ -135,45 +148,45 @@ index c4127179d..110fbd6af 100644
 +    }
 +
 +    protected void mergeInto(Entity entity) {
-+        entity.mergeHistory.merge(mergeHistory);
-+        entity.stacked += stacked;
++        entity.mergeHistory.merge(this.mergeHistory);
++        entity.stacked += this.stacked;
 +        die();
 +    }
 +
 +    protected final boolean isSamePosition(Entity entity) {
-+        AxisAlignedBB bba = getBoundingBox();
-+        AxisAlignedBB bbc = entity.getBoundingBox(); // c stands for compare, btw
-+        return entity.motX == motX && entity.motY == motZ && entity.motZ == motZ
++        AxisAlignedBB bba = this.getBoundingBox();
++        AxisAlignedBB bbc = entity.getBoundingBox();
++        return entity.motX == this.motX && entity.motY == this.motZ && entity.motZ == this.motZ
 +            && bba.a == bbc.a && bba.b == bbc.b && bba.c == bbc.c
 +            && bba.d == bbc.d && bba.e == bbc.e && bba.f == bbc.f;
 +    }
 +
 +    private void storeMergeHistoryInWorld() {
-+        long packed = mergeHistory.spawnLocation();
-+        if (world.mergeHistoryMap.containsKey(packed)) {
-+            world.mergeHistoryMap.get(packed).merge(mergeHistory);
++        long packed = this.mergeHistory.spawnLocation();
++        if (this.world.mergeHistoryMap.containsKey(packed)) {
++            this.world.mergeHistoryMap.get(packed).merge(this.mergeHistory);
 +        } else {
-+            world.mergeHistoryMap.put(packed, mergeHistory);
++            this.world.mergeHistoryMap.put(packed, this.mergeHistory);
 +        }
 +    }
-+    // Blossom end
++    // Blossom end - merge cannoning entities
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -361,6 +416,11 @@ public abstract class Entity implements ICommandListener {
+@@ -361,6 +422,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
-+        // Blossom start
-+        if (mergeHistory.storeHistory()) {
-+            storeMergeHistoryInWorld();
++        // Blossom start - merge cannoning entities
++        if (this.mergeHistory.storeHistory()) {
++            this.storeMergeHistoryInWorld();
 +        }
-+        // Blossom end
++        // Blossom end - merge cannoning entities
          this.dead = true;
      }
  
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index e3bfd8683..f0e3a96e3 100644
+index e3bfd8683..0757cad84 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -48,6 +48,7 @@ public class EntityFallingBlock extends Entity {
@@ -184,38 +197,40 @@ index e3bfd8683..f0e3a96e3 100644
      }
  
      protected boolean s_() {
-@@ -60,6 +61,30 @@ public class EntityFallingBlock extends Entity {
+@@ -60,6 +61,32 @@ public class EntityFallingBlock extends Entity {
          return !this.dead;
      }
  
-+    // Blossom start
++    // Blossom start - merge cannoning entities
 +    @Override
-+    protected boolean isSafeToMergeWith(Entity entity) {
++    protected final boolean isSafeToMergeWith(Entity entity) {
 +        if (!(entity instanceof EntityFallingBlock))
 +            return false;
 +        EntityFallingBlock efb = (EntityFallingBlock) entity;
-+        return efb.block == block && efb.ticksLived - 1 == ticksLived && efb.hurtEntities == hurtEntities;
++        return this.block == efb.block
++            && this.ticksLived == efb.ticksLived - 1
++            && this.hurtEntities == efb.hurtEntities;
 +    }
 +
 +    @Override
-+    protected void respawn() {
++    protected final void respawn() {
 +        for (int i = 1, t = stacked; i < t; ++i) {
 +            // Use the properties from before we ticked
-+            lastProperties(this);
++            this.lastProperties(this);
 +
 +            // This will prevent a loop
-+            stacked = 1;
++            this.stacked = 1;
 +
 +            // and tick!
-+            t_();
++            this.t_();
 +        }
 +    }
-+    // Blossom end
++    // Blossom end - merge cannoning entities
 +
      public void t_() {
          Block block = this.block.getBlock();
  
-@@ -119,6 +144,7 @@ public class EntityFallingBlock extends Entity {
+@@ -119,6 +146,7 @@ public class EntityFallingBlock extends Entity {
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);
                                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
@@ -224,7 +239,7 @@ index e3bfd8683..f0e3a96e3 100644
                                  if (block instanceof BlockFalling) {
                                      ((BlockFalling) block).a_(this.world, blockposition);
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 2b94efe5c..0e1319f47 100644
+index 2b94efe5c..38a7df7c5 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -39,6 +39,7 @@ public class EntityTNTPrimed extends Entity {
@@ -235,14 +250,15 @@ index 2b94efe5c..0e1319f47 100644
      }
  
      protected void h() {}
-@@ -51,6 +52,55 @@ public class EntityTNTPrimed extends Entity {
+@@ -51,6 +52,56 @@ public class EntityTNTPrimed extends Entity {
          return !this.dead;
      }
  
-+    // Blossom start
++    // Blossom start - merge cannoning entities
 +    @Override
-+    protected boolean isSafeToMergeWith(Entity entity) {
-+        return entity instanceof EntityTNTPrimed && ((EntityTNTPrimed) entity).fuseTicks + 1 == fuseTicks;
++    protected final boolean isSafeToMergeWith(Entity entity) {
++        return entity instanceof EntityTNTPrimed
++            && this.fuseTicks == ((EntityTNTPrimed) entity).fuseTicks + 1;
 +    }
 +
 +    /*
@@ -286,12 +302,12 @@ index 2b94efe5c..0e1319f47 100644
 +        chunk.b(temp);
 +    }
 +    */
-+    // Blossom end
++    // Blossom end - merge cannoning entities
 +
      public void t_() {
          if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
          this.lastX = this.locX;
-@@ -85,6 +135,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -85,6 +136,7 @@ public class EntityTNTPrimed extends Entity {
              // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
              // this.die();
              if (!this.world.isClientSide) {

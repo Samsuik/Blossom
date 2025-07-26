@@ -1,14 +1,14 @@
-From 4e67c09dc78d7e081acfb5a0cc953327ae477a75 Mon Sep 17 00:00:00 2001
+From 18859495161a002368389d7d559fd763369202e1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 1 Jul 2023 23:41:52 +0100
 Subject: [PATCH] Optimise checkBlockCollisions
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 2616df95d..9ae2f749e 100644
+index 880607aba..2ed19e465 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -1213,25 +1213,26 @@ public abstract class Entity implements ICommandListener {
+@@ -1219,25 +1219,26 @@ public abstract class Entity implements ICommandListener {
              return;
          }
          // Blossom end

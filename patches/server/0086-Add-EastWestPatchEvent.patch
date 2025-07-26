@@ -1,14 +1,14 @@
-From 173ff6fa97ed1c2a8c47a5deaef76867b9c82a6b Mon Sep 17 00:00:00 2001
+From 0f9fc35876bc38c39e8e645dea56f3080a91265a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 16f4f9e60..da348f09f 100644
+index cfac865bb..91233ab10 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -362,6 +362,18 @@ public abstract class Entity implements ICommandListener {
+@@ -368,6 +368,18 @@ public abstract class Entity implements ICommandListener {
              && !(this instanceof EntityPlayer);
      }
      // Blossom end - reduce entity checks
@@ -27,7 +27,7 @@ index 16f4f9e60..da348f09f 100644
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -708,7 +720,7 @@ public abstract class Entity implements ICommandListener {
+@@ -714,7 +726,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -36,7 +36,7 @@ index 16f4f9e60..da348f09f 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -901,7 +913,7 @@ public abstract class Entity implements ICommandListener {
+@@ -907,7 +919,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  
@@ -46,7 +46,7 @@ index 16f4f9e60..da348f09f 100644
  
                  for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 1d0098bef..8b807300b 100644
+index c9b13591f..d6224f445 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -49,6 +49,7 @@ public class EntityFallingBlock extends Entity {
@@ -58,7 +58,7 @@ index 1d0098bef..8b807300b 100644
  
      protected boolean s_() {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 3a52a514c..baaafc769 100644
+index 83c1ada0e..c9cf07cd5 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -40,6 +40,7 @@ public class EntityTNTPrimed extends Entity {
