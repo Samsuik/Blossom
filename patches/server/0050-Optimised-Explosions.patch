@@ -1,4 +1,4 @@
-From 07003a5ad72fb55121b90a11cd306b200c0a7f86 Mon Sep 17 00:00:00 2001
+From 9a8ca65627b7f994913af1c4971b9ff8ca498c92 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -196,7 +196,7 @@ index 000000000..a043d96d4
 +}
 diff --git a/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
 new file mode 100644
-index 000000000..ff4ef16c9
+index 000000000..c975bd107
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/cache/DensityCache.java
 @@ -0,0 +1,163 @@
@@ -240,7 +240,7 @@ index 000000000..ff4ef16c9
 +        }
 +
 +        if (data == null && (density == 0.0 || density == 1.0f)) {
-+            blockDensity.put(key, new Density(entityAABB, vec3d, density));
++            this.blockDensity.put(key, new Density(entityAABB, vec3d, density));
 +        } else if (data != null && data.density == density) {
 +            data.expand(entityAABB, vec3d);
 +        }
@@ -954,6 +954,35 @@ index 6bfb8b641..97cc040d3 100644
              // } // CraftBukkit
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/Vec3D.java b/src/main/java/net/minecraft/server/Vec3D.java
+index 99259030f..cb54eb3fe 100644
+--- a/src/main/java/net/minecraft/server/Vec3D.java
++++ b/src/main/java/net/minecraft/server/Vec3D.java
+@@ -131,4 +131,24 @@ public class Vec3D {
+ 
+         return new Vec3D(d0, d1, d2);
+     }
++
++    // Blossom start - optimised explosions; override equals and hashCode methods
++    @Override
++    public final boolean equals(Object object) {
++        if (!(object instanceof Vec3D)) return false;
++
++        Vec3D vec3D = (Vec3D) object;
++        return Double.compare(a, vec3D.a) == 0
++            && Double.compare(b, vec3D.b) == 0
++            && Double.compare(c, vec3D.c) == 0;
++    }
++
++    @Override
++    public final int hashCode() {
++        int result = Double.hashCode(a);
++        result = 31 * result + Double.hashCode(b);
++        result = 31 * result + Double.hashCode(c);
++        return result;
++    }
++    // Blossom end - optimised explosions; override equals and hashCode methods
+ }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
 index 35079ee61..8ea4079b9 100644
 --- a/src/main/java/net/minecraft/server/World.java
