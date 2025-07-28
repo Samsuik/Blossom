@@ -1,4 +1,4 @@
-From b97642273ddb4230e7a98f730afe0956a38b3762 Mon Sep 17 00:00:00 2001
+From 2a8ab73386b5ddc72663c4edce18e9b18da5b854 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -632,10 +632,10 @@ index 907c57b8c..7ea958149 100644
          IBlockData iblockdata = (IBlockData) Block.d.a(this.blockIds[j << 8 | k << 4 | i]);
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 16548323c..99de02eb4 100644
+index 1e6c5bf41..ccb91d402 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -681,6 +681,120 @@ public abstract class Entity implements ICommandListener {
+@@ -696,6 +696,120 @@ public abstract class Entity implements ICommandListener {
          // Blossom end - fix chunk loading
      }
  
@@ -756,7 +756,7 @@ index 16548323c..99de02eb4 100644
  
      public void move(double d0, double d1, double d2) {
          if (this.loadChunks) loadChunks(); // PaperSpigot - Load chunks
-@@ -792,11 +906,11 @@ public abstract class Entity implements ICommandListener {
+@@ -807,11 +921,11 @@ public abstract class Entity implements ICommandListener {
              Iterator iterator1;
  
              if(this.world.tacoSpigotConfig.fixEastWest && Math.abs(d0) > Math.abs(d2)) { //TacoSpigot - fix east/west cannoning by calculating the z movement before x if the x velocity is greater
@@ -772,7 +772,7 @@ index 16548323c..99de02eb4 100644
  
                  this.a(this.getBoundingBox().c(0.0D, 0.0D, d2));
  
-@@ -809,21 +923,21 @@ public abstract class Entity implements ICommandListener {
+@@ -824,21 +938,21 @@ public abstract class Entity implements ICommandListener {
                  this.a(this.getBoundingBox().c(d0, 0.0D, 0.0D));
  
              } else {
@@ -805,10 +805,10 @@ index 16548323c..99de02eb4 100644
  
              if (this.S > 0.0F && flag1 && (d6 != d0 || d8 != d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index affccaef2..7469d41ee 100644
+index d50ce3490..112250e98 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -111,7 +111,7 @@ public class EntityFallingBlock extends Entity {
+@@ -112,7 +112,7 @@ public class EntityFallingBlock extends Entity {
              }
  
              this.motY -= 0.03999999910593033D;
@@ -818,10 +818,10 @@ index affccaef2..7469d41ee 100644
              // PaperSpigot start - Remove entities in unloaded chunks
              if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedFallingBlocks) {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 955c1f0a1..7709269bf 100644
+index cacc5c9da..cac3267c0 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -109,7 +109,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -110,7 +110,7 @@ public class EntityTNTPrimed extends Entity {
          this.lastZ = this.locZ;
          this.storePosition(); // Blossom - optimised explosions
          this.motY -= 0.03999999910593033D;
@@ -852,7 +852,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index b35934a43..078d7e49e 100644
+index 35e46942a..564a31f3b 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;

@@ -1,4 +1,4 @@
-From f21f038c76a5ae0883a452aebbaf0e267774f3c3 Mon Sep 17 00:00:00 2001
+From 969c821a4f2ea8d553ce7c52e1095e998cb07baa Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 16 Jun 2024 11:57:23 +0100
 Subject: [PATCH] Modify material size without reflection
@@ -23,5 +23,5 @@ index 0fb26055..f7d66c37 100644
  
      private Material(final int id) {
 -- 
-2.40.0.windows.1
+2.50.1
 

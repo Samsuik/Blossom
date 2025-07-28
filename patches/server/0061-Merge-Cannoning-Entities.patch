@@ -1,4 +1,4 @@
-From 90fcc215a9a3fa3a7d1570caa47a368edba612d2 Mon Sep 17 00:00:00 2001
+From 88d5df6d92d36cdb0f1e5e884b014e6e36be7f4d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -98,22 +98,37 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 70970ccd4..16548323c 100644
+index 70970ccd4..1e6c5bf41 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -179,6 +179,70 @@ public abstract class Entity implements ICommandListener {
+@@ -179,6 +179,85 @@ public abstract class Entity implements ICommandListener {
          this.lastPosition = pos;
      }
      // Blossom end
 +    // Blossom start - merge cannoning entities
 +    protected final me.samsuik.blossom.entity.MergeHistory mergeHistory = new me.samsuik.blossom.entity.MergeHistory();
++    private boolean canMergeEntity;
 +    protected int stacked = 1;
++
++    public final void callMergeCannonEntityEvent() {
++        me.samsuik.blossom.events.entity.MergeCannonEntityEvent event = new me.samsuik.blossom.events.entity.MergeCannonEntityEvent(
++                this.getBukkitEntity(),
++                me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities
++        );
++        org.bukkit.Bukkit.getPluginManager().callEvent(event);
++        this.canMergeEntity = event.canMergeEntity();
++    }
 +
 +    public final int getStacked() {
 +        return stacked;
 +    }
 +
-+    public final boolean tryMergeInto(Entity entity) {
++    public final boolean tryMergeWith(final Entity entity) {
++        // Make sure both entities are still valid and that they can be merged
++        if (entity == null || entity.dead || !entity.canMergeEntity || !this.canMergeEntity) {
++            return false;
++        }
++
 +        // Attempt to merge entities with the same OOE, position and momentum
 +        if (this.isLastPosition(entity) && this.isSafeToMergeWith(entity)) {
 +            this.mergeInto(entity);
@@ -172,7 +187,7 @@ index 70970ccd4..16548323c 100644
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -361,6 +425,11 @@ public abstract class Entity implements ICommandListener {
+@@ -361,6 +440,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
@@ -185,18 +200,19 @@ index 70970ccd4..16548323c 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 2b82cd435..affccaef2 100644
+index 2b82cd435..d50ce3490 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -48,6 +48,7 @@ public class EntityFallingBlock extends Entity {
+@@ -48,6 +48,8 @@ public class EntityFallingBlock extends Entity {
          this.lastY = d1;
          this.lastZ = d2;
          this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
 +        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
++        this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
      }
  
      protected boolean s_() {
-@@ -60,6 +61,32 @@ public class EntityFallingBlock extends Entity {
+@@ -60,6 +62,32 @@ public class EntityFallingBlock extends Entity {
          return !this.dead;
      }
  
@@ -229,7 +245,7 @@ index 2b82cd435..affccaef2 100644
      public void t_() {
          Block block = this.block.getBlock();
  
-@@ -120,6 +147,7 @@ public class EntityFallingBlock extends Entity {
+@@ -120,6 +148,7 @@ public class EntityFallingBlock extends Entity {
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);
                                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
@@ -238,18 +254,19 @@ index 2b82cd435..affccaef2 100644
                                  if (block instanceof BlockFalling) {
                                      ((BlockFalling) block).a_(this.world, blockposition);
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 7093bc2f8..955c1f0a1 100644
+index 7093bc2f8..cacc5c9da 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -39,6 +39,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -39,6 +39,8 @@ public class EntityTNTPrimed extends Entity {
          this.lastZ = d2;
          this.source = entityliving;
          if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
 +        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
++        this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
      }
  
      protected void h() {}
-@@ -51,6 +52,56 @@ public class EntityTNTPrimed extends Entity {
+@@ -51,6 +53,56 @@ public class EntityTNTPrimed extends Entity {
          return !this.dead;
      }
  
@@ -306,7 +323,7 @@ index 7093bc2f8..955c1f0a1 100644
      public void t_() {
          if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
          this.lastX = this.locX;
-@@ -86,6 +137,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -86,6 +138,7 @@ public class EntityTNTPrimed extends Entity {
              // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
              // this.die();
              if (!this.world.isClientSide) {
@@ -333,7 +350,7 @@ index 97cc040d3..e0a25e474 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index e4ff9f145..19dad43e6 100644
+index e4ff9f145..14b29ce2c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
@@ -364,19 +381,16 @@ index e4ff9f145..19dad43e6 100644
          for (tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
              // PaperSpigot end
              tickPosition = (tickPosition < entityList.size()) ? tickPosition : 0;
-@@ -1664,6 +1671,16 @@ public abstract class World implements IBlockAccess {
+@@ -1664,6 +1671,13 @@ public abstract class World implements IBlockAccess {
  
              this.methodProfiler.a("tick");
              if (!entity.dead) {
-+                // Blossom start
-+                if (me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities
-+                    && previous != null && !previous.dead && entity.tryMergeInto(previous)
-+                ) {
++                // Blossom start - merge cannoning entities
++                if (me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities && entity.tryMergeWith(previous)) {
 +                    continue;
 +                }
-+
 +                previous = entity;
-+                // Blossom end
++                // Blossom end - merge cannoning entities
 +
                  try {
                      entity.tickTimer.startTiming(); // Spigot

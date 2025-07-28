@@ -1,4 +1,4 @@
-From 9f8355c1317d30c049bb2f5b6932a8cfb65b91f7 Mon Sep 17 00:00:00 2001
+From 42886dd49e3940ace82a475cf674a9749a5a8ec4 Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Wed, 23 Jul 2025 23:16:57 +0100
 Subject: [PATCH] Provide a EmptyTimingHandler when timings is disabled

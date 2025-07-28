@@ -1,4 +1,4 @@
-From f6b42c71838f61daa8d943ec938d216ceca7328d Mon Sep 17 00:00:00 2001
+From fb0b38b09a0ebc4eecbdfa066e7ad3ce4096d641 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -339,10 +339,10 @@ index 23130ba96..7b48815ee 100644
                  }
              }
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 53da5be6d..5170e52ad 100644
+index 3a5c2e943..81981e227 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -123,7 +123,7 @@ public class EntityFallingBlock extends Entity {
+@@ -124,7 +124,7 @@ public class EntityFallingBlock extends Entity {
                  blockposition = new BlockPosition(this);
                  if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
                      this.world.setAir(blockposition);
@@ -351,7 +351,7 @@ index 53da5be6d..5170e52ad 100644
                  } else if (!this.world.isClientSide) {
                      this.die();
                      return;
-@@ -166,7 +166,7 @@ public class EntityFallingBlock extends Entity {
+@@ -167,7 +167,7 @@ public class EntityFallingBlock extends Entity {
                                      return;
                                  }
                                  this.world.setTypeAndData(blockposition, this.block, 3);
@@ -426,7 +426,7 @@ index f941b7da6..b434de8bf 100644
  
      public void a(BlockPosition blockposition) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 8d6c75521..693ce02c7 100644
+index f4ce26fe1..155516346 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {

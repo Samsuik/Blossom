@@ -1,14 +1,14 @@
-From 5f6f08ee656a559c1585ae7e58d80c31e0e4177c Mon Sep 17 00:00:00 2001
+From e4c7c8b7ca8a5b33ac9f19958aa008d93636d614 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 7c96b7240..d94cfbfdc 100644
+index 4bf269bc4..1ad68b3e5 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -371,6 +371,18 @@ public abstract class Entity implements ICommandListener {
+@@ -386,6 +386,18 @@ public abstract class Entity implements ICommandListener {
              && !(this instanceof EntityPlayer);
      }
      // Blossom end - reduce entity checks
@@ -16,18 +16,18 @@ index 7c96b7240..d94cfbfdc 100644
 +    public boolean eastWestPatched;
 +
 +    protected final void callEastWestPatchEvent() {
-+        this.eastWestPatched = this.world.tacoSpigotConfig.fixEastWest;
-+        if (me.samsuik.blossom.events.entity.EastWestPatchEvent.getHandlerList().getRegisteredListeners().length != 0) {
-+            me.samsuik.blossom.events.entity.EastWestPatchEvent event = new me.samsuik.blossom.events.entity.EastWestPatchEvent(this.getBukkitEntity(), this.eastWestPatched);
-+            org.bukkit.Bukkit.getPluginManager().callEvent(event);
-+            this.eastWestPatched = event.isEastWestPatched();
-+        }
++        me.samsuik.blossom.events.entity.EastWestPatchEvent event = new me.samsuik.blossom.events.entity.EastWestPatchEvent(
++                this.getBukkitEntity(),
++                this.world.tacoSpigotConfig.fixEastWest
++        );
++        org.bukkit.Bukkit.getPluginManager().callEvent(event);
++        this.eastWestPatched = event.isEastWestPatched();
 +    }
 +    // Blossom end - add east west patch event
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -717,7 +729,7 @@ public abstract class Entity implements ICommandListener {
+@@ -732,7 +744,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -36,7 +36,7 @@ index 7c96b7240..d94cfbfdc 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -910,7 +922,7 @@ public abstract class Entity implements ICommandListener {
+@@ -925,7 +937,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  
@@ -46,25 +46,25 @@ index 7c96b7240..d94cfbfdc 100644
  
                  for (iterator1 = list.iterator(); iterator1.hasNext(); d2 = axisalignedbb2.c(this.getBoundingBox(), d2)) {
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index b1936e327..5ac222d18 100644
+index e828e79e1..05d98dc4a 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-@@ -49,6 +49,7 @@ public class EntityFallingBlock extends Entity {
-         this.lastZ = d2;
+@@ -50,6 +50,7 @@ public class EntityFallingBlock extends Entity {
          this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
          this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
+         this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
 +        this.callEastWestPatchEvent(); // Blossom - add east west patch event
      }
  
      protected boolean s_() {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index fe422ed12..b607c1621 100644
+index 75ab81ef7..01416ff07 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -40,6 +40,7 @@ public class EntityTNTPrimed extends Entity {
-         this.source = entityliving;
+@@ -41,6 +41,7 @@ public class EntityTNTPrimed extends Entity {
          if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
          this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
+         this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
 +        this.callEastWestPatchEvent(); // Blossom - add east west patch event
      }
  
