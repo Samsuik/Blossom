@@ -1,11 +1,11 @@
-From 1a039a9d691d9a7becc400f590535733dd52aff7 Mon Sep 17 00:00:00 2001
+From 1b7ac75f2251840a69ecd11de6631d91ef3f04c9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 21 Sep 2020 04:56:07 +0100
-Subject: [PATCH] Fix Sand Unloading
+Subject: [PATCH] Fix instant block falling in lazy chunks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 245c147ce..19a9c3e5c 100644
+index d2cae0493..f6115a88a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -206,5 +206,10 @@ public class BlossomConfig {
@@ -14,14 +14,14 @@ index 245c147ce..19a9c3e5c 100644
      }
 -    
 +
-+    public static boolean preventInstantSandFalling;
-+    private static void PreventInstantSandFalling() {
-+        preventInstantSandFalling = getBoolean("sand.instant-falling-in-lazy-chunks", false);
++    public static boolean allowInstantBlockFallingInLazyChunks;
++    private static void AllowInstantBlockFallingInLazyChunks() {
++        allowInstantBlockFallingInLazyChunks = getBoolean("sand.instant-falling-in-lazy-chunks", false);
 +    }
 +
  }
 diff --git a/src/main/java/net/minecraft/server/BlockFalling.java b/src/main/java/net/minecraft/server/BlockFalling.java
-index 1d952b82a..a7d0d40b5 100644
+index 1d952b82a..3a73f5795 100644
 --- a/src/main/java/net/minecraft/server/BlockFalling.java
 +++ b/src/main/java/net/minecraft/server/BlockFalling.java
 @@ -34,7 +34,7 @@ public class BlockFalling extends Block {
@@ -29,10 +29,10 @@ index 1d952b82a..a7d0d40b5 100644
              byte b0 = 32;
  
 -            if (!BlockFalling.instaFall && world.areChunksLoadedBetween(blockposition.a(-b0, -b0, -b0), blockposition.a(b0, b0, b0))) {
-+            if (me.samsuik.blossom.configuration.BlossomConfig.preventInstantSandFalling || !BlockFalling.instaFall && world.areChunksLoadedBetween(blockposition.a(-b0, -b0, -b0), blockposition.a(b0, b0, b0))) {
++            if (!me.samsuik.blossom.configuration.BlossomConfig.allowInstantBlockFallingInLazyChunks || !BlockFalling.instaFall && world.areChunksLoadedBetween(blockposition.a(-b0, -b0, -b0), blockposition.a(b0, b0, b0))) {
                  if (!world.isClientSide) {
                      // PaperSpigot start - Add FallingBlock source location API
                      org.bukkit.Location loc = new org.bukkit.Location(world.getWorld(), (double) ((float) blockposition.getX() + 0.5F), (double) blockposition.getY(), (double) ((float) blockposition.getZ() + 0.5F));
 -- 
-2.49.0
+2.50.1
 

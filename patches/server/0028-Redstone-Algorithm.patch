@@ -1,4 +1,4 @@
-From d5d489b7499e8c4ce8ea029b110611daf6f59164 Mon Sep 17 00:00:00 2001
+From 011986096ae48cfa1ca9647ed38fc4aa454eb678 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -972,11 +972,11 @@ index 000000000..8e73701e6
 +    PANDAWIRE_EX,
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 19a9c3e5c..992bb89db 100644
+index f6115a88a..0f75f45ad 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -212,4 +212,30 @@ public class BlossomConfig {
-         preventInstantSandFalling = getBoolean("sand.instant-falling-in-lazy-chunks", false);
+         allowInstantBlockFallingInLazyChunks = getBoolean("sand.instant-falling-in-lazy-chunks", false);
      }
  
 +    public static boolean optimisedGlowstone;
@@ -1033,5 +1033,5 @@ index f31a184bb..d155bc4ff 100644
      private static final EnumDirection[] o = new EnumDirection[4];
      private static final Map<String, EnumDirection> p = Maps.newHashMap();
 -- 
-2.49.0
+2.50.1
 
