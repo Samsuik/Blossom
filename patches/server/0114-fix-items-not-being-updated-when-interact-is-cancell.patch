@@ -1,0 +1,43 @@
+From 6d69fcd630b15da8ffb723d4241986e63f6530ca Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Mon, 23 Jun 2025 23:57:21 +0100
+Subject: [PATCH] fix items not being updated when interact is cancelled
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 8529b1f0c..3dc139800 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -1003,6 +1003,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             if (!cancelled) {
+                 this.player.playerInteractManager.useItem(this.player, this.player.world, itemstack);
+             }
++
++            // Blossom start - fix items not being updated when interact is cancelled
++            if (cancelled) {
++                itemstackAmount = -1;
++            }
++            // Blossom end - fix items not being updated when interact is cancelled
+             }
+             // Spigot end
+ 
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index 814bdb757..47b34d82b 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -535,6 +535,12 @@ public class PlayerInteractManager {
+                     itemstack.count = k1;
+                 }
+             }
++
++            // Blossom start - fix items not being updated when interact is cancelled
++            if (interactResult) {
++                result = false;
++            }
++            // Blossom end - fix items not being updated when interact is cancelled
+         }
+         return result;
+         // CraftBukkit end
+-- 
+2.50.1
+

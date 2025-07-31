@@ -1,0 +1,28 @@
+From 9ed4a8d0d3731f81c2f0c5bf8b3738ba6c8bf06b Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 11 Jun 2023 00:28:14 +0100
+Subject: [PATCH] Reduce player swing animations
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index b946211b8..9800dd16f 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1205,8 +1205,13 @@ public abstract class EntityLiving extends Entity {
+         return this.hasEffect(MobEffectList.FASTER_DIG) ? 6 - (1 + this.getEffect(MobEffectList.FASTER_DIG).getAmplifier()) * 1 : (this.hasEffect(MobEffectList.SLOWER_DIG) ? 6 + (1 + this.getEffect(MobEffectList.SLOWER_DIG).getAmplifier()) * 2 : 6);
+     }
+ 
++    // Blossom start - reduce swing animations
++    private long lastArmSwing = -1;
+     public void bw() {
+-        if (!this.ar || this.as >= this.n() / 2 || this.as < 0) {
++        long millis = System.currentTimeMillis();
++        if (millis - lastArmSwing >= 500) {
++            lastArmSwing = millis;
++            // Blossom end
+             this.as = -1;
+             this.ar = true;
+             if (this.world instanceof WorldServer) {
+-- 
+2.50.1
+

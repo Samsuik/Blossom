@@ -1,0 +1,400 @@
+From 9b82a9c3e6c4ce6a541313dc94b0599f1bd9cc39 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 16 Jun 2023 20:18:04 +0100
+Subject: [PATCH] Merge Cannoning Entities
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index e2e456662..657475f29 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -366,4 +366,11 @@ public class BlossomConfig {
+         hopperOnlyPushIntoEmptyContainer = getBoolean("hoppers.only-push-into-empty-containers", false);
+     }
+ 
++    public static boolean mergeCannonEntities;
++    public static boolean mergeEntitiesOnSpawn;
++    private static void MergeCannoningEntities() {
++        mergeCannonEntities = getBoolean("tnt.merging.enabled", true);
++        mergeEntitiesOnSpawn = getBoolean("tnt.merging.on-spawn", true);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/entity/MergeHistory.java b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
+new file mode 100644
+index 000000000..1aee13a98
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/entity/MergeHistory.java
+@@ -0,0 +1,49 @@
++package me.samsuik.blossom.entity;
++
++import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
++import net.minecraft.server.MinecraftServer;
++
++public final class MergeHistory {
++    private final LongOpenHashSet spawnLocations = new LongOpenHashSet();
++    private long spawnLocation;
++    private final int firstMerge = MinecraftServer.currentTick;
++    private int lastUsed = MinecraftServer.currentTick;
++
++    private int ticksSinceFirstMerge() {
++        return MinecraftServer.currentTick - this.firstMerge;
++    }
++
++    public boolean hasMerged() {
++        return this.spawnLocations.size() > 1;
++    }
++
++    public long spawnLocation() {
++        return this.spawnLocation;
++    }
++
++    public void spawnLocation(long packed) {
++        this.spawnLocations.add(packed);
++        this.spawnLocation = packed;
++    }
++
++    public boolean canMerge(long packed) {
++        return this.ticksSinceFirstMerge() >= 200 && this.spawnLocations.contains(packed);
++    }
++
++    public void merge(MergeHistory history, boolean alive) {
++        if (alive || this.spawnLocations.isEmpty()) {
++            this.spawnLocations.addAll(history.spawnLocations);
++        } else {
++            this.spawnLocations.retainAll(history.spawnLocations);
++        }
++        history.spawnLocations.clear();
++    }
++
++    public void update() {
++        this.lastUsed = MinecraftServer.currentTick;
++    }
++
++    public boolean remove() {
++        return MinecraftServer.currentTick - this.lastUsed >= 200;
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
+index a043d96d4..3d754bb55 100644
+--- a/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
++++ b/src/main/java/me/samsuik/blossom/explosions/BlossomExplosion.java
+@@ -149,7 +149,7 @@ public final class BlossomExplosion extends Explosion {
+     private int collectExplosionPotential() {
+         List<Entity> entityList = world.entityList;
+         int index = entityList.indexOf(source);
+-        int count = 1;
++        int count = source.getStacked(); // Blossom
+ 
+         for (int i = index + 1; i < entityList.size(); ++i) {
+             Entity entity = entityList.get(i);
+@@ -158,7 +158,7 @@ public final class BlossomExplosion extends Explosion {
+                 break;
+             }
+ 
+-            count += 1;
++            count += entity.getStacked(); // Blossom
+             entity.die();
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 70970ccd4..1e6c5bf41 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -179,6 +179,85 @@ public abstract class Entity implements ICommandListener {
+         this.lastPosition = pos;
+     }
+     // Blossom end
++    // Blossom start - merge cannoning entities
++    protected final me.samsuik.blossom.entity.MergeHistory mergeHistory = new me.samsuik.blossom.entity.MergeHistory();
++    private boolean canMergeEntity;
++    protected int stacked = 1;
++
++    public final void callMergeCannonEntityEvent() {
++        me.samsuik.blossom.events.entity.MergeCannonEntityEvent event = new me.samsuik.blossom.events.entity.MergeCannonEntityEvent(
++                this.getBukkitEntity(),
++                me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities
++        );
++        org.bukkit.Bukkit.getPluginManager().callEvent(event);
++        this.canMergeEntity = event.canMergeEntity();
++    }
++
++    public final int getStacked() {
++        return stacked;
++    }
++
++    public final boolean tryMergeWith(final Entity entity) {
++        // Make sure both entities are still valid and that they can be merged
++        if (entity == null || entity.dead || !entity.canMergeEntity || !this.canMergeEntity) {
++            return false;
++        }
++
++        // Attempt to merge entities with the same OOE, position and momentum
++        if (this.isLastPosition(entity) && this.isSafeToMergeWith(entity)) {
++            this.mergeInto(entity);
++            return true;
++        }
++
++        // If the entity has just spawned then try merging more aggressively
++        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && !this.mergeHistory.hasMerged() && this.ticksLived == 1) {
++            long spawnLocation = this.mergeHistory.spawnLocation();
++            me.samsuik.blossom.entity.MergeHistory activeMergeHistory = this.world.mergeHistory;
++            if (activeMergeHistory != null && activeMergeHistory.canMerge(spawnLocation) && this.isSafeToMergeWith(this.world.mergingEntity)) {
++                this.mergeInto(this.world.mergingEntity);
++                return true;
++            } else {
++                activeMergeHistory = this.world.mergeHistoryMap.get(spawnLocation);
++                if (activeMergeHistory != null) {
++                    activeMergeHistory.update();
++                }
++                this.world.mergeHistory = activeMergeHistory;
++                this.world.mergingEntity = this;
++            }
++        }
++
++        return false;
++    }
++
++    protected void respawn() {}
++
++    protected boolean isSafeToMergeWith(Entity entity) {
++        return false;
++    }
++
++    protected void mergeInto(Entity entity) {
++        entity.mergeHistory.merge(this.mergeHistory, true);
++        entity.stacked += this.stacked;
++        die();
++    }
++
++    protected final boolean isSamePosition(Entity entity) {
++        AxisAlignedBB bba = this.getBoundingBox();
++        AxisAlignedBB bbc = entity.getBoundingBox();
++        return entity.motX == this.motX && entity.motY == this.motZ && entity.motZ == this.motZ
++            && bba.a == bbc.a && bba.b == bbc.b && bba.c == bbc.c
++            && bba.d == bbc.d && bba.e == bbc.e && bba.f == bbc.f;
++    }
++
++    private void storeMergeHistoryInWorld() {
++        long spawnLocation = this.mergeHistory.spawnLocation();
++        if (this.world.mergeHistoryMap.containsKey(spawnLocation)) {
++            this.world.mergeHistoryMap.get(spawnLocation).merge(this.mergeHistory, false);
++        } else {
++            this.world.mergeHistoryMap.put(spawnLocation, this.mergeHistory);
++        }
++    }
++    // Blossom end - merge cannoning entities
+ 
+     // Spigot start
+     public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
+@@ -361,6 +440,11 @@ public abstract class Entity implements ICommandListener {
+     }
+ 
+     public void die() {
++        // Blossom start - merge cannoning entities
++        if (me.samsuik.blossom.configuration.BlossomConfig.mergeEntitiesOnSpawn && this.mergeHistory.hasMerged()) {
++            this.storeMergeHistoryInWorld();
++        }
++        // Blossom end - merge cannoning entities
+         this.dead = true;
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index 2b82cd435..d50ce3490 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -48,6 +48,8 @@ public class EntityFallingBlock extends Entity {
+         this.lastY = d1;
+         this.lastZ = d2;
+         this.loadChunks = world.paperSpigotConfig.loadUnloadedFallingBlocks; // PaperSpigot
++        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
++        this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
+     }
+ 
+     protected boolean s_() {
+@@ -60,6 +62,32 @@ public class EntityFallingBlock extends Entity {
+         return !this.dead;
+     }
+ 
++    // Blossom start - merge cannoning entities
++    @Override
++    protected final boolean isSafeToMergeWith(Entity entity) {
++        if (!(entity instanceof EntityFallingBlock))
++            return false;
++        EntityFallingBlock efb = (EntityFallingBlock) entity;
++        return this.block == efb.block
++            && this.ticksLived == efb.ticksLived - 1
++            && this.hurtEntities == efb.hurtEntities;
++    }
++
++    @Override
++    protected final void respawn() {
++        for (int i = 1, t = stacked; i < t; ++i) {
++            // Use the properties from before we ticked
++            this.lastProperties(this);
++
++            // This will prevent a loop
++            this.stacked = 1;
++
++            // and tick!
++            this.t_();
++        }
++    }
++    // Blossom end - merge cannoning entities
++
+     public void t_() {
+         Block block = this.block.getBlock();
+ 
+@@ -120,6 +148,7 @@ public class EntityFallingBlock extends Entity {
+                                 }
+                                 this.world.setTypeAndData(blockposition, this.block, 3);
+                                 world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++                                this.respawn(); // Blossom - merge cannoning entities
+                                 // CraftBukkit end
+                                 if (block instanceof BlockFalling) {
+                                     ((BlockFalling) block).a_(this.world, blockposition);
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 7093bc2f8..cacc5c9da 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -39,6 +39,8 @@ public class EntityTNTPrimed extends Entity {
+         this.lastZ = d2;
+         this.source = entityliving;
+         if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
++        this.mergeHistory.spawnLocation(blockposition.asLong()); // Blossom - merge cannoning entities
++        this.callMergeCannonEntityEvent(); // Blossom - merge cannoning entities
+     }
+ 
+     protected void h() {}
+@@ -51,6 +53,56 @@ public class EntityTNTPrimed extends Entity {
+         return !this.dead;
+     }
+ 
++    // Blossom start - merge cannoning entities
++    @Override
++    protected final boolean isSafeToMergeWith(Entity entity) {
++        return entity instanceof EntityTNTPrimed
++            && this.fuseTicks == ((EntityTNTPrimed) entity).fuseTicks + 1;
++    }
++
++    /*
++    @Override
++    protected void respawn() {
++        // If this tnt isn't merged don't try to respawn
++        if (stacked <= 1) {
++            return;
++        }
++
++        EntityTNTPrimed temp = new EntityTNTPrimed(sourceLoc, this.world, this.lastX, this.lastY, this.lastZ, this.source);
++
++        // Update properties
++        temp.lastProperties(this);
++
++        // Add "temp" to the chunk
++        Chunk chunk = world.getChunkAtWorldCoords(new BlockPosition(temp));
++        chunk.a(temp);
++
++        // We should only explode this TNT, otherwise metadata would have to be transferred.
++        for (int i = 1; i < stacked; ++i) {
++            // Explode!
++            explode();
++
++            // This should be fine, it'll reassign during ticking.
++            lastProperties(this);
++
++            // Copy motion across
++            motX = temp.motX;
++            motY = temp.motY;
++            motZ = temp.motZ;
++
++            // Make sure it doesn't explode during ticking
++            fuseTicks = 1;
++
++            // Now, tick this entity
++            t_();
++        }
++
++        // Remove "temp" from the chunk
++        chunk.b(temp);
++    }
++    */
++    // Blossom end - merge cannoning entities
++
+     public void t_() {
+         if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
+         this.lastX = this.locX;
+@@ -86,6 +138,7 @@ public class EntityTNTPrimed extends Entity {
+             // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
+             // this.die();
+             if (!this.world.isClientSide) {
++                this.respawn(); // Blossom - merge cannoning entities
+                 this.explode();
+             }
+             this.die();
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 1bd25e794..c5ada4e04 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -876,6 +876,13 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+                 worldserver.explosionDensityCache.clear(); // PaperSpigot - Optimize explosions
+                 worldserver.minimal.clear(); // Blossom
+                 worldserver.densityCache.clear(true); // Blossom - optimised explosions
++                // Blossom start
++                if (currentTick % 20 == 0) {
++                    worldserver.mergeHistoryMap.values().removeIf(hist -> hist.remove());
++                }
++                worldserver.mergeHistory = null;
++                worldserver.mergingEntity = null;
++                // Blossom end
+             // } // CraftBukkit
+ 
+             // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index e4ff9f145..14b29ce2c 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
+     // Blossom end
+     public final me.samsuik.blossom.explosions.cache.DensityCache densityCache = new me.samsuik.blossom.explosions.cache.DensityCache(); // Blossom - optimise explosions
+     public final it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap<BlockRedstoneTorch.RedstoneUpdateInfo> redstoneTorchMap = new it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap<>(); // Blossom
++    // Blossom start
++    public final it.unimi.dsi.fastutil.longs.Long2ObjectMap<me.samsuik.blossom.entity.MergeHistory> mergeHistoryMap = new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
++    public me.samsuik.blossom.entity.MergeHistory mergeHistory;
++    public Entity mergingEntity;
++    // Blossom end
+ 
+     protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
+         this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
+@@ -1580,6 +1585,7 @@ public abstract class World implements IBlockAccess {
+ 
+         int i;
+         Entity entity;
++
+         CrashReport crashreport;
+         CrashReportSystemDetails crashreportsystemdetails;
+ 
+@@ -1648,6 +1654,7 @@ public abstract class World implements IBlockAccess {
+         int entitiesThisCycle = 0;
+         // PaperSpigot start - Disable tick limiters
+         //if (tickPosition < 0) tickPosition = 0;
++        Entity previous = null; // Blossom
+         for (tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
+             // PaperSpigot end
+             tickPosition = (tickPosition < entityList.size()) ? tickPosition : 0;
+@@ -1664,6 +1671,13 @@ public abstract class World implements IBlockAccess {
+ 
+             this.methodProfiler.a("tick");
+             if (!entity.dead) {
++                // Blossom start - merge cannoning entities
++                if (me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities && entity.tryMergeWith(previous)) {
++                    continue;
++                }
++                previous = entity;
++                // Blossom end - merge cannoning entities
++
+                 try {
+                     entity.tickTimer.startTiming(); // Spigot
+                     this.g(entity);
+-- 
+2.50.1
+

@@ -1,0 +1,126 @@
+From 4c785c67d3e68b18782f5fa09a53dd5fe6bc2b4f Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 29 Jun 2023 00:40:10 +0100
+Subject: [PATCH] Optimise beacon ticking
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockBeacon.java b/src/main/java/net/minecraft/server/BlockBeacon.java
+index b4289c43d..e72162072 100644
+--- a/src/main/java/net/minecraft/server/BlockBeacon.java
++++ b/src/main/java/net/minecraft/server/BlockBeacon.java
+@@ -66,14 +66,13 @@ public class BlockBeacon extends BlockContainer {
+             public void run() {*/ // Paper
+                 Chunk chunk = world.getChunkAtWorldCoords(blockposition);
+ 
+-                for (int i = blockposition.getY() - 1; i >= 0; --i) {
+-                    final BlockPosition blockposition1 = new BlockPosition(blockposition.getX(), i, blockposition.getZ());
+-
+-                    if (!chunk.d(blockposition1)) {
+-                        break;
+-                    }
+-
+-                    IBlockData iblockdata = world.getType(blockposition1);
++                // Blossom start
++                int start = Math.min(blockposition.getY() - 1, chunk.f(blockposition));
++                for (int i = start; i >= 0; --i) {
++                    IBlockData iblockdata = chunk.getBlockData(blockposition.getX(), i, blockposition.getZ());
++                    Block block = iblockdata.getBlock();
++                    if (block.p() >= 15 && block != Blocks.BEACON && block != Blocks.STAINED_GLASS && block != Blocks.STAINED_GLASS_PANE && block != Blocks.BEDROCK) break;
++                    // Blossom end
+ 
+                     if (iblockdata.getBlock() == Blocks.BEACON) {
+                         /*((WorldServer) world).postToMainThread(new Runnable() {
+@@ -81,12 +80,13 @@ public class BlockBeacon extends BlockContainer {
+                                 TileEntity tileentity = world.getTileEntity(blockposition);
+ 
+                                 if (tileentity instanceof TileEntityBeacon) {
+-                                    ((TileEntityBeacon) tileentity).m();
++                                    ((TileEntityBeacon) tileentity).calculateColourAndVisibility(); // Blossom
+                                     world.playBlockAction(blockposition, Blocks.BEACON, 1, 0);
+                                 }
+ 
+                             /*}
+                         });*/ // Paper
++                        break; // Blossom
+                     }
+                 }
+ 
+diff --git a/src/main/java/net/minecraft/server/TileEntityBeacon.java b/src/main/java/net/minecraft/server/TileEntityBeacon.java
+index f4717af7d..e647072b7 100644
+--- a/src/main/java/net/minecraft/server/TileEntityBeacon.java
++++ b/src/main/java/net/minecraft/server/TileEntityBeacon.java
+@@ -56,7 +56,7 @@ public class TileEntityBeacon extends TileEntityContainer implements IUpdatePlay
+     public TileEntityBeacon() {}
+ 
+     public void c() {
+-        if (this.world.getTime() % 80L == 0L) {
++        if (this.world.getTime() % 160L == 0L) { // Blossom - one second faster than the potion effect duration
+             this.m();
+         }
+ 
+@@ -120,12 +120,18 @@ public class TileEntityBeacon extends TileEntityContainer implements IUpdatePlay
+     }
+ 
+     private void B() {
++        // Blossom start
++        this.calculateColourAndVisibility();
++        this.verifyBeaconBase();
++    }
++    public void calculateColourAndVisibility() {
++        // Blossom end
+         int i = this.j;
+         int j = this.position.getX();
+         int k = this.position.getY();
+         int l = this.position.getZ();
+ 
+-        this.j = 0;
++        // Blossom - moved down
+         this.f.clear();
+         this.i = true;
+         TileEntityBeacon.BeaconColorTracker tileentitybeacon_beaconcolortracker = new TileEntityBeacon.BeaconColorTracker(EntitySheep.a(EnumColor.WHITE));
+@@ -136,8 +142,12 @@ public class TileEntityBeacon extends TileEntityContainer implements IUpdatePlay
+ 
+         int i1;
+ 
+-        for (i1 = k + 1; i1 < 256; ++i1) {
+-            IBlockData iblockdata = this.world.getType(blockposition_mutableblockposition.c(j, i1, l));
++        // Blossom start
++        Chunk chunk = world.getChunkIfLoaded(j >> 4, l >> 4);
++        int top = chunk.b(j & 15, l & 15);
++        for (i1 = k + 1; i1 < top; ++i1) {
++            IBlockData iblockdata = chunk.getBlockData(blockposition_mutableblockposition.c(j, i1, l));
++            // Blossom end
+             float[] afloat;
+ 
+             if (iblockdata.getBlock() == Blocks.STAINED_GLASS) {
+@@ -170,6 +180,18 @@ public class TileEntityBeacon extends TileEntityContainer implements IUpdatePlay
+ 
+             flag = false;
+         }
++        // Blossom start
++    }
++
++    private void verifyBeaconBase() {
++        int i = this.j;
++        this.j = 0;
++
++        int j = this.position.getX();
++        int k = this.position.getY();
++        int l = this.position.getZ();
++        int i1;
++        // Blossom end
+ 
+         if (this.i) {
+             for (i1 = 1; i1 <= 4; this.j = i1++) {
+@@ -365,7 +387,7 @@ public class TileEntityBeacon extends TileEntityContainer implements IUpdatePlay
+ 
+     public boolean c(int i, int j) {
+         if (i == 1) {
+-            this.m();
++            // Blossom - remove instant player updates
+             return true;
+         } else {
+             return super.c(i, j);
+-- 
+2.50.1
+

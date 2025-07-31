@@ -1,0 +1,351 @@
+From 446a3a75dfa07e43aea7c4d349b2a6d449d41c84 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 2 Jul 2022 15:12:44 +0100
+Subject: [PATCH] Reduce Entity Checks
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 5e0cdfa2d..e90972270 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -310,4 +310,13 @@ public class BlossomConfig {
+         trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
+     }
+ 
++    public static boolean mobAi;
++    public static boolean entityPushing;
++    public static boolean reduceEntityChecks;
++    private static void EntityMechanics() {
++        mobAi = getBoolean("mobs.mob-ai", true);
++        entityPushing = getBoolean("mobs.entity-pushing", true);
++        reduceEntityChecks = getBoolean("mobs.reduce-entity-checks", true);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 2dc3b1755..9facefa1f 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -635,7 +635,12 @@ public class Block {
+         return false;
+     }
+ 
+-    public void a(World world, BlockPosition blockposition, IBlockData iblockdata, Entity entity) {}
++    // Blossom - start
++    public boolean requiresBlockCheck = true;
++    public void a(World world, BlockPosition blockposition, IBlockData iblockdata, Entity entity) {
++        this.requiresBlockCheck = false;
++    }
++    // Blossom end
+ 
+     public int b(IBlockAccess iblockaccess, BlockPosition blockposition, IBlockData iblockdata, EnumDirection enumdirection) {
+         return 0;
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index dab8393f1..34f3c15a9 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -131,6 +131,27 @@ public abstract class Entity implements ICommandListener {
+     public boolean forceExplosionKnockback; // CraftBukkit - SPIGOT-949
+     public boolean inUnloadedChunk = false; // PaperSpigot - Remove entities in unloaded chunks
+     public boolean loadChunks = false; // PaperSpigot - Entities can load chunks they move through and keep them loaded
++    // Blossom start
++    public BlockPosition blockposition = BlockPosition.ZERO;
++    public BlockPosition lastPosition;
++    public boolean isInLava;
++    public boolean isInHotBlock;
++    public boolean isInBlock;
++    public boolean isDrowning;
++
++    protected void updateBlockPosition() {
++        int blockX = MathHelper.floor(this.locX);
++        int blockY = MathHelper.floor(this.locY);
++        int blockZ = MathHelper.floor(this.locZ);
++
++        BlockPosition pos = this.blockposition;
++        if (pos.getX() != blockX || pos.getY() != blockY || pos.getZ() != blockZ) {
++            this.blockposition = new BlockPosition(blockX, blockY, blockZ);
++        }
++
++        this.lastPosition = pos;
++    }
++    // Blossom end
+ 
+     // Spigot start
+     public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
+@@ -253,6 +274,12 @@ public abstract class Entity implements ICommandListener {
+         this.c(1);
+     }
+     // Paper end - make end portalling safe
++    // Blossom start - reduce entity checks
++    protected final boolean reduceEntityChecks() {
++        return me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks
++            && !(this instanceof EntityPlayer);
++    }
++    // Blossom end - reduce entity checks
+ 
+     public Entity(World world) {
+         this.id = Entity.entityCount++;
+@@ -354,6 +381,7 @@ public abstract class Entity implements ICommandListener {
+         this.locX = d0;
+         this.locY = d1;
+         this.locZ = d2;
++        this.updateBlockPosition(); // Blossom
+         float f = this.width / 2.0F;
+         float f1 = this.length;
+ 
+@@ -517,7 +545,7 @@ public abstract class Entity implements ICommandListener {
+     }
+ 
+     private boolean b(AxisAlignedBB axisalignedbb) {
+-        return this.world.getCubes(this, axisalignedbb).isEmpty() && !this.world.containsLiquid(axisalignedbb);
++        return this.world.getCubes(this, axisalignedbb).isEmpty() && !this.world.containsLiquid(axisalignedbb, true); // Blossom - reduce entity checks
+     }
+ 
+     /**
+@@ -897,9 +925,19 @@ public abstract class Entity implements ICommandListener {
+             */
+             // CraftBukkit end
+ 
+-            boolean flag2 = this.U();
++            // Blossom start - reduce entity checks
++            boolean flag2 = false;
+ 
+-            if (this.world.e(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D))) {
++            if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || ticksLived % 8 == 0 || blockposition != lastPosition) {
++                this.isInHotBlock = this.world.e(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D));
++            }
++
++            if (this.fireTicks > 0 || this.isInHotBlock) {
++                flag2 = this.U();
++            }
++
++            if (this.isInHotBlock) {
++                // Blossom end
+                 this.burn(1);
+                 if (!flag2) {
+                     ++this.fireTicks;
+@@ -934,13 +972,35 @@ public abstract class Entity implements ICommandListener {
+         this.locY = this.getBoundingBox().b;
+         this.locZ = (this.getBoundingBox().c + this.getBoundingBox().f) / 2.0D;
+         this.hasMoved = locX != lastX || locY != lastY || locZ != lastZ; // Blossom
++        this.updateBlockPosition(); // Blossom
+     }
+ 
+     protected String P() {
+         return "game.neutral.swim";
+     }
+ 
++    // Blossom start - reduce entity checks
++    protected void triggerSurroundingBlocks() {
++        if (!this.isInBlock && this.ticksLived % 20 != 0 && this.blockposition == this.lastPosition) {
++            return;
++        }
++
++        IBlockData iblockdata = this.world.getType(blockposition);
++        Block block = iblockdata.getBlock();
++
++        if (block.requiresBlockCheck) {
++            block.a(this.world, blockposition, iblockdata, this);
++        }
++
++        this.isInBlock = block.requiresBlockCheck;
++    }
++
+     protected void checkBlockCollisions() {
++        if (this.reduceEntityChecks() && !isCannoningEntity) {
++            triggerSurroundingBlocks();
++            return;
++        }
++        // Blossom end
+         BlockPosition blockposition = new BlockPosition(this.getBoundingBox().a + 0.001D, this.getBoundingBox().b + 0.001D, this.getBoundingBox().c + 0.001D);
+         BlockPosition blockposition1 = new BlockPosition(this.getBoundingBox().d - 0.001D, this.getBoundingBox().e - 0.001D, this.getBoundingBox().f - 0.001D);
+ 
+@@ -1133,7 +1193,13 @@ public abstract class Entity implements ICommandListener {
+     }
+ 
+     public boolean ab() {
+-        return this.world.a(this.getBoundingBox().grow(-0.10000000149011612D, -0.4000000059604645D, -0.10000000149011612D), Material.LAVA);
++        // Blossom start - reduce entity checks
++        if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 20 == 0 || blockposition != lastPosition) {
++            this.isInLava = this.world.a(this.getBoundingBox().grow(-0.10000000149011612D, -0.4000000059604645D, -0.10000000149011612D), Material.LAVA);
++        }
++
++        return this.isInLava;
++        // Blossom end
+     }
+ 
+     public void a(float f, float f1, float f2) {
+@@ -1612,10 +1678,21 @@ public abstract class Entity implements ICommandListener {
+         return !this.dead;
+     }
+ 
++    // Blossom start - reduce entity checks
++    private boolean isHeadInBlock() {
++        int headY = MathHelper.floor(this.locY + (double) this.getHeadHeight());
++        IBlockData iblockdata = world.getTypeIfLoaded(blockposition.getX(), headY, blockposition.getZ());
++        return iblockdata != null && iblockdata.getBlock().w();
++    }
++
+     public boolean inBlock() {
+         if (this.noclip) {
+             return false;
+         } else {
++            if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks) {
++                return isHeadInBlock();
++            }
++            // Blossom end
+             BlockPosition.MutableBlockPosition blockposition_mutableblockposition = new BlockPosition.MutableBlockPosition(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+ 
+             for (int i = 0; i < 8; ++i) {
+diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
+index 5f4bc4225..09df308b6 100644
+--- a/src/main/java/net/minecraft/server/EntityInsentient.java
++++ b/src/main/java/net/minecraft/server/EntityInsentient.java
+@@ -465,7 +465,7 @@ public abstract class EntityInsentient extends EntityLiving {
+         this.D();
+         this.world.methodProfiler.b();
+         // Spigot Start
+-        if ( this.fromMobSpawner )
++        if ( this.fromMobSpawner || !me.samsuik.blossom.configuration.BlossomConfig.mobAi) // Blossom
+         {
+             // PaperSpigot start - Allow nerfed mobs to jump
+             if (goalFloat != null) {
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index ad2a14e63..b946211b8 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -176,7 +176,7 @@ public abstract class EntityLiving extends Entity {
+         boolean flag = this instanceof EntityHuman;
+ 
+         if (this.isAlive()) {
+-            if (this.inBlock()) {
++            if ((!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 10 == 0 && this.noDamageTicks < (float) this.maxNoDamageTicks / 2.0F) && this.inBlock()) { // Blossom
+                 this.damageEntity(DamageSource.STUCK, 1.0F);
+             } else if (flag && !this.world.getWorldBorder().a(this.getBoundingBox())) {
+                 double d0 = this.world.getWorldBorder().a((Entity) this) + this.world.getWorldBorder().getDamageBuffer();
+@@ -194,7 +194,12 @@ public abstract class EntityLiving extends Entity {
+         boolean flag1 = flag && ((EntityHuman) this).abilities.isInvulnerable;
+ 
+         if (this.isAlive()) {
+-            if (this.a(Material.WATER)) {
++            // Blossom start - reduce entity checks
++            if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 20 == 0) {
++                this.isDrowning = this.a(Material.WATER);
++            }
++            if (this.isDrowning) {
++                // Blossom end
+                 if (!this.aY() && !this.hasEffect(MobEffectList.WATER_BREATHING.id) && !flag1) {
+                     this.setAirTicks(this.j(this.getAirTicks()));
+                     if (this.getAirTicks() == -20) {
+@@ -1684,7 +1689,7 @@ public abstract class EntityLiving extends Entity {
+         this.g(this.aZ, this.ba);
+         this.world.methodProfiler.b();
+         this.world.methodProfiler.a("push");
+-        if (!this.world.isClientSide) {
++        if (!this.world.isClientSide && me.samsuik.blossom.configuration.BlossomConfig.entityPushing) { // Blossom - disable entity pushing
+             this.bL();
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 002fa12f7..3263182c6 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -2009,7 +2009,25 @@ public abstract class World implements IBlockAccess {
+         return false;
+     }
+ 
++    // Blossom start - reduce entity checks
++    private boolean isInLiquid(AxisAlignedBB bb) {
++        int x = MathHelper.floor((bb.a + bb.d) / 2);
++        int y = MathHelper.floor((bb.b + bb.e) / 2);
++        int z = MathHelper.floor((bb.c + bb.f) / 2);
++
++        IBlockData iblockdata = getTypeIfLoaded(x, y, z);
++        return iblockdata != null && iblockdata.getBlock().getMaterial().isLiquid();
++    }
++
+     public boolean containsLiquid(AxisAlignedBB axisalignedbb) {
++        return this.containsLiquid(axisalignedbb, false);
++    }
++
++    public boolean containsLiquid(AxisAlignedBB axisalignedbb, boolean fullCheck) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks && !fullCheck) {
++            return isInLiquid(axisalignedbb);
++        }
++        // Blossom end
+         int i = MathHelper.floor(axisalignedbb.a);
+         int j = MathHelper.floor(axisalignedbb.d);
+         int k = MathHelper.floor(axisalignedbb.b);
+@@ -2033,7 +2051,23 @@ public abstract class World implements IBlockAccess {
+         return false;
+     }
+ 
++    // Blossom start - reduce entity checks
++    private boolean isInHotBlock(AxisAlignedBB bb) {
++        int x = MathHelper.floor((bb.a + bb.d) / 2);
++        int y = MathHelper.floor(bb.e);
++        int z = MathHelper.floor((bb.c + bb.f) / 2);
++
++        IBlockData iblockdata = getTypeIfLoaded(x, y, z);
++        if (iblockdata == null) return false;
++        Block block = iblockdata.getBlock();
++        return block == Blocks.FIRE || block == Blocks.FLOWING_LAVA || block == Blocks.LAVA;
++    }
++
+     public boolean e(AxisAlignedBB axisalignedbb) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks) {
++            return isInHotBlock(axisalignedbb);
++        }
++        // Blossom end
+         int i = MathHelper.floor(axisalignedbb.a);
+         int j = MathHelper.floor(axisalignedbb.d + 1.0D);
+         int k = MathHelper.floor(axisalignedbb.b);
+@@ -2060,7 +2094,45 @@ public abstract class World implements IBlockAccess {
+         return false;
+     }
+ 
++    // Blossom start - reduce entity checks
++    private static final Vec3D ZERO_VEC = new Vec3D(0.0D, 0.0D, 0.0D);
++    private boolean applyMaterialMotion(AxisAlignedBB bb, Entity entity, Material material) {
++        BlockPosition blockposition = new BlockPosition(entity.locX, bb.b, entity.locZ);
++        IBlockData iblockdata = getTypeIfLoaded(blockposition);
++        if (iblockdata == null) return false;
++        Block block = iblockdata.getBlock();
++
++        if (block.getMaterial() != material) {
++            return false;
++        }
++
++        int top = MathHelper.floor(bb.e + 1.0D);
++        int posY = blockposition.getY() + 1;
++        double d0 = (float) posY - BlockFluids.b(iblockdata.get(BlockFluids.LEVEL));
++
++        if ((double) top < d0) {
++            return false;
++        }
++
++        Vec3D vec3d = block.a(this, blockposition, entity, ZERO_VEC);
++
++        if (vec3d.b() > 0.0D && entity.aL()) {
++            vec3d = vec3d.a();
++            double d1 = 0.014D;
++
++            entity.motX += vec3d.a * d1;
++            entity.motY += vec3d.b * d1;
++            entity.motZ += vec3d.c * d1;
++        }
++
++        return true;
++    }
++
+     public boolean a(AxisAlignedBB axisalignedbb, Material material, Entity entity) {
++        if (entity.reduceEntityChecks()) {
++            return applyMaterialMotion(axisalignedbb, entity, material);
++        }
++        // Blossom end
+         int i = MathHelper.floor(axisalignedbb.a);
+         int j = MathHelper.floor(axisalignedbb.d + 1.0D);
+         int k = MathHelper.floor(axisalignedbb.b);
+-- 
+2.50.1
+

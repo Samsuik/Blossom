@@ -1,0 +1,65 @@
+From 83eca1fef4424fc05c5f3c4e071096da7c1a0184 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 29 Jun 2023 01:03:40 +0100
+Subject: [PATCH] Simplify farmland moisture
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 6da5e3b08..bf0ae10ca 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -407,4 +407,11 @@ public class BlossomConfig {
+         ignoreNonPlayerLight = getBoolean("player.ignore-non-player-light-updates", false);
+     }
+ 
++    public static boolean simpleWheatMoistureCalculation;
++    public static boolean farmlandOnlyCheckWaterWhenUnused;
++    private static void FarmlandMoisture() {
++        simpleWheatMoistureCalculation = getBoolean("crops.simple-wheat-moisture-calculation", false);
++        farmlandOnlyCheckWaterWhenUnused = getBoolean("crops.farmland-only-look-for-water-when-unused", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockCrops.java b/src/main/java/net/minecraft/server/BlockCrops.java
+index 06b486c9b..64a356073 100644
+--- a/src/main/java/net/minecraft/server/BlockCrops.java
++++ b/src/main/java/net/minecraft/server/BlockCrops.java
+@@ -55,7 +55,19 @@ public class BlockCrops extends BlockPlant implements IBlockFragilePlantElement
+         // CraftBukkit end
+     }
+ 
++    // Blossom start
++    private static float simpleMoistureCalculation(World world, BlockPosition blockposition) {
++        IBlockData iblockdata = world.getType(blockposition.down());
++        float moisture = 1.0F;
++        if (iblockdata.getBlock() == Blocks.FARMLAND)
++            moisture += 1.0F + (iblockdata.get(BlockSoil.MOISTURE) > 0 ? 1.0F : 3.0F);
++        return moisture;
++    }
++
+     protected static float a(Block block, World world, BlockPosition blockposition) {
++        if (me.samsuik.blossom.configuration.BlossomConfig.simpleWheatMoistureCalculation)
++            return simpleMoistureCalculation(world, blockposition);
++        // Blossom end
+         float f = 1.0F;
+         BlockPosition blockposition1 = blockposition.down();
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockSoil.java b/src/main/java/net/minecraft/server/BlockSoil.java
+index 362a346fc..2e2abf9a7 100644
+--- a/src/main/java/net/minecraft/server/BlockSoil.java
++++ b/src/main/java/net/minecraft/server/BlockSoil.java
+@@ -93,6 +93,11 @@ public class BlockSoil extends Block {
+     }
+ 
+     private boolean f(World world, BlockPosition blockposition) {
++        // Blossom start
++        if (me.samsuik.blossom.configuration.BlossomConfig.farmlandOnlyCheckWaterWhenUnused && world.getType(blockposition.up()) instanceof BlockPlant) {
++            return true;
++        }
++        // Blossom end
+         Iterator iterator = BlockPosition.b(blockposition.a(-4, 0, -4), blockposition.a(4, 1, 4)).iterator();
+ 
+         BlockPosition.MutableBlockPosition blockposition_mutableblockposition;
+-- 
+2.50.1
+

@@ -1,0 +1,79 @@
+From ed895e4d28709c3dc3cd1963432c8656bfcbe757 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 25 Jun 2022 21:14:04 +0100
+Subject: [PATCH] Consistent Explosion Strength
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 16a55e6c4..8356aedf7 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -289,4 +289,11 @@ public class BlossomConfig {
+         pearlThroughCobwebs = getBoolean("projectiles.pearl.through-cobwebs", false);
+     }
+ 
++    public static boolean constantRadius;
++    public static boolean consistentExplosionSeed;
++    private static void ConsistentExplosionStrength() {
++        constantRadius = getBoolean("explosions.constant-radius", false);
++        consistentExplosionSeed = getBoolean("explosions.consistent-explosion-seed", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
+index f4ccd8d4d..4b288ae8b 100644
+--- a/src/main/java/net/minecraft/server/Explosion.java
++++ b/src/main/java/net/minecraft/server/Explosion.java
+@@ -42,6 +42,40 @@ public class Explosion {
+         this.b = flag1;
+     }
+ 
++    // Blossom start - consistent explosion strength
++    protected final float getExplosionStrength(double x, double y, double z) {
++        java.util.Random random = java.util.concurrent.ThreadLocalRandom.current();
++        boolean constant = false;
++
++        if (me.samsuik.blossom.configuration.BlossomConfig.consistentExplosionSeed) {
++            long seed = BlockPosition.asLong((int) posX, (int) posY, (int) posZ);
++
++            if (source != null) {
++                double relX = Math.abs(source.lastX - source.locX);
++                double relY = Math.abs(source.lastY - source.locY);
++                double relZ = Math.abs(source.lastZ - source.locZ);
++
++                double vector = x * 31 * 31 + y * 31 + z * 31;
++
++                constant = relX == 0 && relY == 0 && relZ == 0;
++                seed = MathHelper.floor((relX * relX + relY * relY + relZ * relZ + 1) * vector);
++            }
++
++            random = new java.util.Random(seed);
++        }
++
++        final float next;
++
++        if (me.samsuik.blossom.configuration.BlossomConfig.constantRadius || constant) {
++            next = 0.7f;
++        } else {
++            next = random.nextFloat();
++        }
++
++        return next;
++    }
++    // Blossom end
++
+     public void a() {
+         // CraftBukkit start
+         if (this.size < 0.1F) {
+@@ -69,7 +103,7 @@ public class Explosion {
+                         d0 /= d3;
+                         d1 /= d3;
+                         d2 /= d3;
+-                        float f = this.size * (0.7F + this.world.random.nextFloat() * 0.6F);
++                        float f = this.size * (0.7F + this.getExplosionStrength(d0, d1, d2) * 0.6F); // Blossom
+                         double d4 = this.posX;
+                         double d5 = this.posY;
+                         double d6 = this.posZ;
+-- 
+2.50.1
+

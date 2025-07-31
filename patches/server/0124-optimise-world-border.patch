@@ -1,0 +1,80 @@
+From 3be08f26011415d8c5278e58c02790c07fc6f893 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Wed, 23 Jul 2025 16:35:00 +0100
+Subject: [PATCH] optimise world border
+
+
+diff --git a/src/main/java/net/minecraft/server/WorldBorder.java b/src/main/java/net/minecraft/server/WorldBorder.java
+index 7ea40468e..51f2de60d 100644
+--- a/src/main/java/net/minecraft/server/WorldBorder.java
++++ b/src/main/java/net/minecraft/server/WorldBorder.java
+@@ -19,6 +19,26 @@ public class WorldBorder {
+     private int k;
+     private int l;
+     public WorldServer world; // CraftBukkit
++    // Blossom start - optimise world border
++    private AxisAlignedBB bounds;
++
++    public final void updateWorldBorderSize() {
++        this.bounds = this.getBounds();
++    }
++
++    public final AxisAlignedBB getBounds() {
++        double halfSize = this.getSize() / 2.0;
++        double centerX = this.getCenterX();
++        double centerZ = this.getCenterZ();
++
++        double minX = Math.max(centerX - halfSize, -this.h);
++        double minZ = Math.max(centerZ - halfSize, -this.h);
++        double maxX = Math.min(centerX + halfSize, this.h);
++        double maxZ = Math.min(centerZ + halfSize, this.h);
++
++        return new AxisAlignedBB(minX, Double.NEGATIVE_INFINITY, minZ, maxX, Double.POSITIVE_INFINITY, maxZ);
++    }
++    // Blossom end - optimise world border
+ 
+     public WorldBorder() {
+         this.e = this.d;
+@@ -27,10 +47,14 @@ public class WorldBorder {
+         this.j = 5.0D;
+         this.k = 15;
+         this.l = 5;
++        this.updateWorldBorderSize(); // Blossom - optimise world border
+     }
+ 
+     public boolean a(BlockPosition blockposition) {
+-        return (double) (blockposition.getX() + 1) > this.b() && (double) blockposition.getX() < this.d() && (double) (blockposition.getZ() + 1) > this.c() && (double) blockposition.getZ() < this.e();
++        // Blossom start - optimise world border
++        final AxisAlignedBB bounds = this.bounds;
++        return blockposition.getX() >= bounds.a && blockposition.getX() < bounds.d && blockposition.getZ() >= bounds.c && blockposition.getZ() < bounds.f;
++        // Blossom end - optimise world border
+     }
+ 
+     // CraftBukkit start - split method
+@@ -49,7 +73,10 @@ public class WorldBorder {
+     }
+ 
+     public boolean a(AxisAlignedBB axisalignedbb) {
+-        return axisalignedbb.d > this.b() && axisalignedbb.a < this.d() && axisalignedbb.f > this.c() && axisalignedbb.c < this.e();
++        // Blossom start - optimise world border
++        final AxisAlignedBB bounds = this.bounds;
++        return axisalignedbb.d > bounds.b && axisalignedbb.a < bounds.d && axisalignedbb.f > bounds.c && axisalignedbb.c < bounds.e;
++        // Blossom end - optimise world border
+     }
+ 
+     public double a(Entity entity) {
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 5aa7ac917..8c176ae5b 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -205,6 +205,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+ 
+     public void doTick() {
+         super.doTick();
++        this.getWorldBorder().updateWorldBorderSize(); // Blossom - optimise world border
+         if (this.getWorldData().isHardcore() && this.getDifficulty() != EnumDifficulty.HARD) {
+             this.getWorldData().setDifficulty(EnumDifficulty.HARD);
+         }
+-- 
+2.50.1
+

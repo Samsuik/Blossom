@@ -1,0 +1,29 @@
+From 56be6ae227eddb71b3c5b1a463b8095460296528 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 15 Jul 2023 17:34:03 +0100
+Subject: [PATCH] Redundant misplaced chunk message
+
+
+diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+index 06d08092f..6d9cd017a 100644
+--- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+@@ -220,6 +220,7 @@ public class ChunkProviderServer implements IChunkProvider {
+ 
+         chunk = chunk == null ? (!this.world.ad() && !this.forceChunkLoad ? this.emptyChunk : this.getChunkAt(i, j)) : chunk;
+ 
++        /* // Blossom start - optimise chunk retrieval
+         if (chunk == emptyChunk) return chunk;
+         if (i != chunk.locX || j != chunk.locZ) {
+             b.error("Chunk (" + chunk.locX + ", " + chunk.locZ + ") stored at  (" + i + ", " + j + ") in world '" + world.getWorld().getName() + "'");
+@@ -228,6 +229,7 @@ public class ChunkProviderServer implements IChunkProvider {
+             ex.fillInStackTrace();
+             ex.printStackTrace();
+         }
++        */ // Blossom end
+ 
+         return chunk;
+         // CraftBukkit end
+-- 
+2.50.1
+

@@ -1,0 +1,33 @@
+From dbf5148deda0701b35adfb8dbae02a49ea6091d6 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 22 Nov 2020 05:29:10 +0000
+Subject: [PATCH] Remove TNT Water Logic
+
+Remove the code for keeping TNT in sync with the server.
+This can cause players to easily timeout while near a cannon or at walls.
+
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 872d9659c..44f961d15 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -180,6 +180,8 @@ public class EntityTNTPrimed extends Entity {
+     public boolean W() {
+         if (!world.paperSpigotConfig.fixCannons) return super.W();
+ 
++        // Blossom start - Optimise TNT Ticking
++        /*
+         // Preserve velocity while calling the super method
+         double oldMotX = this.motX;
+         double oldMotY = this.motY;
+@@ -207,6 +209,8 @@ public class EntityTNTPrimed extends Entity {
+                 }
+             }
+         }
++        */
++        // Blossom end
+ 
+         return this.inWater;
+     }
+-- 
+2.50.1
+

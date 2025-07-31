@@ -1,0 +1,44 @@
+From d4a31aacfab048b308b2a0b54b2dedce9fbc4b8a Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 1 Jul 2023 22:21:03 +0100
+Subject: [PATCH] Fix cannons by default
+
+
+diff --git a/src/main/java/org/github/paperspigot/PaperSpigotWorldConfig.java b/src/main/java/org/github/paperspigot/PaperSpigotWorldConfig.java
+index 6ad8e817d..4a0ee12b6 100644
+--- a/src/main/java/org/github/paperspigot/PaperSpigotWorldConfig.java
++++ b/src/main/java/org/github/paperspigot/PaperSpigotWorldConfig.java
+@@ -299,7 +299,7 @@ public class PaperSpigotWorldConfig
+             }
+         }
+ 
+-        fixCannons = getBoolean( "fix-cannons", false );
++        fixCannons = getBoolean( "fix-cannons", true ); // Blossom
+         log( "Fix TNT cannons: " + fixCannons );
+     }
+ 
+@@ -312,7 +312,7 @@ public class PaperSpigotWorldConfig
+     public boolean optimizeExplosions;
+     private void optimizeExplosions()
+     {
+-        optimizeExplosions = getBoolean( "optimize-explosions", false );
++        optimizeExplosions = getBoolean( "optimize-explosions", true ); // Blossom
+     }
+ 
+     public boolean fastDrainLava;
+diff --git a/src/main/java/org/spigotmc/SpigotWorldConfig.java b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+index 80628e946..d1abd8099 100644
+--- a/src/main/java/org/spigotmc/SpigotWorldConfig.java
++++ b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+@@ -327,7 +327,7 @@ public class SpigotWorldConfig
+         {
+             set( "max-tnt-per-tick", 100 );
+         }
+-        maxTntTicksPerTick = getInt( "max-tnt-per-tick", 100 );
++        maxTntTicksPerTick = getInt( "max-tnt-per-tick", 1_000_000_000 ); // Blossom
+         log( "Max TNT Explosions: " + maxTntTicksPerTick );
+     }
+ 
+-- 
+2.50.1
+

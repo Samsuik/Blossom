@@ -1,0 +1,21 @@
+From e68f14d0a2ea4f8323085d936bfcf5798029e8b8 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 9 Jul 2022 19:57:49 +0100
+Subject: [PATCH] Disable AsyncCatcher on shutdown
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 8dcead136..1e092b085 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -441,6 +441,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+     // CraftBukkit end
+ 
+     public void stop() throws ExceptionWorldConflict { // CraftBukkit - added throws
++        org.spigotmc.AsyncCatcher.enabled = false; // Blossom - disable async catcher on shutdown
+         // CraftBukkit start - prevent double stopping on multiple threads
+         synchronized(stopLock) {
+             if (hasStopped) return;
+-- 
+2.50.1
+

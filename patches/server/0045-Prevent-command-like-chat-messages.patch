@@ -1,0 +1,32 @@
+From a4fb60445ccd35a86d28ca2dc017d2406524bdc4 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 27 May 2023 18:32:27 +0100
+Subject: [PATCH] Prevent command-like chat messages
+
+This fixes clients being able to bypass the antispam by appending
+" /skill" to their chat message. This works because the whitespace
+in front is sanitised after the "/" command check, allowing it to
+be sent as a chat message and be exempt from the antispam by spigot.
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 3afb56069..e6104d23b 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -1231,7 +1231,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             }
+ 
+             // CraftBukkit start
+-            if (isSync) {
++            // Blossom start - prevent command-like chat messages
++            if (!isSync && s.startsWith("/")) {
++                ChatMessage chatmessage = new ChatMessage("chat.cannotSend", new Object[0]);
++                chatmessage.getChatModifier().setColor(EnumChatFormat.RED);
++                this.sendPacket(new PacketPlayOutChat(chatmessage));
++            } else if (isSync) {
++                // Blossom end
+                 try {
+                     this.minecraftServer.server.playerCommandState = true;
+                     this.handleCommand(s);
+-- 
+2.50.1
+

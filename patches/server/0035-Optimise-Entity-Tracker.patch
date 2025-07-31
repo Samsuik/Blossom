@@ -1,0 +1,263 @@
+From 56eb36c0ce56e84025dc45e8e55688da08e796a4 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 30 Jun 2022 23:06:01 +0100
+Subject: [PATCH] Optimise Entity Tracker
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 8356aedf7..5e0cdfa2d 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -296,4 +296,18 @@ public class BlossomConfig {
+         consistentExplosionSeed = getBoolean("explosions.consistent-explosion-seed", false);
+     }
+ 
++    public static boolean trackerUseChunkMap;
++    public static double trackVerticalDistance;
++    private static void EntityTracker() {
++        double defaultVerticalDistanceMod = -1.0;
++        if (version < 2 && config.contains("entity-tracker.check-vertical-distance")) {
++            defaultVerticalDistanceMod = config.getBoolean("entity-tracker.check-vertical-distance") ? 1.0 : defaultVerticalDistanceMod;
++            set("entity-tracker.check-vertical-distance", null);
++            set("entity-tracker.work-in-parallel", null);
++        }
++
++        trackerUseChunkMap = getBoolean("entity-tracker.use-chunk-map-for-players", true);
++        trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index eaa4b489b..8586af99a 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -79,6 +79,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         return this.collidesWithEntities && super.ae(); // (second !this.isDead near bottom of EntityLiving)
+     }
+     // Spigot end
++    public final boolean realPlayer; // Blossom - optimise entity tracker
+ 
+     public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
+         super(worldserver, gameprofile);
+@@ -116,6 +117,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         // this.canPickUpLoot = true; TODO
+         this.maxHealthCache = this.getMaxHealth();
+         // CraftBukkit end
++        this.realPlayer = this.getClass() == EntityPlayer.class; // Blossom - optimise entity tracker
+     }
+ 
+     public void a(NBTTagCompound nbttagcompound) {
+diff --git a/src/main/java/net/minecraft/server/EntityTracker.java b/src/main/java/net/minecraft/server/EntityTracker.java
+index cb72b3672..cd4f53892 100644
+--- a/src/main/java/net/minecraft/server/EntityTracker.java
++++ b/src/main/java/net/minecraft/server/EntityTracker.java
+@@ -109,7 +109,7 @@ public class EntityTracker {
+ 
+             this.c.add(entitytrackerentry);
+             this.trackedEntities.a(entity.getId(), entitytrackerentry);
+-            entitytrackerentry.scanPlayers(this.world.players);
++            entitytrackerentry.scanPlayers(getPlayersNearby(entitytrackerentry)); // Blossom
+         } catch (Throwable throwable) {
+             CrashReport crashreport = CrashReport.a(throwable, "Adding entity to track");
+             CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Entity To Track");
+@@ -168,6 +168,90 @@ public class EntityTracker {
+     }
+ 
+     public void updatePlayers() {
++        // Blossom start - optimise entity tracker
++        blossom_updatePlayers();
++    }
++
++    private static final java.util.List<EntityHuman> EMPTY_HUMAN_LIST = java.util.Collections.emptyList();
++
++    // Utilise the player chunk map for locating nearby players instead of going through the whole server.
++    private java.util.List<EntityHuman> getPlayersNearby(EntityTrackerEntry entitytrackerentry) {
++        if (!me.samsuik.blossom.configuration.BlossomConfig.trackerUseChunkMap) {
++            return this.world.players;
++        }
++
++        Entity tracker = entitytrackerentry.tracker;
++        PlayerChunkMap chunkMap = ((WorldServer) tracker.world).getPlayerChunkMap();
++        PlayerChunkMap.PlayerChunk chunk = chunkMap.getPlayerChunk(tracker.getChunkX(), tracker.getChunkZ(), false);
++
++        if (chunk == null || chunk.getPlayersInDistance().isEmpty()) {
++            return EMPTY_HUMAN_LIST;
++        }
++
++        return java.util.Collections.unmodifiableList(chunk.getPlayersInDistance());
++    }
++
++    private void blossom_updatePlayers() {
++        Set<EntityPlayer> movedPlayers = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
++
++        // This is slightly different from the vanilla implementation.
++        // We're collecting all the movedPlayers first then processing the other entities,
++        // and moved the logic that would have been in the second for loop into the entity loop.
++        // This allows us to avoid iterating over all movedPlayers within the world.
++
++        // iterate over players first, this is to gather the movedPlayers
++        for (EntityHuman humanEntity : world.players) {
++            EntityTrackerEntry entitytrackerentry = trackedEntities.get(humanEntity.getId());
++
++            if (entitytrackerentry == null) {
++                continue;
++            }
++
++            java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
++
++            // if there's no players nearby, and we do not have any tracked any players
++            // don't attempt to track or update new players
++            if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
++                continue;
++            }
++
++            entitytrackerentry.track(humans);
++
++            // Check if the tracker has moved
++            if (entitytrackerentry.n && entitytrackerentry.tracker instanceof EntityPlayer) {
++                movedPlayers.add((EntityPlayer) entitytrackerentry.tracker);
++            }
++        }
++
++        // Now, we go over all the tracked entities (excluding players!)
++        for (EntityTrackerEntry entitytrackerentry : this.c) {
++            Entity tracker = entitytrackerentry.tracker;
++
++            if (tracker instanceof EntityPlayer && ((EntityPlayer) tracker).realPlayer) {
++                continue; // done above
++            }
++
++            java.util.List<EntityHuman> humans = getPlayersNearby(entitytrackerentry);
++
++            // if there's no players nearby, and we do not have any tracked any players
++            // don't attempt to track or update new players
++            if (humans == EMPTY_HUMAN_LIST && entitytrackerentry.trackedPlayers.isEmpty()) {
++                continue;
++            }
++
++            entitytrackerentry.track(humans);
++
++            // Update humans that have moved
++            for (EntityHuman human : humans) {
++                if (human != entitytrackerentry.tracker && human instanceof EntityPlayer && movedPlayers.contains(human)) {
++                    entitytrackerentry.updatePlayer((EntityPlayer) human);
++                }
++            }
++        }
++    }
++
++    private void unused_updatePlayers() {
++        // Blossom end - optimise entity tracker
+         ArrayList arraylist = Lists.newArrayList();
+         Iterator iterator = this.c.iterator();
+ 
+@@ -202,7 +286,7 @@ public class EntityTracker {
+             EntityTrackerEntry entitytrackerentry = (EntityTrackerEntry) iterator.next();
+ 
+             if (entitytrackerentry.tracker == entityplayer) {
+-                entitytrackerentry.scanPlayers(this.world.players);
++                entitytrackerentry.scanPlayers(getPlayersNearby(entitytrackerentry)); // Blossom
+             } else {
+                 entitytrackerentry.updatePlayer(entityplayer);
+             }
+@@ -240,10 +324,16 @@ public class EntityTracker {
+     }
+ 
+     public void a(EntityPlayer entityplayer, Chunk chunk) {
+-        Iterator iterator = this.c.iterator();
+-
+-        while (iterator.hasNext()) {
+-            EntityTrackerEntry entitytrackerentry = (EntityTrackerEntry) iterator.next();
++        // Blossom start - optimise entity tracker
++        java.util.List<Entity>[] entitySlices = chunk.entitySlices;
++        for (int slice = 0; slice < entitySlices.length; slice++)
++            for (Entity entity : entitySlices[slice]) {
++            EntityTrackerEntry entitytrackerentry = trackedEntities.get(entity.getId());
++
++            if (entitytrackerentry == null) {
++                continue; // might not have been tracked
++            }
++            // Blossom end
+ 
+             if (entitytrackerentry.tracker != entityplayer && entitytrackerentry.tracker.ae == chunk.locX && entitytrackerentry.tracker.ag == chunk.locZ) {
+                 entitytrackerentry.updatePlayer(entityplayer);
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index af2285e78..e785350f7 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -59,6 +59,7 @@ public class EntityTrackerEntry {
+             int blockY = MathHelper.floor(this.tracker.locY);
+             int blockZ = MathHelper.floor(this.tracker.locZ);
+             long packed = BlockPosition.asLong(blockX, blockY, blockZ);
++            synchronized (this.tracker.world.minimal) { // Blossom - parallel entity tracker
+             int curr = this.tracker.world.minimal.get(packed);
+ 
+             if (curr != Integer.MIN_VALUE) {
+@@ -66,6 +67,7 @@ public class EntityTrackerEntry {
+             } else {
+                 this.tracker.world.minimal.put(packed, this.tracker.getId());
+             }
++            } // Blossom - parallel entity tracker
+         }
+ 
+         return true;
+@@ -372,7 +374,11 @@ public class EntityTrackerEntry {
+                         }
+                     }
+ 
++                    // Blossom start - optimise entity tracker
++                    synchronized (entityplayer.removeQueue) {
+                     entityplayer.removeQueue.remove(Integer.valueOf(this.tracker.getId()));
++                    }
++                    // Blossom end
+                     // CraftBukkit end
+                     this.trackedPlayerMap.put(entityplayer, true); // PaperBukkit
+                     Packet packet = this.createPacket(entityplayer); // Blossom
+@@ -454,7 +460,11 @@ public class EntityTrackerEntry {
+                 }
+             } else if (this.trackedPlayers.contains(entityplayer)) {
+                 this.trackedPlayers.remove(entityplayer);
++                // Blossom - optimise entity tracker
++                synchronized (entityplayer.removeQueue) {
+                 entityplayer.d(this.tracker);
++                }
++                // Blossom end
+             }
+ 
+         }
+@@ -465,6 +475,12 @@ public class EntityTrackerEntry {
+         double d0 = entityplayer.locX - this.tracker.locX;
+         double d1 = entityplayer.locZ - this.tracker.locZ;
+         // CraftBukkit end
++        // Blossom start - vertical tracking distance
++        double verticalDistance = (double) this.b * me.samsuik.blossom.configuration.BlossomConfig.trackVerticalDistance;
++        if (verticalDistance > 0.0 && Math.abs(entityplayer.locY - this.tracker.locY) > verticalDistance) {
++            return false;
++        }
++        // Blossom end
+ 
+         return d0 >= (double) (-this.b) && d0 <= (double) this.b && d1 >= (double) (-this.b) && d1 <= (double) this.b && this.tracker.a(entityplayer);
+     }
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index d8f2ec0e0..0fd959119 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -85,6 +85,7 @@ public class PlayerChunkMap {
+         return this.d.getEntry(k) != null;
+     }
+ 
++    public PlayerChunkMap.PlayerChunk getPlayerChunk(int x, int z, boolean create) { return a(x, z, create); } // Blossom
+     private PlayerChunkMap.PlayerChunk a(int i, int j, boolean flag) {
+         long k = (long) i + 2147483647L | (long) j + 2147483647L << 32;
+         PlayerChunkMap.PlayerChunk playerchunkmap_playerchunk = (PlayerChunkMap.PlayerChunk) this.d.getEntry(k);
+@@ -352,6 +353,7 @@ public class PlayerChunkMap {
+     class PlayerChunk {
+ 
+         private final List<EntityPlayer> b = Lists.newArrayList();
++        public List<EntityPlayer> getPlayersInDistance() { return b; } // Blossom
+         private final ChunkCoordIntPair location;
+         private short[] dirtyBlocks = new short[64];
+         private int dirtyCount;
+-- 
+2.50.1
+

@@ -1,0 +1,63 @@
+From 7d57fda5d2be7c8b7491906ecf451b0c11adaa28 Mon Sep 17 00:00:00 2001
+From: "40902469+Samsuik@users.noreply.github.com"
+ <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 19 Dec 2020 19:35:00 +0000
+Subject: [PATCH] Configurable Golems
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 4876f202c..e754337a0 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -340,4 +340,11 @@ public class BlossomConfig {
+         potionVerticalOffset = (float) getDouble("projectiles.potion.vertical-offset", -20.0);
+     }
+ 
++    public static boolean ironGolemsDropPoppies;
++    public static boolean ironGolemsTakeFallDamage;
++    private static void IronGolems() {
++        ironGolemsDropPoppies = getBoolean("mobs.iron-golems.drop-poppies", true);
++        ironGolemsTakeFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityGolem.java b/src/main/java/net/minecraft/server/EntityGolem.java
+index 795229512..ea487956e 100644
+--- a/src/main/java/net/minecraft/server/EntityGolem.java
++++ b/src/main/java/net/minecraft/server/EntityGolem.java
+@@ -6,7 +6,13 @@ public abstract class EntityGolem extends EntityCreature implements IAnimal {
+         super(world);
+     }
+ 
+-    public void e(float f, float f1) {}
++    public void e(float f, float f1) {
++        // Blossom start - configurable golems; allow iron golems to take fall damage
++        if (this instanceof EntityIronGolem && me.samsuik.blossom.configuration.BlossomConfig.ironGolemsTakeFallDamage) {
++            super.e(f, f1);
++        }
++        // Blossom end - configurable golems; allow iron golems to take fall damage
++    }
+ 
+     protected String z() {
+         return "none";
+diff --git a/src/main/java/net/minecraft/server/EntityIronGolem.java b/src/main/java/net/minecraft/server/EntityIronGolem.java
+index ba09cb2cc..46a09f3dd 100644
+--- a/src/main/java/net/minecraft/server/EntityIronGolem.java
++++ b/src/main/java/net/minecraft/server/EntityIronGolem.java
+@@ -143,9 +143,13 @@ public class EntityIronGolem extends EntityGolem {
+ 
+         int k;
+ 
++        // Blossom start - configurable golems; option for iron golems dropping poppies
++        if (me.samsuik.blossom.configuration.BlossomConfig.ironGolemsDropPoppies) {
+         for (k = 0; k < j; ++k) {
+             this.a(Item.getItemOf(Blocks.RED_FLOWER), 1, (float) BlockFlowers.EnumFlowerVarient.POPPY.b());
+         }
++        }
++        // Blossom end - configurable golems; option for iron golems dropping poppies
+ 
+         k = 3 + this.random.nextInt(3);
+ 
+-- 
+2.50.1
+

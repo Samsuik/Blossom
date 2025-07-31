@@ -1,0 +1,22 @@
+From e8565590a2523c6e9087caec5bbf213a041e8150 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sun, 20 Jul 2025 23:51:19 +0100
+Subject: [PATCH] Let useHopperCheck be used with isHopperPushBased
+
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
+index a7c017651..73fa7195c 100644
+--- a/src/main/java/net/minecraft/server/TileEntityHopper.java
++++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
+@@ -238,7 +238,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+                 }
+             }
+             // PaperSpigot start
+-            if (world.paperSpigotConfig.useHopperCheck && !world.tacoSpigotConfig.isHopperPushBased && !this.n()) { // TacoSpigot - dont use hopper check in push mode
++            if (world.paperSpigotConfig.useHopperCheck/* && !world.tacoSpigotConfig.isHopperPushBased*/ && !this.n()) { // Blossom // TacoSpigot - dont use hopper check in push mode
+                 this.d(world.spigotConfig.hopperCheck);
+             }
+             // PaperSpigot end
+-- 
+2.50.1
+

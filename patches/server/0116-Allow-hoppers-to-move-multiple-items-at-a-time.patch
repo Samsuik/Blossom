@@ -1,0 +1,118 @@
+From 600e98e19ef3b37d39c3eb8aecbd98d5c786b03b Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Wed, 16 Jul 2025 18:08:58 +0100
+Subject: [PATCH] Allow hoppers to move multiple items at a time
+
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityHopper.java b/src/main/java/net/minecraft/server/TileEntityHopper.java
+index f2bd10b45..94b0666d8 100644
+--- a/src/main/java/net/minecraft/server/TileEntityHopper.java
++++ b/src/main/java/net/minecraft/server/TileEntityHopper.java
+@@ -297,12 +297,13 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+             if (me.samsuik.blossom.configuration.BlossomConfig.hopperOnlyPushIntoEmptyContainer ? !canInsertIntoContainer(iinventory, enumdirection) : this.a(iinventory, enumdirection)) { // Blossom
+                 return false;
+             } else {
++                int itemsToMove = world.spigotConfig.hopperAmount; // Blossom - allow hoppers to move multiple items at a time
+                 for (int i = 0; i < this.getSize(); ++i) {
+                     // Blossom start - optimise hopper logic
+                     ItemStack itemstack = getItem(i);
+ 
+                     if (itemstack != null) {
+-                        int moving = Math.min(itemstack.count, world.spigotConfig.hopperAmount);
++                        int moving = Math.min(itemstack.count, itemsToMove); // Blossom - allow hoppers to move multiple items at a time
+ 
+                         int response = callItemMoveEvent(this, this, iinventory, itemstack, moving);
+                         if (response == -1) {
+@@ -321,7 +322,10 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+                             IGNORE_TILE_UPDATES = false;
+                         }
+ 
+-                        if (moved >= 0) {
++                        // Blossom start - allow hoppers to move multiple items at a time
++                        itemsToMove -= moved;
++                        if (itemsToMove <= 0 || moved <= 0) {
++                            // Blossom end - allow hoppers to move multiple items at a time
+                             return true;
+                         }
+                         // Blossom end - optimise hopper logic
+@@ -528,24 +532,27 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+                 return false;
+             }
+ 
++            // Blossom start - allow hoppers to move multiple items at a time
++            int hopperAmount = ihopper.getWorld().spigotConfig.hopperAmount;
++            int itemsToMove = hopperAmount;
++
+             if (iinventory instanceof IWorldInventory) {
+                 IWorldInventory iworldinventory = (IWorldInventory) iinventory;
+                 int[] aint = iworldinventory.getSlotsForFace(enumdirection);
+ 
+-                for (int i = 0; i < aint.length; ++i) {
+-                    if (a(ihopper, iinventory, aint[i], enumdirection)) {
+-                        return true;
+-                    }
++                for (int i = 0; i < aint.length && itemsToMove > 0; ++i) {
++                    itemsToMove -= insertItemIntoContainer(ihopper, iinventory, aint[i], enumdirection, itemsToMove);
+                 }
+             } else {
+                 int j = iinventory.getSize();
+ 
+-                for (int k = 0; k < j; ++k) {
+-                    if (a(ihopper, iinventory, k, enumdirection)) {
+-                        return true;
+-                    }
++                for (int k = 0; k < j && itemsToMove > 0; ++k) {
++                    itemsToMove -= insertItemIntoContainer(ihopper, iinventory, k, enumdirection, itemsToMove);
+                 }
+             }
++
++            return itemsToMove != hopperAmount;
++            // Blossom end - allow hoppers to move multiple items at a time
+         } else if (!ihopper.getWorld().tacoSpigotConfig.isHopperPushBased || !(ihopper instanceof TileEntityHopper)) { // TacoSpigot - only search for entities in 'pull mode'
+             Iterator iterator = a(ihopper.getWorld(), ihopper.A(), ihopper.B() + 1.0D, ihopper.C()).iterator();
+ 
+@@ -562,11 +569,17 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+     }
+ 
+     private static boolean a(IHopper ihopper, IInventory iinventory, int i, EnumDirection enumdirection) {
++        // Blossom start - allow hoppers to move multiple items at a time
++        return insertItemIntoContainer(ihopper, iinventory, i, enumdirection, ihopper.getWorld().spigotConfig.hopperAmount) > 0;
++    }
++
++    private static int insertItemIntoContainer(IHopper ihopper, IInventory iinventory, int i, EnumDirection enumdirection, int itemsToMove) {
++        // Blossom end - allow hoppers to move multiple items at a time
+         ItemStack itemstack = iinventory.getItem(i);
+ 
+         if (itemstack != null && b(iinventory, itemstack, i, enumdirection)) {
+             // Blossom start - optimise hopper logic
+-            int moving = Math.min(itemstack.count, ihopper.getWorld().spigotConfig.hopperAmount);
++            int moving = Math.min(itemstack.count, itemsToMove); // Blossom - allow hoppers to move multiple items at a time
+ 
+             int response = callItemMoveEvent(ihopper, iinventory, ihopper, itemstack, moving);
+             if (response == -1) {
+@@ -575,7 +588,7 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+                 } else if (ihopper instanceof EntityMinecartHopper) {
+                     ((EntityMinecartHopper) ihopper).m(ihopper.getWorld().spigotConfig.hopperTransfer / 2); // Spigot
+                 }
+-                return false;
++                return 0; // Blossom - allow hoppers to move multiple items at a time
+             } else if (response != moving) {
+                 moving = response;
+             }
+@@ -589,11 +602,11 @@ public class TileEntityHopper extends TileEntityContainer implements IHopper, IU
+                 IGNORE_TILE_UPDATES = false;
+             }
+ 
+-            return moved >= 0;
++            return moved; // Blossom - allow hoppers to move multiple items at a time
+             // Blossom end - optimise hopper logic
+         }
+ 
+-        return false;
++        return 0; // Blossom - allow hoppers to move multiple items at a time
+     }
+ 
+     public static boolean a(IInventory iinventory, EntityItem entityitem) {
+-- 
+2.50.1
+

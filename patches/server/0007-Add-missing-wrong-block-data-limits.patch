@@ -1,0 +1,324 @@
+From aa0e8010dc4e8f4739831fa089bc3ef5346183ce Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 9 May 2023 16:09:02 +0100
+Subject: [PATCH] Add missing/wrong block data limits
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockAnvil.java b/src/main/java/net/minecraft/server/BlockAnvil.java
+index 43b1d00dd..4707dcc1c 100644
+--- a/src/main/java/net/minecraft/server/BlockAnvil.java
++++ b/src/main/java/net/minecraft/server/BlockAnvil.java
+@@ -60,7 +60,7 @@ public class BlockAnvil extends BlockFalling {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockAnvil.FACING, EnumDirection.fromType2(i & 3)).set(BlockAnvil.DAMAGE, Integer.valueOf((i & 15) >> 2));
++        return this.getBlockData().set(BlockAnvil.FACING, EnumDirection.fromType2(i & 3)).set(BlockAnvil.DAMAGE, Integer.valueOf(MathHelper.clamp(i & 15, 0, 11) >> 2)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockBanner.java b/src/main/java/net/minecraft/server/BlockBanner.java
+index 2e9f0157c..8b6574eed 100644
+--- a/src/main/java/net/minecraft/server/BlockBanner.java
++++ b/src/main/java/net/minecraft/server/BlockBanner.java
+@@ -135,7 +135,7 @@ public class BlockBanner extends BlockContainer {
+         }
+ 
+         public IBlockData fromLegacyData(int i) {
+-            return this.getBlockData().set(BlockBanner.BlockStandingBanner.ROTATION, Integer.valueOf(i));
++            return this.getBlockData().set(BlockBanner.BlockStandingBanner.ROTATION, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+         }
+ 
+         public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockCactus.java b/src/main/java/net/minecraft/server/BlockCactus.java
+index ddc213517..d1b34371f 100644
+--- a/src/main/java/net/minecraft/server/BlockCactus.java
++++ b/src/main/java/net/minecraft/server/BlockCactus.java
+@@ -92,7 +92,7 @@ public class BlockCactus extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockCactus.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockCactus.AGE, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockCake.java b/src/main/java/net/minecraft/server/BlockCake.java
+index 11a7eaf17..4918483ad 100644
+--- a/src/main/java/net/minecraft/server/BlockCake.java
++++ b/src/main/java/net/minecraft/server/BlockCake.java
+@@ -102,7 +102,7 @@ public class BlockCake extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockCake.BITES, Integer.valueOf(i));
++        return this.getBlockData().set(BlockCake.BITES, Integer.valueOf(MathHelper.clamp(i, 0, 6))); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockCauldron.java b/src/main/java/net/minecraft/server/BlockCauldron.java
+index 5a4d5f7c2..5ceee71b4 100644
+--- a/src/main/java/net/minecraft/server/BlockCauldron.java
++++ b/src/main/java/net/minecraft/server/BlockCauldron.java
+@@ -172,7 +172,7 @@ public class BlockCauldron extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockCauldron.LEVEL, Integer.valueOf(i));
++        return this.getBlockData().set(BlockCauldron.LEVEL, Integer.valueOf(i & 3)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockCocoa.java b/src/main/java/net/minecraft/server/BlockCocoa.java
+index 8eb1bebae..c77b648ae 100644
+--- a/src/main/java/net/minecraft/server/BlockCocoa.java
++++ b/src/main/java/net/minecraft/server/BlockCocoa.java
+@@ -137,7 +137,7 @@ public class BlockCocoa extends BlockDirectional implements IBlockFragilePlantEl
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockCocoa.FACING, EnumDirection.fromType2(i)).set(BlockCocoa.AGE, Integer.valueOf((i & 15) >> 2));
++        return this.getBlockData().set(BlockCocoa.FACING, EnumDirection.fromType2(i)).set(BlockCocoa.AGE, Integer.valueOf(MathHelper.clamp(i & 15, 0, 11) >> 2)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockCrops.java b/src/main/java/net/minecraft/server/BlockCrops.java
+index f6989962a..06b486c9b 100644
+--- a/src/main/java/net/minecraft/server/BlockCrops.java
++++ b/src/main/java/net/minecraft/server/BlockCrops.java
+@@ -146,7 +146,7 @@ public class BlockCrops extends BlockPlant implements IBlockFragilePlantElement
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockCrops.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockCrops.AGE, Integer.valueOf(i & 7)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockDaylightDetector.java b/src/main/java/net/minecraft/server/BlockDaylightDetector.java
+index 45df7c9ad..117dc9179 100644
+--- a/src/main/java/net/minecraft/server/BlockDaylightDetector.java
++++ b/src/main/java/net/minecraft/server/BlockDaylightDetector.java
+@@ -93,7 +93,7 @@ public class BlockDaylightDetector extends BlockContainer {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockDaylightDetector.POWER, Integer.valueOf(i));
++        return this.getBlockData().set(BlockDaylightDetector.POWER, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockFire.java b/src/main/java/net/minecraft/server/BlockFire.java
+index 3a19920da..d3574d2e0 100644
+--- a/src/main/java/net/minecraft/server/BlockFire.java
++++ b/src/main/java/net/minecraft/server/BlockFire.java
+@@ -353,7 +353,7 @@ public class BlockFire extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockFire.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockFire.AGE, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockFloorSign.java b/src/main/java/net/minecraft/server/BlockFloorSign.java
+index 27bc09774..ea115a226 100644
+--- a/src/main/java/net/minecraft/server/BlockFloorSign.java
++++ b/src/main/java/net/minecraft/server/BlockFloorSign.java
+@@ -18,7 +18,7 @@ public class BlockFloorSign extends BlockSign {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockFloorSign.ROTATION, Integer.valueOf(i));
++        return this.getBlockData().set(BlockFloorSign.ROTATION, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockFluids.java b/src/main/java/net/minecraft/server/BlockFluids.java
+index db73f5d9c..8447dc78e 100644
+--- a/src/main/java/net/minecraft/server/BlockFluids.java
++++ b/src/main/java/net/minecraft/server/BlockFluids.java
+@@ -179,7 +179,7 @@ public abstract class BlockFluids extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockFluids.LEVEL, Integer.valueOf(i));
++        return this.getBlockData().set(BlockFluids.LEVEL, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockHopper.java b/src/main/java/net/minecraft/server/BlockHopper.java
+index 9f9b45db5..1bfbea2d2 100644
+--- a/src/main/java/net/minecraft/server/BlockHopper.java
++++ b/src/main/java/net/minecraft/server/BlockHopper.java
+@@ -125,7 +125,10 @@ public class BlockHopper extends BlockContainer {
+     }
+ 
+     public static EnumDirection b(int i) {
+-        return EnumDirection.fromType1(i & 7);
++        // Blossom start - correct bad block data
++        EnumDirection facing = EnumDirection.fromType1(i & 7);
++        return facing == EnumDirection.UP ? EnumDirection.DOWN : facing;
++        // Blossom end
+     }
+ 
+     public static boolean f(int i) {
+diff --git a/src/main/java/net/minecraft/server/BlockLeaves2.java b/src/main/java/net/minecraft/server/BlockLeaves2.java
+index 944ce5b42..a1f0a8408 100644
+--- a/src/main/java/net/minecraft/server/BlockLeaves2.java
++++ b/src/main/java/net/minecraft/server/BlockLeaves2.java
+@@ -59,7 +59,7 @@ public class BlockLeaves2 extends BlockLeaves {
+     }
+ 
+     public BlockWood.EnumLogVariant b(int i) {
+-        return BlockWood.EnumLogVariant.a((i & 3) + 4);
++        return BlockWood.EnumLogVariant.a((i & 1) + 4); // Blossom - correct bad block data
+     }
+ 
+     protected BlockStateList getStateList() {
+diff --git a/src/main/java/net/minecraft/server/BlockLog2.java b/src/main/java/net/minecraft/server/BlockLog2.java
+index d7508df9d..00564c8aa 100644
+--- a/src/main/java/net/minecraft/server/BlockLog2.java
++++ b/src/main/java/net/minecraft/server/BlockLog2.java
+@@ -41,7 +41,7 @@ public class BlockLog2 extends BlockLogAbstract {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        IBlockData iblockdata = this.getBlockData().set(BlockLog2.VARIANT, BlockWood.EnumLogVariant.a((i & 3) + 4));
++        IBlockData iblockdata = this.getBlockData().set(BlockLog2.VARIANT, BlockWood.EnumLogVariant.a((i & 1) + 4)); // Blossom - correct bad block data
+ 
+         switch (i & 12) {
+             case 0:
+diff --git a/src/main/java/net/minecraft/server/BlockMinecartDetector.java b/src/main/java/net/minecraft/server/BlockMinecartDetector.java
+index f3ce4a9c0..8cec4e3e5 100644
+--- a/src/main/java/net/minecraft/server/BlockMinecartDetector.java
++++ b/src/main/java/net/minecraft/server/BlockMinecartDetector.java
+@@ -142,7 +142,7 @@ public class BlockMinecartDetector extends BlockMinecartTrackAbstract {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockMinecartDetector.SHAPE, BlockMinecartTrackAbstract.EnumTrackPosition.a(i & 7)).set(BlockMinecartDetector.POWERED, Boolean.valueOf((i & 8) > 0));
++        return this.getBlockData().set(BlockMinecartDetector.SHAPE, BlockMinecartTrackAbstract.EnumTrackPosition.a(MathHelper.clamp(i & 7, 0, 5))).set(BlockMinecartDetector.POWERED, Boolean.valueOf((i & 8) > 0)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockNetherWart.java b/src/main/java/net/minecraft/server/BlockNetherWart.java
+index 374f06caa..efea374bc 100644
+--- a/src/main/java/net/minecraft/server/BlockNetherWart.java
++++ b/src/main/java/net/minecraft/server/BlockNetherWart.java
+@@ -63,7 +63,7 @@ public class BlockNetherWart extends BlockPlant {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockNetherWart.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockNetherWart.AGE, Integer.valueOf(i & 3)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockPiston.java b/src/main/java/net/minecraft/server/BlockPiston.java
+index b582f4bcd..3592951f9 100644
+--- a/src/main/java/net/minecraft/server/BlockPiston.java
++++ b/src/main/java/net/minecraft/server/BlockPiston.java
+@@ -242,7 +242,7 @@ public class BlockPiston extends Block {
+     public static EnumDirection b(int i) {
+         int j = i & 7;
+ 
+-        return j > 5 ? null : EnumDirection.fromType1(j);
++        return j > 5 ? EnumDirection.NORTH : EnumDirection.fromType1(j); // Blossom - correct bad block data
+     }
+ 
+     public static EnumDirection a(World world, BlockPosition blockposition, EntityLiving entityliving) {
+diff --git a/src/main/java/net/minecraft/server/BlockPistonExtension.java b/src/main/java/net/minecraft/server/BlockPistonExtension.java
+index 922893aed..3b0e8d8bd 100644
+--- a/src/main/java/net/minecraft/server/BlockPistonExtension.java
++++ b/src/main/java/net/minecraft/server/BlockPistonExtension.java
+@@ -162,7 +162,7 @@ public class BlockPistonExtension extends Block {
+     public static EnumDirection b(int i) {
+         int j = i & 7;
+ 
+-        return j > 5 ? null : EnumDirection.fromType1(j);
++        return j > 5 ? EnumDirection.NORTH : EnumDirection.fromType1(j); // Blossom - correct bad block data
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+diff --git a/src/main/java/net/minecraft/server/BlockPoweredRail.java b/src/main/java/net/minecraft/server/BlockPoweredRail.java
+index 43a400fec..4b20efc45 100644
+--- a/src/main/java/net/minecraft/server/BlockPoweredRail.java
++++ b/src/main/java/net/minecraft/server/BlockPoweredRail.java
+@@ -139,7 +139,7 @@ public class BlockPoweredRail extends BlockMinecartTrackAbstract {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockPoweredRail.SHAPE, BlockMinecartTrackAbstract.EnumTrackPosition.a(i & 7)).set(BlockPoweredRail.POWERED, Boolean.valueOf((i & 8) > 0));
++        return this.getBlockData().set(BlockPoweredRail.SHAPE, BlockMinecartTrackAbstract.EnumTrackPosition.a(MathHelper.clamp(i & 7, 0, 5))).set(BlockPoweredRail.POWERED, Boolean.valueOf((i & 8) > 0)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockPressurePlateWeighted.java b/src/main/java/net/minecraft/server/BlockPressurePlateWeighted.java
+index 5e96f9bd2..133d4ddb3 100644
+--- a/src/main/java/net/minecraft/server/BlockPressurePlateWeighted.java
++++ b/src/main/java/net/minecraft/server/BlockPressurePlateWeighted.java
+@@ -66,7 +66,7 @@ public class BlockPressurePlateWeighted extends BlockPressurePlateAbstract {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockPressurePlateWeighted.POWER, Integer.valueOf(i));
++        return this.getBlockData().set(BlockPressurePlateWeighted.POWER, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockRedstoneWire.java b/src/main/java/net/minecraft/server/BlockRedstoneWire.java
+index 532188e28..95a1aac9e 100644
+--- a/src/main/java/net/minecraft/server/BlockRedstoneWire.java
++++ b/src/main/java/net/minecraft/server/BlockRedstoneWire.java
+@@ -365,7 +365,7 @@ public class BlockRedstoneWire extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockRedstoneWire.POWER, Integer.valueOf(i));
++        return this.getBlockData().set(BlockRedstoneWire.POWER, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockReed.java b/src/main/java/net/minecraft/server/BlockReed.java
+index 337f2c40e..047acd7f1 100644
+--- a/src/main/java/net/minecraft/server/BlockReed.java
++++ b/src/main/java/net/minecraft/server/BlockReed.java
+@@ -103,7 +103,7 @@ public class BlockReed extends Block {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockReed.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockReed.AGE, Integer.valueOf(i & 15)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockRepeater.java b/src/main/java/net/minecraft/server/BlockRepeater.java
+index 29a242831..21cb444b3 100644
+--- a/src/main/java/net/minecraft/server/BlockRepeater.java
++++ b/src/main/java/net/minecraft/server/BlockRepeater.java
+@@ -67,7 +67,7 @@ public class BlockRepeater extends BlockDiodeAbstract {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockRepeater.FACING, EnumDirection.fromType2(i)).set(BlockRepeater.LOCKED, Boolean.valueOf(false)).set(BlockRepeater.DELAY, Integer.valueOf(1 + (i >> 2)));
++        return this.getBlockData().set(BlockRepeater.FACING, EnumDirection.fromType2(i)).set(BlockRepeater.LOCKED, Boolean.valueOf(false)).set(BlockRepeater.DELAY, Integer.valueOf(1 + ((i & 15) >> 2))); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+diff --git a/src/main/java/net/minecraft/server/BlockStem.java b/src/main/java/net/minecraft/server/BlockStem.java
+index 0a6871b21..ea53e48eb 100644
+--- a/src/main/java/net/minecraft/server/BlockStem.java
++++ b/src/main/java/net/minecraft/server/BlockStem.java
+@@ -145,7 +145,7 @@ public class BlockStem extends BlockPlant implements IBlockFragilePlantElement {
+     }
+ 
+     public IBlockData fromLegacyData(int i) {
+-        return this.getBlockData().set(BlockStem.AGE, Integer.valueOf(i));
++        return this.getBlockData().set(BlockStem.AGE, Integer.valueOf(i & 7)); // Blossom - correct bad block data
+     }
+ 
+     public int toLegacyData(IBlockData iblockdata) {
+-- 
+2.50.1
+

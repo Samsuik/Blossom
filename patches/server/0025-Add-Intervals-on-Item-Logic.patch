@@ -1,0 +1,67 @@
+From 272154f769a84759c564b5af4a6b2fbf8ba799f1 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Thu, 29 Oct 2020 22:11:04 +0000
+Subject: [PATCH] Add Intervals on Item Logic
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index cc1042a5a..cef696597 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -266,4 +266,13 @@ public class BlossomConfig {
+         silenceSounds = getBoolean("mobs.sounds.silenced", false);
+     }
+ 
++    public static int noclipInterval;
++    public static int mergeInterval;
++    public static int hopperInterval;
++    private static void Items() {
++        noclipInterval = Math.max(getInt("items.noclip-delay", 0), 0) + 1;
++        mergeInterval = Math.max(getInt("items.merge-delay", 0), 0) + 1;
++        hopperInterval = Math.max(getInt("items.hoppers.delay", 0), 0) + 1;
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityItem.java b/src/main/java/net/minecraft/server/EntityItem.java
+index 8e01ccd26..90f58516c 100644
+--- a/src/main/java/net/minecraft/server/EntityItem.java
++++ b/src/main/java/net/minecraft/server/EntityItem.java
+@@ -67,7 +67,7 @@ public class EntityItem extends Entity implements HopperPusher {
+             this.die();
+         } else {
+             super.t_();
+-            if (tryPutInHopper()) return; // TacoSpigot
++            if (ticksLived % me.samsuik.blossom.configuration.BlossomConfig.hopperInterval == 0 && tryPutInHopper()) return; // Blossom - Add Interval // TacoSpigot
+             // CraftBukkit start - Use wall time for pickup and despawn timers
+             int elapsedTicks = MinecraftServer.currentTick - this.lastTick;
+             if (this.pickupDelay != 32767) this.pickupDelay -= elapsedTicks;
+@@ -79,7 +79,7 @@ public class EntityItem extends Entity implements HopperPusher {
+             this.lastY = this.locY;
+             this.lastZ = this.locZ;
+             this.motY -= 0.03999999910593033D;
+-            this.noclip = this.j(this.locX, (this.getBoundingBox().b + this.getBoundingBox().e) / 2.0D, this.locZ);
++            this.noclip = ticksLived % me.samsuik.blossom.configuration.BlossomConfig.noclipInterval == 0 && this.j(this.locX, (this.getBoundingBox().b + this.getBoundingBox().e) / 2.0D, this.locZ); // Blossom
+             this.move(this.motX, this.motY, this.motZ);
+             boolean flag = (int) this.lastX != (int) this.locX || (int) this.lastY != (int) this.locY || (int) this.lastZ != (int) this.locZ;
+ 
+@@ -91,7 +91,7 @@ public class EntityItem extends Entity implements HopperPusher {
+                     this.makeSound("random.fizz", 0.4F, 2.0F + this.random.nextFloat() * 0.4F);
+                 }
+ 
+-                if (!this.world.isClientSide) {
++                if (!this.world.isClientSide && ticksLived % me.samsuik.blossom.configuration.BlossomConfig.mergeInterval == 0) { // Blossom
+                     this.w();
+                 }
+             }
+@@ -133,7 +133,7 @@ public class EntityItem extends Entity implements HopperPusher {
+     // Spigot start - copied from above
+     @Override
+     public void inactiveTick() {
+-        if (tryPutInHopper()) return; // TacoSpigot
++        if (ticksLived % me.samsuik.blossom.configuration.BlossomConfig.hopperInterval == 0 && tryPutInHopper()) return; // Blossom - Add Interval // TacoSpigot
+         // CraftBukkit end
+         // CraftBukkit start - Use wall time for pickup and despawn timers
+         int elapsedTicks = MinecraftServer.currentTick - this.lastTick;
+-- 
+2.50.1
+

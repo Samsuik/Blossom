@@ -1,0 +1,26 @@
+From 4f9c432b3913287a9e0648528b04d37c647826fa Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 11 Jun 2023 00:17:24 +0100
+Subject: [PATCH] Fix block break desync
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 388a53b26..8494fd7d5 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -826,6 +826,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             double d3 = d0 * d0 + d1 * d1 + d2 * d2;
+ 
+             if (d3 > 36.0D) {
++                // Blossom start - fix block break desync
++                int maxDistance = Math.max(player.viewDistance / 2, 1);
++                if (d3 < Math.pow(maxDistance, 2)) {
++                    this.player.playerConnection.sendPacket(new PacketPlayOutBlockChange(worldserver, blockposition));
++                }
++                // Blossom end
+                 return;
+             } else if (blockposition.getY() >= this.minecraftServer.getMaxBuildHeight()) {
+                 return;
+-- 
+2.50.1
+
