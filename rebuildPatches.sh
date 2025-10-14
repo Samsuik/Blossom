@@ -29,6 +29,7 @@ function savePatches {
     what_name=$(basename $what) # TacoSpigot - add a seperate 'name' of what, for situations where 'what' contains a slash
     target=$2
     echo "Formatting patches for $what..."
+    rm -r "$basedir/$what/"
     cd "$basedir/$target"
     git format-patch --no-stat -N -o "$basedir/$what/" upstream/upstream >/dev/null
     cd "$basedir"
@@ -36,10 +37,6 @@ function savePatches {
     cleanupPatches "$basedir/${what}"
     echo "  Patches saved for $target to $what"
 }
-
-if [ "$1" == "clean" ]; then
-	rm -rf Blossom-*-Patches
-fi
 
 savePatches patches/api Blossom-API
 savePatches patches/server Blossom-Server

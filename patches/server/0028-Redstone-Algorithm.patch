@@ -1,4 +1,4 @@
-From 011986096ae48cfa1ca9647ed38fc4aa454eb678 Mon Sep 17 00:00:00 2001
+From 7135523469af2250c1a02373a4762cd98b03c67e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -972,7 +972,7 @@ index 000000000..8e73701e6
 +    PANDAWIRE_EX,
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f6115a88a..0f75f45ad 100644
+index f6115a88a..de8ebef16 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -212,4 +212,30 @@ public class BlossomConfig {
@@ -980,7 +980,7 @@ index f6115a88a..0f75f45ad 100644
      }
  
 +    public static boolean optimisedGlowstone;
-+    public static me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm redstoneAlgorithm;
++    public static me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.VANILLA;
 +    private static void RedstoneAlgorithm() {
 +        try {
 +            String value = getString("redstone.algorithm", "pandawire");
@@ -1033,5 +1033,5 @@ index f31a184bb..d155bc4ff 100644
      private static final EnumDirection[] o = new EnumDirection[4];
      private static final Map<String, EnumDirection> p = Maps.newHashMap();
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

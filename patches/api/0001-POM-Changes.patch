@@ -1,11 +1,11 @@
-From 42540892e2edbdc923521ccd7b123f3676360799 Mon Sep 17 00:00:00 2001
+From e7013fae68b6ba1a01cbff5f4b888075464dc838 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 Jun 2022 19:57:24 +0100
 Subject: [PATCH] POM Changes
 
 
 diff --git a/pom.xml b/pom.xml
-index 13aab5e4..141b1622 100644
+index 13aab5e4..e6c44297 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -4,18 +4,18 @@
@@ -31,6 +31,15 @@ index 13aab5e4..141b1622 100644
      <description>An enhanced plugin API for Minecraft servers.</description>
  
      <properties>
+@@ -95,7 +95,7 @@
+         <dependency>
+             <groupId>net.md-5</groupId>
+             <artifactId>bungeecord-chat</artifactId>
+-            <version>1.8-SNAPSHOT</version>
++            <version>1.16-R0.3</version>
+             <type>jar</type>
+             <scope>compile</scope>
+         </dependency>
 @@ -132,26 +132,12 @@
                  <groupId>org.apache.maven.plugins</groupId>
                  <artifactId>maven-compiler-plugin</artifactId>
@@ -83,5 +92,5 @@ index 7e89b97b..420e72d7 100644
  
          new AuthorNagException("Deprecated use of CustomTimingsHandler. Please Switch to Timings.of ASAP").printStackTrace();
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 
