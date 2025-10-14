@@ -1,0 +1,39 @@
+From 436dcd332c0a3f7b4bcd06824afa316edd47d296 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Tue, 14 Oct 2025 11:35:06 +0100
+Subject: [PATCH] fix inconsistent bow boosting
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index d809cfd59..3fb6a01e1 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -586,4 +586,8 @@ public class BlossomConfig {
+         spongeRadius = getInt("fluids.sponge.flow-radius", 2);
+     }
+ 
++    public static boolean fixBowBoosting;
++    private static void FixBowBoosting() {
++        fixBowBoosting = getBoolean("player.fix-inconsistent-bow-boosting", false);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
+index 3cad857b4..85a31449b 100644
+--- a/src/main/java/net/minecraft/server/EntityArrow.java
++++ b/src/main/java/net/minecraft/server/EntityArrow.java
+@@ -206,6 +206,12 @@ public class EntityArrow extends Entity implements IProjectile {
+                     AxisAlignedBB axisalignedbb1 = entity1.getBoundingBox().grow((double) f1, (double) f1, (double) f1);
+                     MovingObjectPosition movingobjectposition1 = axisalignedbb1.a(vec3d, vec3d1);
+ 
++                    // Blossom start - fix inconsistent bow boosting
++                    if (me.samsuik.blossom.configuration.BlossomConfig.fixBowBoosting
++                        && movingobjectposition1 == null && this.getBoundingBox().b(entity1.getBoundingBox())) {
++                        movingobjectposition1 = new MovingObjectPosition(entity1);
++                    }
++                    // Blossom end - fix inconsistent bow boosting
+                     if (movingobjectposition1 != null) {
+                         double d1 = vec3d.distanceSquared(movingobjectposition1.pos);
+ 
+-- 
+2.50.1 (Apple Git-155)
+
