@@ -1,14 +1,14 @@
-From e4dcdd18a80921a918917070e48f817dbe1b1cc6 Mon Sep 17 00:00:00 2001
+From fa1bc5d5dcbfabd29d2b297a210a48ad323f6009 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 13:53:53 +0100
 Subject: [PATCH] Monster Eggs Change Spawners
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index bb9a442e9..7eb0e5834 100644
+index 9bc93b3b8..4d4171b11 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -475,4 +475,9 @@ public class BlossomConfig {
+@@ -479,4 +479,9 @@ public class BlossomConfig {
          itemArmourDamage = getDouble("player.armour.other-damage-limit", 1.0);
      }
      
@@ -32,5 +32,5 @@ index 84f5da5bf..26667abf8 100644
  
                  if (tileentity instanceof TileEntityMobSpawner) {
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

@@ -1,14 +1,14 @@
-From df7a06a5435fadebef3a207281e12d27945977bc Mon Sep 17 00:00:00 2001
+From 40148735443c6e26b9db3e3536f576aa32f8d154 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 00:23:53 +0100
 Subject: [PATCH] Fix Paper player-blocking-damage-multiplier
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 2f9aab57b..80de90003 100644
+index 49feb63fe..968e397c5 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
-@@ -1094,7 +1094,7 @@ public abstract class EntityLiving extends Entity {
+@@ -1099,7 +1099,7 @@ public abstract class EntityLiving extends Entity {
                  public Double apply(Double f) {
                      if (human) {
                          if (!damagesource.ignoresArmor() && ((EntityHuman) EntityLiving.this).isBlocking() && f > 0.0F) {
@@ -18,5 +18,5 @@ index 2f9aab57b..80de90003 100644
                      }
                      return -0.0;
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

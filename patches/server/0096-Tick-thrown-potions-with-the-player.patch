@@ -1,4 +1,4 @@
-From 5fdd3cb9b6651f7956bdb75137a15ca30d7ddac7 Mon Sep 17 00:00:00 2001
+From da8e19837f11a5f7899ca1ed5ef4801c70d07e45 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -7,10 +7,10 @@ Keeps potion ticking in sync with the player that threw them. This helps
 a lot with poor connections and low tps.
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 0f3e5d584..a3ee56307 100644
+index 1ff8873d6..a44e93f10 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -503,5 +503,10 @@ public class BlossomConfig {
+@@ -507,5 +507,10 @@ public class BlossomConfig {
      private static void PearlSpawnEndermite() {
          pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
      }
@@ -142,5 +142,5 @@ index a2235c4fc..6817bb602 100644
                  if (me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities && entity.tryMergeWith(previous)) {
                      continue;
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

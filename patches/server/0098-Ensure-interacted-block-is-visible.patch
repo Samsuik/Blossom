@@ -1,14 +1,14 @@
-From e806f3d02b0ed4076f01c2d81a41ee3a355834e5 Mon Sep 17 00:00:00 2001
+From b37b587ba5ddcd1af89c48da4a48532cbef5ae11 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 14:31:04 +0100
 Subject: [PATCH] Ensure interacted block is visible
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e89cedc81..b1b6ccb5f 100644
+index a42c6c164..bc9dd3d43 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -514,4 +514,9 @@ public class BlossomConfig {
+@@ -518,4 +518,9 @@ public class BlossomConfig {
          playerSuffocationTeleport = getBoolean("player.teleport-up-to-avoid-suffocation", false);
      }
  
@@ -38,7 +38,7 @@ index 26667abf8..506bffc40 100644
              double d0 = 0.0D;
  
 diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
-index 9b1aeb5ee..971b5a29e 100644
+index b434de8bf..814bdb757 100644
 --- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
 +++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
 @@ -406,6 +406,14 @@ public class PlayerInteractManager {
@@ -71,5 +71,5 @@ index 9b1aeb5ee..971b5a29e 100644
              }
  
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

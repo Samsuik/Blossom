@@ -1,14 +1,14 @@
-From 5902fccf0702dc3c464a346d87ca1e628078a17a Mon Sep 17 00:00:00 2001
+From 7b5de26a642d515c5fe2e32220bed9e1bcb192a6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e2530a8ff..1ffe416e9 100644
+index 27539c993..2c5ae3818 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -579,4 +579,11 @@ public class BlossomConfig {
+@@ -583,4 +583,11 @@ public class BlossomConfig {
          pluginCommandLabels = getBoolean("player.commands.plugin-labels", false);
      }
  
@@ -113,5 +113,5 @@ index de7714ea5..cb9d98250 100644
              world.setTypeAndData(blockposition, iblockdata.set(BlockSponge.WET, Boolean.valueOf(true)), 2);
              world.triggerEffect(2001, blockposition, Block.getId(Blocks.WATER));
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

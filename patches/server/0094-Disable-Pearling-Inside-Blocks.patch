@@ -1,14 +1,14 @@
-From fa11a49f94e0dba3e1dc527228e4065b7ab12fb5 Mon Sep 17 00:00:00 2001
+From 367ebb3f2a12e228be95c03b28414dc3df657bd1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 18:18:33 +0100
 Subject: [PATCH] Disable Pearling Inside Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 6bb4a9b25..ab981bc92 100644
+index bd35ce916..9d19ad21b 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -493,5 +493,10 @@ public class BlossomConfig {
+@@ -497,5 +497,10 @@ public class BlossomConfig {
      private static void DispenserRandomness() {
          dispenserRandomness = getBoolean("dispensers.items-selection-randomness", true);
      }
@@ -71,5 +71,5 @@ index 319c0bc6f..abb88858f 100644
          if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedEnderPearls) {
              this.die();
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

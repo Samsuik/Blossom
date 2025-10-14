@@ -1,4 +1,4 @@
-From b6f15711ca79ec4312a730656308ccdb1a0d9f87 Mon Sep 17 00:00:00 2001
+From b6701b29838351df43bd26dfcbdf15407a2c64ca Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Sun, 20 Jul 2025 10:34:47 +0100
 Subject: [PATCH] Reduce equipment change updates
@@ -41,7 +41,7 @@ index 09df308b6..4e8c4b9bb 100644
  
      public ItemStack[] getEquipment() {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index fa30106f1..c31456e0e 100644
+index 458ffe935..ecd9cb121 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -101,6 +101,13 @@ public abstract class EntityLiving extends Entity {
@@ -67,7 +67,7 @@ index fa30106f1..c31456e0e 100644
                  // CraftBukkit start
                  if(this instanceof EntityAnimal){
                      ((EntityAnimal)this).cq();
-@@ -1543,7 +1552,10 @@ public abstract class EntityLiving extends Entity {
+@@ -1548,7 +1557,10 @@ public abstract class EntityLiving extends Entity {
  
      public void t_() {
          super.t_();
@@ -80,5 +80,5 @@ index fa30106f1..c31456e0e 100644
  
              if (i > 0) {
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
