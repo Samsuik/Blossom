@@ -1,4 +1,4 @@
-From 353bb8d21561ef6724eeb29b9c9858f53012a520 Mon Sep 17 00:00:00 2001
+From 34e0bd5e739e4588482094c5b08723742f61242f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 00:40:54 +0100
 Subject: [PATCH] Configure Armour Damage Rate
@@ -23,10 +23,10 @@ index ac71ded65..9bc93b3b8 100644
 +    
  }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 968e397c5..2484c3d00 100644
+index 51830e2a0..96eff7d5b 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
-@@ -1164,6 +1164,19 @@ public abstract class EntityLiving extends Entity {
+@@ -1168,6 +1168,19 @@ public abstract class EntityLiving extends Entity {
              // Apply damage to armor
              if (!damagesource.ignoresArmor()) {
                  float armorDamage = (float) (event.getDamage() + event.getDamage(DamageModifier.BLOCKING) + event.getDamage(DamageModifier.HARD_HAT));

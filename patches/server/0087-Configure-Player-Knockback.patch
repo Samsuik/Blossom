@@ -1,4 +1,4 @@
-From d24d763f85a7b64df27de8b4e7abda58d33fd28d Mon Sep 17 00:00:00 2001
+From b2ea01f86bfb326571720326d59f45702f7a5584 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 9 Jul 2023 23:54:44 +0100
 Subject: [PATCH] Configure Player Knockback
@@ -122,10 +122,27 @@ index e4b863499..3f3c94cbe 100644
                              this.motZ *= 0.6D;
                              this.setSprinting(false);
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 9800dd16f..49feb63fe 100644
+index 9800dd16f..396f85182 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
-@@ -910,16 +910,40 @@ public abstract class EntityLiving extends Entity {
+@@ -815,7 +815,7 @@ public abstract class EntityLiving extends Entity {
+                         }
+ 
+                         this.aw = (float) (MathHelper.b(d1, d0) * 180.0D / 3.1415927410125732D - (double) this.yaw);
+-                        this.a(entity, f, d0, d1);
++                        this.knockback(damagesource.i(), entity, f, d0, d1);
+                     } else {
+                         this.aw = (float) ((int) (Math.random() * 2.0D) * 180);
+                     }
+@@ -907,19 +907,47 @@ public abstract class EntityLiving extends Entity {
+     protected void dropEquipment(boolean flag, int i) {}
+ 
+     public void a(Entity entity, float f, double d0, double d1) {
++        // Blossom start
++        this.knockback(entity, entity, f, d0, d1);
++    }
++
++    public void knockback(Entity cause, Entity entity, float f, double d0, double d1) {
          if (this.random.nextDouble() >= this.getAttributeInstance(GenericAttributes.c).getValue()) {
              this.ai = true;
              float f1 = MathHelper.sqrt(d0 * d0 + d1 * d1);
@@ -139,16 +156,15 @@ index 9800dd16f..49feb63fe 100644
 -            this.motZ -= d1 / (double) f1 * (double) f2;
 -            if (this.motY > 0.4000000059604645D) {
 -                this.motY = 0.4000000059604645D;
-+            // Blossom start
 +            double verticalKnockback = (float) me.samsuik.blossom.configuration.BlossomConfig.knockbackVertical;
 +            double horizontalKnockback = (float) me.samsuik.blossom.configuration.BlossomConfig.knockbackHorizontal;
 +
-+            if (entity instanceof EntityProjectile || entity instanceof EntityFishingHook) {
++            if (cause instanceof EntityProjectile || cause instanceof EntityFishingHook) {
 +                verticalKnockback = me.samsuik.blossom.configuration.BlossomConfig.fishingVertical;
 +                horizontalKnockback = me.samsuik.blossom.configuration.BlossomConfig.fishingHorizontal;
 +            }
 +
-+            if (entity instanceof EntityArrow) {
++            if (cause instanceof EntityArrow) {
 +                verticalKnockback = me.samsuik.blossom.configuration.BlossomConfig.arrowVertical;
 +                horizontalKnockback = me.samsuik.blossom.configuration.BlossomConfig.arrowHorizontal;
 +            }

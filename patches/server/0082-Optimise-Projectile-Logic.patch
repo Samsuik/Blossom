@@ -1,4 +1,4 @@
-From 3b6390d348fd61ca1e7aeb4a9f603eec84dc2472 Mon Sep 17 00:00:00 2001
+From 9a9e04f31adcfa5bf859a1f6026cacea94c23cb5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 7 Jul 2023 00:14:09 +0100
 Subject: [PATCH] Optimise Projectile Logic
@@ -149,7 +149,7 @@ index f08c8a2f8..e4f6ee750 100644
              this.world.makeSound(this, "fireworks.launch", 3.0F, 1.0F);
          }
 diff --git a/src/main/java/net/minecraft/server/EntityFishingHook.java b/src/main/java/net/minecraft/server/EntityFishingHook.java
-index 12a8cd668..9da2fef17 100644
+index 12a8cd668..ff86472c3 100644
 --- a/src/main/java/net/minecraft/server/EntityFishingHook.java
 +++ b/src/main/java/net/minecraft/server/EntityFishingHook.java
 @@ -81,10 +81,7 @@ public class EntityFishingHook extends Entity {
@@ -183,13 +183,7 @@ index 12a8cd668..9da2fef17 100644
              this.setPosition(d0, d1, d2);
              this.setYawPitch(this.yaw, this.pitch);
          } else {
-@@ -155,21 +149,24 @@ public class EntityFishingHook extends Entity {
-                 ++this.au;
-             }
- 
-+            boolean oldHit = this.as; // Blossom
-+
-             Vec3D vec3d = new Vec3D(this.locX, this.locY, this.locZ);
+@@ -159,17 +153,18 @@ public class EntityFishingHook extends Entity {
              Vec3D vec3d1 = new Vec3D(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
              MovingObjectPosition movingobjectposition = this.world.rayTrace(vec3d, vec3d1);
  
@@ -201,7 +195,7 @@ index 12a8cd668..9da2fef17 100644
              }
  
 +            double d6; // Blossom - moved up
-+            if (as && !inWater && hooked == null) { // Blossom - avoid searching for entities when we're inside a block, attached to an entity or floating in water.
++            if (!this.as && !this.inWater && this.hooked == null) { // Blossom - avoid searching for entities when we're inside a block, attached to an entity or floating in water.
              Entity entity = null;
              List list = this.world.getEntities(this, this.getBoundingBox().a(this.motX, this.motY, this.motZ).grow(1.0D, 1.0D, 1.0D));
              double d5 = 0.0D;
@@ -211,7 +205,7 @@ index 12a8cd668..9da2fef17 100644
  
              for (int i = 0; i < list.size(); ++i) {
                  Entity entity1 = (Entity) list.get(i);
-@@ -192,6 +189,7 @@ public class EntityFishingHook extends Entity {
+@@ -192,6 +187,7 @@ public class EntityFishingHook extends Entity {
              if (entity != null) {
                  movingobjectposition = new MovingObjectPosition(entity);
              }
@@ -219,12 +213,10 @@ index 12a8cd668..9da2fef17 100644
  
              // PaperSpigot start - Allow fishing hooks to fly through vanished players the shooter can't see
              if (movingobjectposition != null && movingobjectposition.entity instanceof EntityPlayer && owner != null && owner instanceof EntityPlayer) {
-@@ -212,30 +210,17 @@ public class EntityFishingHook extends Entity {
-                 }
-             }
+@@ -214,28 +210,7 @@ public class EntityFishingHook extends Entity {
  
--            if (!this.as) {
--                this.move(this.motX, this.motY, this.motZ);
+             if (!this.as) {
+                 this.move(this.motX, this.motY, this.motZ);
 -                float f1 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
 -
 -                this.yaw = (float) (MathHelper.b(this.motX, this.motZ) * 180.0D / 3.1415927410125732D);
@@ -240,19 +232,11 @@ index 12a8cd668..9da2fef17 100644
 -                while (this.yaw - this.lastYaw < -180.0F) {
 -                    this.lastYaw -= 360.0F;
 -                }
-+            // Blossom start
-+            if (!oldHit && as) {
-+                move(motX, motY, motZ);
-+            }
- 
+-
 -                while (this.yaw - this.lastYaw >= 180.0F) {
 -                    this.lastYaw += 360.0F;
 -                }
-+            if (!this.as) {
-+                a(getBoundingBox().c(motX, motY, motZ));
-+                recalcPosition();
-+                // Blossom end
- 
+-
 -                this.pitch = this.lastPitch + (this.pitch - this.lastPitch) * 0.2F;
 -                this.yaw = this.lastYaw + (this.yaw - this.lastYaw) * 0.2F;
 +                // Blossom - unnecessary
@@ -316,5 +300,5 @@ index 0b36daf67..fac8f1094 100644
          float f3 = this.m();
  
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
