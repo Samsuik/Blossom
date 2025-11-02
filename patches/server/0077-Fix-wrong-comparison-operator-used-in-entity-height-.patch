@@ -1,4 +1,4 @@
-From 882e1259331aedde6853f3349b813b3da4542ac0 Mon Sep 17 00:00:00 2001
+From 1f51ab1350fcd7336bb65a29bd3eb86e42c1fb71 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 1 Jul 2023 22:55:49 +0100
 Subject: [PATCH] Fix wrong comparison operator used in entity height nerf
@@ -18,10 +18,10 @@ index 81981e227..e828e79e1 100644
                      this.a(new ItemStack(block, 1, block.getDropData(this.block)), 0.0F);
                  }
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index cac3267c0..75ab81ef7 100644
+index 96b4116d9..698967094 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -113,7 +113,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -111,7 +111,7 @@ public class EntityTNTPrimed extends Entity {
          this.move_cannon(this.motX, this.motY, this.motZ); // Blossom
  
          // PaperSpigot start - Drop TNT entities above the specified height
@@ -31,5 +31,5 @@ index cac3267c0..75ab81ef7 100644
          }
          // PaperSpigot end
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

@@ -1,14 +1,14 @@
-From de2d8ace2a713747c8cd3acdc30f1d31551d3a79 Mon Sep 17 00:00:00 2001
+From edf3d3cb06b3d1d42b6cd8c74ca4c3bffe3b0d9a Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 19:04:35 +0100
 Subject: [PATCH] Allow Disabling Light Updates
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a80873c82..6da5e3b08 100644
+index 1902656ae..68feecf1b 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -400,4 +400,11 @@ public class BlossomConfig {
+@@ -402,4 +402,11 @@ public class BlossomConfig {
          leftShootingThreshold = getDouble("tnt.left-shooting-threshold", 80.0);
      }
  
@@ -47,7 +47,7 @@ index e0a25e474..686ec097e 100644
          SpigotTimings.minecraftSchedulerTimer.stopTiming(); // Spigot
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 71933c946..f4ce26fe1 100644
+index 9b8ec1f1c..8c31eb786 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -3035,6 +3035,7 @@ public abstract class World implements IBlockAccess {
@@ -59,5 +59,5 @@ index 71933c946..f4ce26fe1 100644
          int z = position.getZ();
          final Chunk chunk = this.getChunkIfLoaded(x >> 4, z >> 4);
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

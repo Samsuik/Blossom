@@ -1,14 +1,14 @@
-From 3e5a0fe73ea1c6094f920a5d38a09cd1161966ef Mon Sep 17 00:00:00 2001
+From d504c18298595cb8c0967f3dc8066c9baca3400d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 4e406d2b5..a80873c82 100644
+index 5d9b70e73..1902656ae 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -387,4 +387,17 @@ public class BlossomConfig {
+@@ -389,4 +389,17 @@ public class BlossomConfig {
          optimisedMovement = getBoolean("tnt.optimised-movement", true);
      }
  
@@ -40,7 +40,7 @@ index 331bafa03..83da9eb38 100644
          } else if (entity.motY < 0.0D) {
              entity.motY = -entity.motY;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index ccb91d402..b249ab7e0 100644
+index 9d98f3db5..e3cbffe61 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -713,7 +713,7 @@ public abstract class Entity implements ICommandListener {
@@ -100,7 +100,7 @@ index 112250e98..0b034c4c0 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 564a31f3b..71933c946 100644
+index a7a3b07cb..9b8ec1f1c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -3285,11 +3285,16 @@ public abstract class World implements IBlockAccess {
@@ -122,5 +122,5 @@ index 564a31f3b..71933c946 100644
          this.getServer().getPluginManager().callEvent(event);
  
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

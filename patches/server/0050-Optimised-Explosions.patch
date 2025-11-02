@@ -1,22 +1,24 @@
-From 04207da6c06f95ac27a61e0b3ee1c9a17bf2e865 Mon Sep 17 00:00:00 2001
+From 1c4f5838fc37e44afd30282ccc48a8c791f68d48 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e754337a0..86872886e 100644
+index 20aff9886..fac7e7f8f 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -347,4 +347,11 @@ public class BlossomConfig {
+@@ -347,4 +347,13 @@ public class BlossomConfig {
          ironGolemsTakeFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
      }
  
 +    public static boolean protectedRegions;
 +    public static boolean avoidRedundantBlockSearches;
++    public static boolean batchExplosions;
 +    private static void Explosions() {
 +        protectedRegions = getBoolean("explosions.protected-regions", true);
 +        avoidRedundantBlockSearches = getBoolean("explosions.avoid-redundant-block-searches", true);
++        batchExplosions = getBoolean("explosions.batch-explosions", true);
 +    }
 +
  }
@@ -1004,7 +1006,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 35079ee61..920872a3f 100644
+index 35079ee61..585095048 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -1029,7 +1031,7 @@ index 35079ee61..920872a3f 100644
 -        Explosion explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
 +        // Blossom start - optimised explosions
 +        Explosion explosion;
-+        if (entity instanceof EntityTNTPrimed && !((EntityTNTPrimed) entity).isRogue) {
++        if (entity instanceof EntityTNTPrimed && !((EntityTNTPrimed) entity).isRogue && me.samsuik.blossom.configuration.BlossomConfig.batchExplosions) {
 +            explosion = new me.samsuik.blossom.explosions.BlossomExplosion(this, entity, d0, d1, d2, f, flag, flag1);
 +        } else {
 +            explosion = new Explosion(this, entity, d0, d1, d2, f, flag, flag1);
@@ -1066,5 +1068,5 @@ index e9f39e233..9bcc5799c 100644
  
      public void playBlockAction(BlockPosition blockposition, Block block, int i, int j) {
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

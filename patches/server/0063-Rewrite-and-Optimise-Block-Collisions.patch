@@ -1,14 +1,14 @@
-From 2a8ab73386b5ddc72663c4edce18e9b18da5b854 Mon Sep 17 00:00:00 2001
+From 7024a91ac05d49b1e2292fdfdef2d54c4c35f105 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a48d6187d..4e406d2b5 100644
+index be2373fe7..5d9b70e73 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -378,4 +378,13 @@ public class BlossomConfig {
+@@ -380,4 +380,13 @@ public class BlossomConfig {
          activationRangeDelay = Math.max(getInt("mobs.activation-range-delay", 0) + 1, 1);
      }
  
@@ -632,7 +632,7 @@ index 907c57b8c..7ea958149 100644
          IBlockData iblockdata = (IBlockData) Block.d.a(this.blockIds[j << 8 | k << 4 | i]);
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 1e6c5bf41..ccb91d402 100644
+index 24789f104..9d98f3db5 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -696,6 +696,120 @@ public abstract class Entity implements ICommandListener {
@@ -818,10 +818,10 @@ index d50ce3490..112250e98 100644
              // PaperSpigot start - Remove entities in unloaded chunks
              if (this.inUnloadedChunk && world.paperSpigotConfig.removeUnloadedFallingBlocks) {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index cacc5c9da..cac3267c0 100644
+index a80d5f781..96b4116d9 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-@@ -110,7 +110,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -108,7 +108,7 @@ public class EntityTNTPrimed extends Entity {
          this.lastZ = this.locZ;
          this.storePosition(); // Blossom - optimised explosions
          this.motY -= 0.03999999910593033D;
@@ -852,7 +852,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 35e46942a..564a31f3b 100644
+index 5dbda2e8d..a7a3b07cb 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
@@ -1070,5 +1070,5 @@ index 35e46942a..564a31f3b 100644
                                  // PaperSpigot end
                              }
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

@@ -1,14 +1,14 @@
-From 88d5df6d92d36cdb0f1e5e884b014e6e36be7f4d Mon Sep 17 00:00:00 2001
+From 2f9004e92daa4c285b1e271ab75a6ba6a48d2e88 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e2e456662..657475f29 100644
+index a08bbf1c5..f5dacad4d 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -366,4 +366,11 @@ public class BlossomConfig {
+@@ -368,4 +368,11 @@ public class BlossomConfig {
          hopperOnlyPushIntoEmptyContainer = getBoolean("hoppers.only-push-into-empty-containers", false);
      }
  
@@ -98,7 +98,7 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 70970ccd4..1e6c5bf41 100644
+index 70970ccd4..24789f104 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -179,6 +179,85 @@ public abstract class Entity implements ICommandListener {
@@ -107,7 +107,7 @@ index 70970ccd4..1e6c5bf41 100644
      // Blossom end
 +    // Blossom start - merge cannoning entities
 +    protected final me.samsuik.blossom.entity.MergeHistory mergeHistory = new me.samsuik.blossom.entity.MergeHistory();
-+    private boolean canMergeEntity;
++    protected boolean canMergeEntity;
 +    protected int stacked = 1;
 +
 +    public final void callMergeCannonEntityEvent() {
@@ -254,7 +254,7 @@ index 2b82cd435..d50ce3490 100644
                                  if (block instanceof BlockFalling) {
                                      ((BlockFalling) block).a_(this.world, blockposition);
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 7093bc2f8..cacc5c9da 100644
+index 7093bc2f8..ffa3827e2 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -39,6 +39,8 @@ public class EntityTNTPrimed extends Entity {
@@ -266,7 +266,7 @@ index 7093bc2f8..cacc5c9da 100644
      }
  
      protected void h() {}
-@@ -51,6 +53,56 @@ public class EntityTNTPrimed extends Entity {
+@@ -51,6 +53,54 @@ public class EntityTNTPrimed extends Entity {
          return !this.dead;
      }
  
@@ -277,11 +277,10 @@ index 7093bc2f8..cacc5c9da 100644
 +            && this.fuseTicks == ((EntityTNTPrimed) entity).fuseTicks + 1;
 +    }
 +
-+    /*
 +    @Override
 +    protected void respawn() {
 +        // If this tnt isn't merged don't try to respawn
-+        if (stacked <= 1) {
++        if (stacked <= 1 || me.samsuik.blossom.configuration.BlossomConfig.batchExplosions) {
 +            return;
 +        }
 +
@@ -317,13 +316,12 @@ index 7093bc2f8..cacc5c9da 100644
 +        // Remove "temp" from the chunk
 +        chunk.b(temp);
 +    }
-+    */
 +    // Blossom end - merge cannoning entities
 +
      public void t_() {
          if (world.spigotConfig.currentPrimedTnt++ > world.spigotConfig.maxTntTicksPerTick) { return; } // Spigot
          this.lastX = this.locX;
-@@ -86,6 +138,7 @@ public class EntityTNTPrimed extends Entity {
+@@ -86,6 +136,7 @@ public class EntityTNTPrimed extends Entity {
              // CraftBukkit start - Need to reverse the order of the explosion and the entity death so we have a location for the event
              // this.die();
              if (!this.world.isClientSide) {
@@ -350,7 +348,7 @@ index 97cc040d3..e0a25e474 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index e4ff9f145..14b29ce2c 100644
+index b928f70c7..745b53bed 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {
@@ -396,5 +394,5 @@ index e4ff9f145..14b29ce2c 100644
                      entity.tickTimer.startTiming(); // Spigot
                      this.g(entity);
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
