@@ -1,4 +1,4 @@
-From e98a8a904f9ce1162a31868db96f89716e1411ef Mon Sep 17 00:00:00 2001
+From 356a060311fd8e2ca3a8e050015e8bd9670ba153 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 21 Feb 2021 22:36:38 +0000
@@ -197,7 +197,7 @@ index 2a57ffa09..934c3b34f 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 11b017f1d..089eefd05 100644
+index c259ddc3b..0ee47316a 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -141,6 +141,45 @@ public abstract class Entity implements ICommandListener {
@@ -347,7 +347,7 @@ index 4bf790cdf..98864383a 100644
              this.j(this.getType() - 1);
          }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 9d0be90ce..3225ef38c 100644
+index 8de3d7e03..12fdf10bf 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1460,25 +1460,32 @@ public abstract class World implements IBlockAccess {
@@ -397,7 +397,7 @@ index 9d0be90ce..3225ef38c 100644
      }
  
      public boolean a(WorldBorder worldborder, Entity entity) {
-@@ -2852,6 +2859,49 @@ public abstract class World implements IBlockAccess {
+@@ -2853,6 +2860,49 @@ public abstract class World implements IBlockAccess {
          return null;
      }
  
@@ -448,5 +448,5 @@ index 9d0be90ce..3225ef38c 100644
          return this.a(entity, axisalignedbb, IEntitySelector.d);
      }
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

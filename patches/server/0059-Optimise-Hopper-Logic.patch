@@ -1,4 +1,4 @@
-From 38bcf8ed2646d5182b906682ef0a87ec5a473234 Mon Sep 17 00:00:00 2001
+From 1dc17088839f4c3ded089a58d900df36d74fdf97 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
@@ -56,7 +56,7 @@ index 7e83ce3e0..0f341a1cd 100644
      public InventoryLargeChest(String s, ITileInventory itileinventory, ITileInventory itileinventory1) {
          this.a = s;
 diff --git a/src/main/java/net/minecraft/server/TileEntity.java b/src/main/java/net/minecraft/server/TileEntity.java
-index 48c6abf58..c9e93fcdb 100644
+index aed74c473..6bd686e9c 100644
 --- a/src/main/java/net/minecraft/server/TileEntity.java
 +++ b/src/main/java/net/minecraft/server/TileEntity.java
 @@ -14,6 +14,7 @@ public abstract class TileEntity {
@@ -67,7 +67,7 @@ index 48c6abf58..c9e93fcdb 100644
      private static Map<String, Class<? extends TileEntity>> f = Maps.newHashMap();
      private static Map<Class<? extends TileEntity>, String> g = Maps.newHashMap();
      protected World world;
-@@ -116,6 +117,7 @@ public abstract class TileEntity {
+@@ -121,6 +122,7 @@ public abstract class TileEntity {
  
      public void update() {
          if (this.world != null) {
@@ -75,7 +75,7 @@ index 48c6abf58..c9e93fcdb 100644
              IBlockData iblockdata = this.world.getType(this.position);
  
              this.h = iblockdata.getBlock().toLegacyData(iblockdata);
-@@ -143,6 +145,7 @@ public abstract class TileEntity {
+@@ -148,6 +150,7 @@ public abstract class TileEntity {
          return null;
      }
  
@@ -493,7 +493,7 @@ index 8d00cd0a2..f2bd10b45 100644
              if (list.size() > 0) {
                  object = (IInventory) list.get(world.random.nextInt(list.size()));
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index eb40a8708..bb273b77c 100644
+index f31ff19de..39cdee725 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1710,6 +1710,7 @@ public abstract class World implements IBlockAccess {

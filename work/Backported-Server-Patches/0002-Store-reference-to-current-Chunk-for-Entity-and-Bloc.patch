@@ -1,4 +1,4 @@
-From 792232224ab2a6c2855f88ab8f1a006c1402938c Mon Sep 17 00:00:00 2001
+From 784e4fdf002fe535ab866896b96ecfae75a019a5 Mon Sep 17 00:00:00 2001
 From: Aikar <aikar@aikar.co>
 Date: Wed, 4 Jul 2018 02:10:36 -0400
 Subject: [PATCH] Store reference to current Chunk for Entity and Block
@@ -143,19 +143,24 @@ index c4bfd5fe6..c45a57735 100644
          this.id = Entity.entityCount++;
          this.j = 1.0D;
 diff --git a/src/main/java/net/minecraft/server/TileEntity.java b/src/main/java/net/minecraft/server/TileEntity.java
-index fdcbf4434..48c6abf58 100644
+index fdcbf4434..aed74c473 100644
 --- a/src/main/java/net/minecraft/server/TileEntity.java
 +++ b/src/main/java/net/minecraft/server/TileEntity.java
-@@ -22,6 +22,23 @@ public abstract class TileEntity {
+@@ -22,6 +22,28 @@ public abstract class TileEntity {
      private int h;
      protected Block e;
  
 +    // Paper start
 +    private Chunk currentChunk = null;
 +
-+    public final Chunk getCurrentChunk() {
++    public final Chunk getCurrentChunkCached() {
 +        final Chunk chunk = this.currentChunk;
-+        return chunk != null && chunk.isLoaded() ? chunk : this.getChunkAtLocation();
++        return chunk != null && chunk.isLoaded() ? chunk : null;
++    }
++
++    public final Chunk getCurrentChunk() {
++        final Chunk chunk = this.getCurrentChunkCached();
++        return chunk != null ? chunk : this.getChunkAtLocation();
 +    }
 +
 +    public final void setCurrentChunk(Chunk chunk) {

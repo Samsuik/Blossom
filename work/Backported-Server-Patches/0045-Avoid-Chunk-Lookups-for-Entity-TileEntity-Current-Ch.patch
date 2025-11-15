@@ -1,4 +1,4 @@
-From ec36115c1689eb3a1adc4ccf23f59f1c5ec72a17 Mon Sep 17 00:00:00 2001
+From 4ae8907d24e3acea8f6ee52d4b47c0a59cd40c70 Mon Sep 17 00:00:00 2001
 From: Aikar <aikar@aikar.co>
 Date: Wed, 4 Jul 2018 03:39:51 -0400
 Subject: [PATCH] Avoid Chunk Lookups for Entity/TileEntity Current Chunk
@@ -30,7 +30,7 @@ index b017994af..a7281229f 100644
          if (this.h) {
              TileEntity tileentity = (TileEntity) this.tileEntities.remove(blockposition);
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 7374b8a34..3a6f5299a 100644
+index 7374b8a34..a4bde2add 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1477,11 +1477,15 @@ public abstract class World implements IBlockAccess {
@@ -67,12 +67,11 @@ index 7374b8a34..3a6f5299a 100644
  
                  guardEntityList = false; // Spigot
                  this.entityList.remove(this.tickPosition--); // CraftBukkit - Use field for loop variable
-@@ -1577,10 +1587,11 @@ public abstract class World implements IBlockAccess {
-             }
+@@ -1578,9 +1588,10 @@ public abstract class World implements IBlockAccess {
              // Spigot end
  
-+            net.minecraft.server.Chunk chunk = tileentity.getCurrentChunk(); // Paper
              if (!tileentity.x() && tileentity.t()) {
++                final Chunk chunk = tileentity.getCurrentChunk(); // Paper
                  BlockPosition blockposition = tileentity.getPosition();
  
 -                if (this.isLoaded(blockposition) && this.N.a(blockposition)) {
@@ -80,20 +79,21 @@ index 7374b8a34..3a6f5299a 100644
                      try {
                          tileentity.tickTimer.startTiming(); // Spigot
                          ((IUpdatePlayerListBox) tileentity).c();
-@@ -1606,8 +1617,10 @@ public abstract class World implements IBlockAccess {
+@@ -1606,8 +1617,11 @@ public abstract class World implements IBlockAccess {
                  tilesThisCycle--;
                  this.tileEntityList.remove(tileTickPosition--);
                  //this.h.remove(tileentity); // PaperSpigot - Remove unused list
 -                if (this.isLoaded(tileentity.getPosition())) {
 -                    this.getChunkAtWorldCoords(tileentity.getPosition()).e(tileentity.getPosition());
 +                // Paper start
++                final Chunk chunk = tileentity.getCurrentChunkCached();
 +                if (chunk != null) {
 +                    chunk.removeTileEntity(tileentity.getPosition());
 +                    // Paper end
                  }
              }
          }
-@@ -1635,8 +1648,11 @@ public abstract class World implements IBlockAccess {
+@@ -1635,8 +1649,11 @@ public abstract class World implements IBlockAccess {
                      }
                      // CraftBukkit end */
  
@@ -107,7 +107,7 @@ index 7374b8a34..3a6f5299a 100644
                      }
  
                      this.notify(tileentity1.getPosition());
-@@ -1695,7 +1711,8 @@ public abstract class World implements IBlockAccess {
+@@ -1695,7 +1712,8 @@ public abstract class World implements IBlockAccess {
              entity.ticksLived++;
              entity.inactiveTick();
              // PaperSpigot start - Remove entities in unloaded chunks
@@ -117,7 +117,7 @@ index 7374b8a34..3a6f5299a 100644
                      (entity instanceof EntityFallingBlock && this.paperSpigotConfig.removeUnloadedFallingBlocks) ||
                      (entity instanceof EntityTNTPrimed && this.paperSpigotConfig.removeUnloadedTNTEntities))) {
                  entity.inUnloadedChunk = true;
-@@ -1746,13 +1763,19 @@ public abstract class World implements IBlockAccess {
+@@ -1746,13 +1764,19 @@ public abstract class World implements IBlockAccess {
  
              if (!entity.ad || entity.ae != k || entity.af != l || entity.ag != i1) {
                  if (entity.loadChunks) entity.loadChunks(); // PaperSpigot - Force load chunks

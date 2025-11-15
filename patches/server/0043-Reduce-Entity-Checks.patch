@@ -1,11 +1,11 @@
-From ec2b048a75832947fde7d1de563f5b95b80da602 Mon Sep 17 00:00:00 2001
+From f13b41f6f68e47107a8fcaf275ee1752c0e4b2f0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index c06d53516..a97f9ed66 100644
+index fd65f3c44..1ed5fbf6d 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -310,4 +310,13 @@ public class BlossomConfig {
@@ -41,7 +41,7 @@ index 2dc3b1755..9facefa1f 100644
      public int b(IBlockAccess iblockaccess, BlockPosition blockposition, IBlockData iblockdata, EnumDirection enumdirection) {
          return 0;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 5564f6188..6d76f1b00 100644
+index dab8393f1..34f3c15a9 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -131,6 +131,27 @@ public abstract class Entity implements ICommandListener {
@@ -247,10 +247,10 @@ index ad2a14e63..b946211b8 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 002fa12f7..3263182c6 100644
+index 6cd2d9783..f1097f96c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -2009,7 +2009,25 @@ public abstract class World implements IBlockAccess {
+@@ -2010,7 +2010,25 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
@@ -276,7 +276,7 @@ index 002fa12f7..3263182c6 100644
          int i = MathHelper.floor(axisalignedbb.a);
          int j = MathHelper.floor(axisalignedbb.d);
          int k = MathHelper.floor(axisalignedbb.b);
-@@ -2033,7 +2051,23 @@ public abstract class World implements IBlockAccess {
+@@ -2034,7 +2052,23 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
@@ -300,7 +300,7 @@ index 002fa12f7..3263182c6 100644
          int i = MathHelper.floor(axisalignedbb.a);
          int j = MathHelper.floor(axisalignedbb.d + 1.0D);
          int k = MathHelper.floor(axisalignedbb.b);
-@@ -2060,7 +2094,45 @@ public abstract class World implements IBlockAccess {
+@@ -2061,7 +2095,45 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
@@ -347,5 +347,5 @@ index 002fa12f7..3263182c6 100644
          int j = MathHelper.floor(axisalignedbb.d + 1.0D);
          int k = MathHelper.floor(axisalignedbb.b);
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

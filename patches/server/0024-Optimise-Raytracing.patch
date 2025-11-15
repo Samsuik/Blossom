@@ -1,4 +1,4 @@
-From c8fe78b7fe19b4dfb6a6c7de0925fd68ac7fed54 Mon Sep 17 00:00:00 2001
+From 607afa68b5c5eda545e62c354ea9d4c6d3456813 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 19 Jun 2022 21:18:56 +0100
 Subject: [PATCH] Optimise Raytracing
@@ -185,7 +185,7 @@ index 1a2cdd1bc..88131b507 100644
      public IBlockData getPlacedState(World world, BlockPosition blockposition, EnumDirection enumdirection, float f, float f1, float f2, int i, EntityLiving entityliving) {
          IBlockData iblockdata = this.getBlockData();
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index ca782659a..9d0be90ce 100644
+index 8d8aab4d4..8de3d7e03 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -894,9 +894,12 @@ public abstract class World implements IBlockAccess {
@@ -356,7 +356,7 @@ index ca782659a..9d0be90ce 100644
      public void makeSound(Entity entity, String s, float f, float f1) {
          for (int i = 0; i < this.u.size(); ++i) {
              ((IWorldAccess) this.u.get(i)).a(s, entity.locX, entity.locY, entity.locZ, f, f1);
-@@ -2049,7 +2184,7 @@ public abstract class World implements IBlockAccess {
+@@ -2050,7 +2185,7 @@ public abstract class World implements IBlockAccess {
                          double d6 = axisalignedbb.b + (axisalignedbb.e - axisalignedbb.b) * (double) f1;
                          double d7 = axisalignedbb.c + (axisalignedbb.f - axisalignedbb.c) * (double) f2;
  
@@ -366,5 +366,5 @@ index ca782659a..9d0be90ce 100644
                          }
  
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

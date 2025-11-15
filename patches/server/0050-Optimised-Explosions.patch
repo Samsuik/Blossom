@@ -1,4 +1,4 @@
-From 1c4f5838fc37e44afd30282ccc48a8c791f68d48 Mon Sep 17 00:00:00 2001
+From 85a7593fd6b775dbcbdf492e18bfc399115b2838 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -1006,7 +1006,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 35079ee61..585095048 100644
+index 4269812f1..df5833c18 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -1017,7 +1017,7 @@ index 35079ee61..585095048 100644
  
      protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
          this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
-@@ -2210,12 +2211,21 @@ public abstract class World implements IBlockAccess {
+@@ -2211,12 +2212,21 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
