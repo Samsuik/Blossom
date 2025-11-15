@@ -1,11 +1,11 @@
-From 63856c19f3fe458c0e340075299edeffd777569b Mon Sep 17 00:00:00 2001
+From fe32793f28c91c278fb27b1995e1ad8111d30c70 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 6 Jul 2022 16:34:42 +0100
 Subject: [PATCH] Rewritten Data Watcher
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a1e3f2ff1..4ae76fde2 100644
+index f7ff15e1e..ee4ed004a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -324,4 +324,9 @@ public class BlossomConfig {
@@ -243,10 +243,10 @@ index 1fbbfaaed..b0d0667a9 100644
          int i = (datawatcher_watchableobject.c() << 5 | datawatcher_watchableobject.a() & 31) & 255;
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 6d76f1b00..abeb76e4a 100644
+index f48bc865c..d2a39000a 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -304,7 +304,13 @@ public abstract class Entity implements ICommandListener {
+@@ -311,7 +311,13 @@ public abstract class Entity implements ICommandListener {
          }
          // Spigot end
  
@@ -261,5 +261,5 @@ index 6d76f1b00..abeb76e4a 100644
          this.datawatcher.a(1, Short.valueOf((short) 300));
          this.datawatcher.a(3, Byte.valueOf((byte) 0));
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

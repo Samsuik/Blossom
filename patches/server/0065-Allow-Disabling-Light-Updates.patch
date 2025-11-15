@@ -1,4 +1,4 @@
-From a60e23cb3d910ad25f64db22a521bb0a56e8f69f Mon Sep 17 00:00:00 2001
+From bd84af37a863645f9614ec50adec30c66d0426dd Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 19:04:35 +0100
 Subject: [PATCH] Allow Disabling Light Updates
@@ -47,10 +47,10 @@ index e0a25e474..686ec097e 100644
          SpigotTimings.minecraftSchedulerTimer.stopTiming(); // Spigot
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 01786a9ba..d53ab6501 100644
+index 2d3c48eae..5846a8da9 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3036,6 +3036,7 @@ public abstract class World implements IBlockAccess {
+@@ -3053,6 +3053,7 @@ public abstract class World implements IBlockAccess {
       * PaperSpigot - Asynchronous lighting updates
       */
      public boolean updateLight(final EnumSkyBlock enumskyblock, final BlockPosition position) {

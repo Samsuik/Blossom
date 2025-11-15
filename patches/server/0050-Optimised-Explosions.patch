@@ -1,4 +1,4 @@
-From 85a7593fd6b775dbcbdf492e18bfc399115b2838 Mon Sep 17 00:00:00 2001
+From f9f5d66b26e6aec1f367ba97c35aa428a5e838f4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -512,7 +512,7 @@ index 3d1e583f3..815ba72d0 100644
              entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
              world.addEntity(entitytntprimed);
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index d56c007df..70970ccd4 100644
+index f5994a511..506f8fc65 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -132,6 +132,33 @@ public abstract class Entity implements ICommandListener {
@@ -1006,7 +1006,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 4269812f1..df5833c18 100644
+index d21b08a44..180a77f7f 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -1017,7 +1017,7 @@ index 4269812f1..df5833c18 100644
  
      protected World(IDataManager idatamanager, WorldData worlddata, WorldProvider worldprovider, MethodProfiler methodprofiler, boolean flag, ChunkGenerator gen, org.bukkit.World.Environment env) {
          this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
-@@ -2211,12 +2212,21 @@ public abstract class World implements IBlockAccess {
+@@ -2228,12 +2229,21 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  

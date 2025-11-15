@@ -1,4 +1,4 @@
-From 38d5f2f90bcdd52e3992b795fee9e86ea349ccd6 Mon Sep 17 00:00:00 2001
+From eda6a112cc056bda73dd6d6fc991b0501d406b17 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
@@ -40,10 +40,10 @@ index 331bafa03..83da9eb38 100644
          } else if (entity.motY < 0.0D) {
              entity.motY = -entity.motY;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 9d98f3db5..e3cbffe61 100644
+index e50044e89..4e7b94467 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -713,7 +713,7 @@ public abstract class Entity implements ICommandListener {
+@@ -720,7 +720,7 @@ public abstract class Entity implements ICommandListener {
          }
          // CraftBukkit end
  
@@ -100,10 +100,10 @@ index 112250e98..0b034c4c0 100644
                                      return;
                                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index e096f753e..01786a9ba 100644
+index 9971c2c0e..2d3c48eae 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -3286,11 +3286,16 @@ public abstract class World implements IBlockAccess {
+@@ -3303,11 +3303,16 @@ public abstract class World implements IBlockAccess {
      }
  
      public boolean a(Block block, BlockPosition blockposition, boolean flag, EnumDirection enumdirection, Entity entity, ItemStack itemstack) {

@@ -1,15 +1,15 @@
-From e4c7c8b7ca8a5b33ac9f19958aa008d93636d614 Mon Sep 17 00:00:00 2001
+From a241280ebdf06bf1ad87e2a0c1b4a6943520172f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:58:24 +0100
 Subject: [PATCH] Add EastWestPatchEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 4bf269bc4..1ad68b3e5 100644
+index a6128baed..b1c829a5f 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -386,6 +386,18 @@ public abstract class Entity implements ICommandListener {
-             && !(this instanceof EntityPlayer);
+@@ -393,6 +393,18 @@ public abstract class Entity implements ICommandListener {
+             || this.blockposition != this.lastPosition; // We can get away with just comparing the reference
      }
      // Blossom end - reduce entity checks
 +    // Blossom start - add east west patch event
@@ -27,7 +27,7 @@ index 4bf269bc4..1ad68b3e5 100644
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -732,7 +744,7 @@ public abstract class Entity implements ICommandListener {
+@@ -739,7 +751,7 @@ public abstract class Entity implements ICommandListener {
          double old_moveY = moveY;
          double old_moveZ = moveZ;
  
@@ -36,7 +36,7 @@ index 4bf269bc4..1ad68b3e5 100644
  
          AxisAlignedBB boundingBox = getBoundingBox();
          List<AxisAlignedBB> shapes = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(2);
-@@ -925,7 +937,7 @@ public abstract class Entity implements ICommandListener {
+@@ -932,7 +944,7 @@ public abstract class Entity implements ICommandListener {
              AxisAlignedBB axisalignedbb2;
              Iterator iterator1;
  
@@ -58,7 +58,7 @@ index e828e79e1..05d98dc4a 100644
  
      protected boolean s_() {
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index 75ab81ef7..01416ff07 100644
+index b6f9455e0..a6d49b65e 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -41,6 +41,7 @@ public class EntityTNTPrimed extends Entity {
@@ -70,5 +70,5 @@ index 75ab81ef7..01416ff07 100644
  
      protected void h() {}
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

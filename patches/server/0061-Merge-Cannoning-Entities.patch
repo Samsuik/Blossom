@@ -1,4 +1,4 @@
-From 2f9004e92daa4c285b1e271ab75a6ba6a48d2e88 Mon Sep 17 00:00:00 2001
+From e1727ebc10325b201ffbf91ae776c4534bfb4540 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
@@ -98,7 +98,7 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 70970ccd4..24789f104 100644
+index fbfb30d61..29a5ebe96 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -179,6 +179,85 @@ public abstract class Entity implements ICommandListener {
@@ -187,7 +187,7 @@ index 70970ccd4..24789f104 100644
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -361,6 +440,11 @@ public abstract class Entity implements ICommandListener {
+@@ -368,6 +447,11 @@ public abstract class Entity implements ICommandListener {
      }
  
      public void die() {
@@ -348,7 +348,7 @@ index 97cc040d3..e0a25e474 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index b928f70c7..745b53bed 100644
+index 015373093..ab1a799e1 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {

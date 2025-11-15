@@ -1,14 +1,14 @@
-From 9a9e04f31adcfa5bf859a1f6026cacea94c23cb5 Mon Sep 17 00:00:00 2001
+From d4e250a0386936211b9354a0184e3bbc263f9154 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 7 Jul 2023 00:14:09 +0100
 Subject: [PATCH] Optimise Projectile Logic
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 73e147f38..4bf269bc4 100644
+index 9becaee29..a6128baed 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -1203,7 +1203,7 @@ public abstract class Entity implements ICommandListener {
+@@ -1210,7 +1210,7 @@ public abstract class Entity implements ICommandListener {
          }
      }
  

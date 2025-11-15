@@ -1,4 +1,4 @@
-From f13b41f6f68e47107a8fcaf275ee1752c0e4b2f0 Mon Sep 17 00:00:00 2001
+From a666058f3a214f1a68dfab55e077db00eba5fcf1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
@@ -41,7 +41,7 @@ index 2dc3b1755..9facefa1f 100644
      public int b(IBlockAccess iblockaccess, BlockPosition blockposition, IBlockData iblockdata, EnumDirection enumdirection) {
          return 0;
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index dab8393f1..34f3c15a9 100644
+index dab8393f1..ac3b17207 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -131,6 +131,27 @@ public abstract class Entity implements ICommandListener {
@@ -72,7 +72,7 @@ index dab8393f1..34f3c15a9 100644
  
      // Spigot start
      public Timing tickTimer = SpigotTimings.getEntityTimings(this); // Spigot
-@@ -253,6 +274,12 @@ public abstract class Entity implements ICommandListener {
+@@ -253,6 +274,19 @@ public abstract class Entity implements ICommandListener {
          this.c(1);
      }
      // Paper end - make end portalling safe
@@ -81,11 +81,18 @@ index dab8393f1..34f3c15a9 100644
 +        return me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks
 +            && !(this instanceof EntityPlayer);
 +    }
++
++    protected final boolean shouldCheck(final int interval) {
++        return !this.reduceEntityChecks()
++            || this.ticksLived % interval == 0
++            || this.noDamageTicks < 20 // Always check if we have recently taken damage
++            || this.blockposition != this.lastPosition; // We can get away with just comparing the reference
++    }
 +    // Blossom end - reduce entity checks
  
      public Entity(World world) {
          this.id = Entity.entityCount++;
-@@ -354,6 +381,7 @@ public abstract class Entity implements ICommandListener {
+@@ -354,6 +388,7 @@ public abstract class Entity implements ICommandListener {
          this.locX = d0;
          this.locY = d1;
          this.locZ = d2;
@@ -93,7 +100,7 @@ index dab8393f1..34f3c15a9 100644
          float f = this.width / 2.0F;
          float f1 = this.length;
  
-@@ -517,7 +545,7 @@ public abstract class Entity implements ICommandListener {
+@@ -517,7 +552,7 @@ public abstract class Entity implements ICommandListener {
      }
  
      private boolean b(AxisAlignedBB axisalignedbb) {
@@ -102,29 +109,29 @@ index dab8393f1..34f3c15a9 100644
      }
  
      /**
-@@ -897,9 +925,19 @@ public abstract class Entity implements ICommandListener {
+@@ -897,9 +932,19 @@ public abstract class Entity implements ICommandListener {
              */
              // CraftBukkit end
  
 -            boolean flag2 = this.U();
 +            // Blossom start - reduce entity checks
 +            boolean flag2 = false;
- 
--            if (this.world.e(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D))) {
-+            if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || ticksLived % 8 == 0 || blockposition != lastPosition) {
-+                this.isInHotBlock = this.world.e(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D));
++
++            if (this.shouldCheck(8)) {
++                this.isInHotBlock = this.world.hasLavaOrFire(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D), this);
 +            }
 +
 +            if (this.fireTicks > 0 || this.isInHotBlock) {
 +                flag2 = this.U();
 +            }
-+
+ 
+-            if (this.world.e(this.getBoundingBox().shrink(0.001D, 0.001D, 0.001D))) {
 +            if (this.isInHotBlock) {
-+                // Blossom end
++                // Blossom end - reduce entity checks
                  this.burn(1);
                  if (!flag2) {
                      ++this.fireTicks;
-@@ -934,13 +972,35 @@ public abstract class Entity implements ICommandListener {
+@@ -934,13 +979,35 @@ public abstract class Entity implements ICommandListener {
          this.locY = this.getBoundingBox().b;
          this.locZ = (this.getBoundingBox().c + this.getBoundingBox().f) / 2.0D;
          this.hasMoved = locX != lastX || locY != lastY || locZ != lastZ; // Blossom
@@ -137,7 +144,7 @@ index dab8393f1..34f3c15a9 100644
  
 +    // Blossom start - reduce entity checks
 +    protected void triggerSurroundingBlocks() {
-+        if (!this.isInBlock && this.ticksLived % 20 != 0 && this.blockposition == this.lastPosition) {
++        if (!this.isInBlock || !this.shouldCheck(20)) {
 +            return;
 +        }
 +
@@ -152,30 +159,30 @@ index dab8393f1..34f3c15a9 100644
 +    }
 +
      protected void checkBlockCollisions() {
-+        if (this.reduceEntityChecks() && !isCannoningEntity) {
-+            triggerSurroundingBlocks();
++        if (this.reduceEntityChecks() && !this.isCannoningEntity) {
++            this.triggerSurroundingBlocks();
 +            return;
 +        }
 +        // Blossom end
          BlockPosition blockposition = new BlockPosition(this.getBoundingBox().a + 0.001D, this.getBoundingBox().b + 0.001D, this.getBoundingBox().c + 0.001D);
          BlockPosition blockposition1 = new BlockPosition(this.getBoundingBox().d - 0.001D, this.getBoundingBox().e - 0.001D, this.getBoundingBox().f - 0.001D);
  
-@@ -1133,7 +1193,13 @@ public abstract class Entity implements ICommandListener {
+@@ -1133,7 +1200,13 @@ public abstract class Entity implements ICommandListener {
      }
  
      public boolean ab() {
 -        return this.world.a(this.getBoundingBox().grow(-0.10000000149011612D, -0.4000000059604645D, -0.10000000149011612D), Material.LAVA);
 +        // Blossom start - reduce entity checks
-+        if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 20 == 0 || blockposition != lastPosition) {
++        if (this.shouldCheck(10)) {
 +            this.isInLava = this.world.a(this.getBoundingBox().grow(-0.10000000149011612D, -0.4000000059604645D, -0.10000000149011612D), Material.LAVA);
 +        }
 +
 +        return this.isInLava;
-+        // Blossom end
++        // Blossom end - reduce entity checks
      }
  
      public void a(float f, float f1, float f2) {
-@@ -1612,10 +1678,21 @@ public abstract class Entity implements ICommandListener {
+@@ -1612,10 +1685,21 @@ public abstract class Entity implements ICommandListener {
          return !this.dead;
      }
  
@@ -190,10 +197,10 @@ index dab8393f1..34f3c15a9 100644
          if (this.noclip) {
              return false;
          } else {
-+            if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks) {
-+                return isHeadInBlock();
++            if (this.reduceEntityChecks()) {
++                return this.isHeadInBlock();
 +            }
-+            // Blossom end
++            // Blossom end - reduce entity checks
              BlockPosition.MutableBlockPosition blockposition_mutableblockposition = new BlockPosition.MutableBlockPosition(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
  
              for (int i = 0; i < 8; ++i) {
@@ -211,7 +218,7 @@ index 5f4bc4225..09df308b6 100644
              // PaperSpigot start - Allow nerfed mobs to jump
              if (goalFloat != null) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index ad2a14e63..b946211b8 100644
+index ad2a14e63..410c778ae 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -176,7 +176,7 @@ public abstract class EntityLiving extends Entity {
@@ -219,7 +226,7 @@ index ad2a14e63..b946211b8 100644
  
          if (this.isAlive()) {
 -            if (this.inBlock()) {
-+            if ((!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 10 == 0 && this.noDamageTicks < (float) this.maxNoDamageTicks / 2.0F) && this.inBlock()) { // Blossom
++            if (this.shouldCheck(10) && this.inBlock()) { // Blossom - reduce entity checks
                  this.damageEntity(DamageSource.STUCK, 1.0F);
              } else if (flag && !this.world.getWorldBorder().a(this.getBoundingBox())) {
                  double d0 = this.world.getWorldBorder().a((Entity) this) + this.world.getWorldBorder().getDamageBuffer();
@@ -229,11 +236,11 @@ index ad2a14e63..b946211b8 100644
          if (this.isAlive()) {
 -            if (this.a(Material.WATER)) {
 +            // Blossom start - reduce entity checks
-+            if (!me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks || this.ticksLived % 20 == 0) {
++            if (this.shouldCheck(10)) {
 +                this.isDrowning = this.a(Material.WATER);
 +            }
 +            if (this.isDrowning) {
-+                // Blossom end
++                // Blossom end - reduce entity checks
                  if (!this.aY() && !this.hasEffect(MobEffectList.WATER_BREATHING.id) && !flag1) {
                      this.setAirTicks(this.j(this.getAirTicks()));
                      if (this.getAirTicks() == -20) {
@@ -247,7 +254,7 @@ index ad2a14e63..b946211b8 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 6cd2d9783..f1097f96c 100644
+index 6cd2d9783..6270195d9 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -2010,7 +2010,25 @@ public abstract class World implements IBlockAccess {
@@ -270,37 +277,54 @@ index 6cd2d9783..f1097f96c 100644
 +
 +    public boolean containsLiquid(AxisAlignedBB axisalignedbb, boolean fullCheck) {
 +        if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks && !fullCheck) {
-+            return isInLiquid(axisalignedbb);
++            return this.isInLiquid(axisalignedbb);
 +        }
-+        // Blossom end
++        // Blossom end - reduce entity checks
          int i = MathHelper.floor(axisalignedbb.a);
          int j = MathHelper.floor(axisalignedbb.d);
          int k = MathHelper.floor(axisalignedbb.b);
-@@ -2034,7 +2052,23 @@ public abstract class World implements IBlockAccess {
+@@ -2034,7 +2052,40 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
 +    // Blossom start - reduce entity checks
 +    private boolean isInHotBlock(AxisAlignedBB bb) {
 +        int x = MathHelper.floor((bb.a + bb.d) / 2);
-+        int y = MathHelper.floor(bb.e);
 +        int z = MathHelper.floor((bb.c + bb.f) / 2);
 +
-+        IBlockData iblockdata = getTypeIfLoaded(x, y, z);
-+        if (iblockdata == null) return false;
-+        Block block = iblockdata.getBlock();
-+        return block == Blocks.FIRE || block == Blocks.FLOWING_LAVA || block == Blocks.LAVA;
++        Chunk chunk = this.getChunkIfLoaded(x >> 4, z >> 4);
++        if (chunk == null) {
++            return false;
++        }
++
++        int minY = MathHelper.floor(bb.b);
++        int maxY = MathHelper.floor(bb.e);
++
++        for (int y = minY; y <= maxY; ++y) {
++            IBlockData iblockdata = chunk.getBlockData(x, y, z);
++            Block block = iblockdata.getBlock();
++
++            if (block == Blocks.FIRE || block == Blocks.FLOWING_LAVA || block == Blocks.LAVA) {
++                return true;
++            }
++        }
++
++        return false;
 +    }
 +
      public boolean e(AxisAlignedBB axisalignedbb) {
-+        if (me.samsuik.blossom.configuration.BlossomConfig.reduceEntityChecks) {
-+            return isInHotBlock(axisalignedbb);
++        return this.hasLavaOrFire(axisalignedbb, null);
++    }
++
++    public final boolean hasLavaOrFire(AxisAlignedBB axisalignedbb, Entity entity) {
++        if (entity != null && entity.reduceEntityChecks()) {
++            return this.isInHotBlock(axisalignedbb);
 +        }
-+        // Blossom end
++        // Blossom end - reduce entity checks
          int i = MathHelper.floor(axisalignedbb.a);
          int j = MathHelper.floor(axisalignedbb.d + 1.0D);
          int k = MathHelper.floor(axisalignedbb.b);
-@@ -2061,7 +2095,45 @@ public abstract class World implements IBlockAccess {
+@@ -2061,7 +2112,45 @@ public abstract class World implements IBlockAccess {
          return false;
      }
  
@@ -339,10 +363,10 @@ index 6cd2d9783..f1097f96c 100644
 +    }
 +
      public boolean a(AxisAlignedBB axisalignedbb, Material material, Entity entity) {
-+        if (entity.reduceEntityChecks()) {
-+            return applyMaterialMotion(axisalignedbb, entity, material);
++        if (entity.fireTicks <= 0 && entity.reduceEntityChecks()) {
++            return this.applyMaterialMotion(axisalignedbb, entity, material);
 +        }
-+        // Blossom end
++        // Blossom end - reduce entity checks
          int i = MathHelper.floor(axisalignedbb.a);
          int j = MathHelper.floor(axisalignedbb.d + 1.0D);
          int k = MathHelper.floor(axisalignedbb.b);
