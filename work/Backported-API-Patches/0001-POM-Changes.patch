@@ -1,0 +1,96 @@
+From 292a3dc32cf12ace1ad6be6ed3056af2e7915347 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 12 Jun 2022 19:57:24 +0100
+Subject: [PATCH] POM Changes
+
+
+diff --git a/pom.xml b/pom.xml
+index b61d116d..cc2ae5d4 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -4,18 +4,18 @@
+     <modelVersion>4.0.0</modelVersion>
+ 
+     <parent>
+-        <groupId>net.techcable.tacospigot</groupId>
++        <groupId>me.samsuik.blossom</groupId>
+         <artifactId>parent</artifactId>
+         <version>dev-SNAPSHOT</version>
+     </parent>
+ 
+-    <groupId>net.techcable.tacospigot</groupId>
++    <groupId>me.samsuik.blossom</groupId>
+     <artifactId>api</artifactId>
+     <version>1.8.8-R0.2-SNAPSHOT</version>
+     <packaging>jar</packaging>
+ 
+-    <name>TacoSpigot-API</name>
+-    <url>https://github.com/TacoSpigot</url>
++    <name>Blossom-API</name>
++    <url>https://github.com/Samsuik/Blossom</url>
+     <description>An enhanced plugin API for Minecraft servers.</description>
+ 
+     <properties>
+@@ -95,7 +95,7 @@
+         <dependency>
+             <groupId>net.md-5</groupId>
+             <artifactId>bungeecord-chat</artifactId>
+-            <version>1.8-SNAPSHOT</version>
++            <version>1.16-R0.3</version>
+             <type>jar</type>
+             <scope>compile</scope>
+         </dependency>
+@@ -121,26 +121,12 @@
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-compiler-plugin</artifactId>
+                 <!-- versions after this appear to be broken -->
+-                <version>3.1</version>
+-                <configuration>
+-                    <!-- we use the Eclipse compiler as it doesn't need a JDK -->
+-                    <compilerId>eclipse</compilerId>
+-                    <!-- source and target are ignored if this isn't true -->
+-                    <optimize>true</optimize>
+-                </configuration>
+-                <dependencies>
+-                    <!-- we need our custom version as it fixes some bugs on case sensitive file systems -->
+-                    <dependency>
+-                        <groupId>org.codehaus.plexus</groupId>
+-                        <artifactId>plexus-compiler-eclipse</artifactId>
+-                        <version>2.5.0-spigotmc</version>
+-                    </dependency>
+-                </dependencies>
++                <version>3.8.1</version>
+             </plugin>
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-shade-plugin</artifactId>
+-                <version>2.3</version>
++                <version>3.3.0</version>
+                 <executions>
+                     <execution>
+                         <phase>package</phase>
+diff --git a/src/main/java/org/spigotmc/CustomTimingsHandler.java b/src/main/java/org/spigotmc/CustomTimingsHandler.java
+index 7e89b97b..420e72d7 100644
+--- a/src/main/java/org/spigotmc/CustomTimingsHandler.java
++++ b/src/main/java/org/spigotmc/CustomTimingsHandler.java
+@@ -30,7 +30,7 @@ import co.aikar.timings.NullTimingHandler;
+ import co.aikar.timings.Timing;
+ import co.aikar.timings.Timings;
+ import co.aikar.timings.TimingsManager;
+-import sun.reflect.Reflection;
++// import sun.reflect.Reflection; // Blossom - yeah no
+ 
+ import java.lang.reflect.Method;
+ import java.util.logging.Level;
+@@ -52,7 +52,7 @@ public final class CustomTimingsHandler {
+ 
+         Plugin plugin = null;
+         try {
+-             plugin = TimingsManager.getPluginByClassloader(Reflection.getCallerClass(2));
++             // plugin = TimingsManager.getPluginByClassloader(Reflection.getCallerClass(2)); // Blossom - not today, sorry
+         } catch (Exception ignored) {}
+ 
+         new AuthorNagException("Deprecated use of CustomTimingsHandler. Please Switch to Timings.of ASAP").printStackTrace();
+-- 
+2.50.1 (Apple Git-155)
+

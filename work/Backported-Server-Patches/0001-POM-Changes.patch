@@ -1,0 +1,147 @@
+From ab162955d6e1bc0a11438c8499eca90f48ee6bbb Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 12 Jun 2022 19:57:36 +0100
+Subject: [PATCH] POM Changes
+
+
+diff --git a/pom.xml b/pom.xml
+index 85ff12de2..dcf3171af 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -1,12 +1,12 @@
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+     <modelVersion>4.0.0</modelVersion>
+-    <groupId>net.techcable.tacospigot</groupId>
++    <groupId>me.samsuik.blossom</groupId>
+     <artifactId>server</artifactId>
+     <packaging>jar</packaging>
+     <version>1.8.8-R0.2-SNAPSHOT</version>
+-    <name>TacoSpigot</name>
+-    <url>https://github.com/TacoSpigot</url>
++    <name>Blossom</name>
++    <url>https://github.com/Samsuik/Blossom</url>
+ 
+     <properties>
+         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+@@ -22,7 +22,7 @@
+     </properties>
+ 
+     <parent>
+-        <groupId>net.techcable.tacospigot</groupId>
++        <groupId>me.samsuik.blossom</groupId>
+         <artifactId>parent</artifactId>
+         <version>dev-SNAPSHOT</version>
+         <relativePath>../pom.xml</relativePath>
+@@ -37,10 +37,10 @@
+         <dependency>
+             <groupId>it.unimi.dsi</groupId>
+             <artifactId>fastutil</artifactId>
+-            <version>7.0.12</version>
++            <version>8.5.12</version>
+         </dependency>
+         <dependency>
+-            <groupId>net.techcable.tacospigot</groupId>
++            <groupId>me.samsuik.blossom</groupId>
+             <artifactId>api</artifactId>
+             <version>${project.version}</version>
+             <type>jar</type>
+@@ -115,8 +115,8 @@
+         </pluginRepository>
+         <!-- PaperSpigot - Repo for gitdescribe -->
+         <pluginRepository>
+-            <id>destroystokyo</id>
+-            <url>https://ci.destroystokyo.com/plugin/repository/everything/</url>
++            <id>papermc</id>
++            <url>https://repo.papermc.io/repository/maven-public/</url>
+         </pluginRepository>
+     </pluginRepositories>
+ 
+@@ -129,7 +129,7 @@
+             <artifactId>gitdescribe-maven-plugin</artifactId>
+             <version>1.3</version>
+             <configuration>
+-                <outputPrefix>git-TacoSpigot-</outputPrefix>
++                <outputPrefix>git-Blossom-</outputPrefix>
+                 <scmDirectory>..</scmDirectory>
+             </configuration>
+             <executions>
+@@ -144,7 +144,7 @@
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-jar-plugin</artifactId>
+-                <version>2.5</version>
++                <version>3.2.0</version>
+                 <configuration>
+                     <forceCreation>true</forceCreation> <!-- Required to prevent shading the jar multiple times -->
+                     <archive>
+@@ -228,7 +228,7 @@
+             <plugin>
+                 <groupId>net.md-5</groupId>
+                 <artifactId>specialsource-maven-plugin</artifactId>
+-                <version>1.2.1</version>
++		        <version>1.2.4</version>
+                 <executions>
+                     <execution>
+                         <phase>package</phase>
+@@ -246,21 +246,7 @@
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-compiler-plugin</artifactId>
+                 <!-- versions after this appear to be broken -->
+-                <version>3.1</version>
+-                <configuration>
+-                    <!-- we use the Eclipse compiler as it doesn't need a JDK -->
+-                    <compilerId>eclipse</compilerId>
+-                    <!-- source and target are ignored if this isn't true -->
+-                    <optimize>true</optimize>
+-                </configuration>
+-                <dependencies>
+-                    <!-- we need our custom version as it fixes some bugs on case sensitive file systems -->
+-                    <dependency>
+-                        <groupId>org.codehaus.plexus</groupId>
+-                        <artifactId>plexus-compiler-eclipse</artifactId>
+-                        <version>2.5.0-spigotmc</version>
+-                    </dependency>
+-                </dependencies>
++                <version>3.8.1</version>
+             </plugin>
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index a5bbd8b71..569a8846b 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -20,6 +20,8 @@ public class Main {
+     public static boolean useConsole = true;
+ 
+     public static void main(String[] args) {
++        // Blossom start - they likely have a good idea of what they're doing
++        /*
+         if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8)) {
+             System.err.println("TacoSpigot requires java 8");
+             System.err.println("Oracle dropped all support for java " + SystemUtils.JAVA_VERSION);
+@@ -27,6 +29,8 @@ public class Main {
+             System.err.println("Shutting down");
+             System.exit(1);
+         }
++        */
++        // Blossom end
+         // Todo: Installation script
+         OptionParser parser = new OptionParser() {
+             {
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+index 6549e73bc..49f1ab608 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+@@ -11,7 +11,7 @@ public final class Versioning {
+     public static String getBukkitVersion() {
+         String result = "Unknown-Version";
+ 
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/net.techcable.tacospigot/api/pom.properties");
++        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/me.samsuik.blossom/api/pom.properties");
+         Properties properties = new Properties();
+ 
+         if (stream != null) {
+-- 
+2.50.1 (Apple Git-155)
+

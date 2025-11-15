@@ -16,6 +16,8 @@ function applyPatch {
     git branch -f upstream "$branch" >/dev/null
 
     cd "$basedir"
+    # rm -rf "$target"
+
     if [ ! -d  "$target" ]; then
         git clone "$what" "$target"
     fi

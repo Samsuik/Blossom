@@ -1,0 +1,187 @@
+From 8571fd29773d997f1947e29eaec8dae8bf17b49c Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 5 Jul 2022 18:08:08 +0100
+Subject: [PATCH] FPS Command
+
+
+diff --git a/src/main/java/me/samsuik/blossom/visuals/gui/FPSGUI.java b/src/main/java/me/samsuik/blossom/visuals/gui/FPSGUI.java
+new file mode 100644
+index 00000000..38a4c554
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/visuals/gui/FPSGUI.java
+@@ -0,0 +1,109 @@
++package me.samsuik.blossom.visuals.gui;
++
++import me.samsuik.blossom.visuals.Visuals;
++import org.bukkit.Bukkit;
++import org.bukkit.ChatColor;
++import org.bukkit.Material;
++import org.bukkit.entity.Player;
++import org.bukkit.event.inventory.InventoryClickEvent;
++import org.bukkit.inventory.Inventory;
++import org.bukkit.inventory.InventoryHolder;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++
++import java.util.EnumMap;
++import java.util.HashMap;
++import java.util.Map;
++
++public class FPSGUI {
++
++    private static final FPSGUI FPS_GUI = new FPSGUI();
++
++    public static FPSGUI getInstance() {
++        return FPS_GUI;
++    }
++
++    private final EnumMap<Visuals.VisualType, FPSIcon> iconMap = new EnumMap<>(Visuals.VisualType.class);
++    private final Map<Integer, Visuals.VisualType>     slotMap = new HashMap<>();
++
++    private FPSGUI() {
++        iconMap.put(Visuals.VisualType.TNT_VISIBILITY, new FPSIcon(Material.TNT, ChatColor.RED, 12));
++        iconMap.put(Visuals.VisualType.SAND_VISIBILITY, new FPSIcon(Material.SAND, ChatColor.YELLOW, 14));
++        iconMap.put(Visuals.VisualType.EXPLOSIONS, new FPSIcon(Material.WEB, ChatColor.WHITE, 20));
++        iconMap.put(Visuals.VisualType.PISTONS, new FPSIcon(Material.PISTON_BASE, ChatColor.GOLD, 21));
++        iconMap.put(Visuals.VisualType.MINIMAL, new FPSIcon(Material.STONE_SLAB2, ChatColor.GOLD, 22));
++        iconMap.put(Visuals.VisualType.SPAWNERS, new FPSIcon(Material.MOB_SPAWNER, ChatColor.DARK_GRAY, 23));
++        iconMap.put(Visuals.VisualType.REDSTONE, new FPSIcon(Material.REDSTONE, ChatColor.DARK_RED, 24));
++        iconMap.put(Visuals.VisualType.LIGHTING, new FPSIcon(Material.GLOWSTONE, ChatColor.YELLOW, 30));
++        iconMap.put(Visuals.VisualType.FLASHING_TNT, new FPSIcon(Material.REDSTONE_LAMP_OFF, ChatColor.RED, 32));
++        iconMap.put(Visuals.VisualType.ENCHANTMENT_GLINT, new FPSIcon(Material.ENCHANTED_BOOK, ChatColor.DARK_PURPLE, 40));
++        iconMap.forEach((key, value) -> slotMap.put(value.slot, key));
++    }
++
++    public void onClick(InventoryClickEvent event) {
++        Inventory inventory = event.getClickedInventory();
++
++        if (inventory == null || !(inventory.getHolder() instanceof Holder)) {
++            return;
++        }
++
++        int slot = event.getSlot();
++        Visuals.VisualType setting = slotMap.get(slot);
++
++        if (setting != null) {
++            FPSIcon icon = iconMap.get(setting);
++            Player player = (Player) event.getWhoClicked();
++
++            Visuals visibility = player.getVisuals();
++            visibility.toggle(setting);
++            String state = visibility.isEnabled(setting) ? "Enabled" : "Disabled";
++            player.sendMessage(ChatColor.translateAlternateColorCodes('&', " &7| &e" + state + " &7" + setting.getFriendlyName()));
++
++            inventory.setItem(slot, icon.getItemStack(player, setting));
++        }
++
++        event.setCancelled(true);
++    }
++
++    public void showTo(Player player) {
++        player.openInventory(createInventory(player));
++    }
++
++    private Inventory createInventory(Player player) {
++        Inventory inventory = Bukkit.createInventory(new Holder(), 54, "FPS Menu");
++
++        for (int i = 0; i < inventory.getSize(); ++i) {
++            int column = i % 9;
++            int row    = (i + 1) / 9;
++
++            int background = column   < 1 || column  > 7 ? 15 // make edges black
++                           : (column  < 2 || column  > 6) && (row == 1 || row == 4) ? 0 // adjacent white side pieces
++                           : (column  < 3 || column  > 5) && (row == 0 || row == 5) ? 7 // top and bottom greys
++                           : (column >= 3 && column <= 5) && (row > 0 && row < 5) ||
++                             (column == 2 || column == 6) && (row == 2 || row == 3) ? 1 : 4; // centre part
++
++            ItemStack itemstack = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) background);
++            ItemMeta meta = itemstack.getItemMeta();
++            meta.setDisplayName(ChatColor.GRAY + "");
++            itemstack.setItemMeta(meta);
++
++            inventory.setItem(i, itemstack);
++        }
++
++        for (Map.Entry<Visuals.VisualType, FPSIcon> entry : iconMap.entrySet()) {
++            FPSIcon icon = entry.getValue();
++            ItemStack itemstack = icon.getItemStack(player, entry.getKey());
++            inventory.setItem(icon.slot, itemstack);
++        }
++
++        return inventory;
++    }
++
++    static class Holder implements InventoryHolder {
++        @Override
++        public Inventory getInventory() {
++            return null;
++        }
++    }
++
++}
+diff --git a/src/main/java/me/samsuik/blossom/visuals/gui/FPSIcon.java b/src/main/java/me/samsuik/blossom/visuals/gui/FPSIcon.java
+new file mode 100644
+index 00000000..bd569694
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/visuals/gui/FPSIcon.java
+@@ -0,0 +1,40 @@
++package me.samsuik.blossom.visuals.gui;
++
++import me.samsuik.blossom.visuals.Visuals;
++import org.bukkit.ChatColor;
++import org.bukkit.Material;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.ItemStack;
++import org.bukkit.inventory.meta.ItemMeta;
++
++public class FPSIcon {
++
++    final Material material;
++    final ChatColor colour;
++    final int slot;
++
++    public FPSIcon(Material material, ChatColor colour, int slot) {
++        this.material = material;
++        this.colour = colour;
++        this.slot = slot;
++    }
++
++    public ItemStack getItemStack(Player player, Visuals.VisualType setting) {
++        Visuals visibility = player.getVisuals();
++
++        // Get the current state as a string
++        String state = visibility.isEnabled(setting)
++            ? "Enabled" : "Disabled";
++
++        // Friendly name as a component
++        ItemStack itemstack = new ItemStack(material);
++        ItemMeta meta = itemstack.getItemMeta();
++
++        // Set the display name
++        meta.setDisplayName(colour + setting.getFriendlyName() + " " + ChatColor.GRAY + state);
++
++        itemstack.setItemMeta(meta);
++        return itemstack;
++    }
++
++}
+diff --git a/src/main/java/org/bukkit/plugin/SimplePluginManager.java b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+index 1325b032..cdc5d7e8 100644
+--- a/src/main/java/org/bukkit/plugin/SimplePluginManager.java
++++ b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+@@ -489,6 +489,12 @@ public final class SimplePluginManager implements PluginManager {
+     }
+ 
+     private void fireEvent(Event event) {
++        // Blossom start - fps command
++        if (event instanceof org.bukkit.event.inventory.InventoryClickEvent) {
++            me.samsuik.blossom.visuals.gui.FPSGUI.getInstance().onClick((org.bukkit.event.inventory.InventoryClickEvent) event);
++        }
++        // Blossom end
++
+         HandlerList handlers = event.getHandlers();
+         RegisteredListener[] listeners = handlers.getRegisteredListeners();
+ 
+-- 
+2.50.1 (Apple Git-155)
+

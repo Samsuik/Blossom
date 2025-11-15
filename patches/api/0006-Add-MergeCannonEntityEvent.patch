@@ -1,0 +1,47 @@
+From 85f66628e6501b6fdf2d76b5df3a50fb894b2c23 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Mon, 28 Jul 2025 21:04:15 +0100
+Subject: [PATCH] Add MergeCannonEntityEvent
+
+
+diff --git a/src/main/java/me/samsuik/blossom/events/entity/MergeCannonEntityEvent.java b/src/main/java/me/samsuik/blossom/events/entity/MergeCannonEntityEvent.java
+new file mode 100644
+index 00000000..85bb624a
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/events/entity/MergeCannonEntityEvent.java
+@@ -0,0 +1,32 @@
++package me.samsuik.blossom.events.entity;
++
++import org.bukkit.entity.Entity;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.entity.EntityEvent;
++
++public final class MergeCannonEntityEvent extends EntityEvent {
++    private static final HandlerList HANDLERS = new HandlerList();
++    private boolean mergeEntity;
++
++    public MergeCannonEntityEvent(Entity what, boolean merge) {
++        super(what);
++        this.mergeEntity = merge;
++    }
++
++    public boolean canMergeEntity() {
++        return this.mergeEntity;
++    }
++
++    public void setMergeEntity(boolean merge) {
++        this.mergeEntity = merge;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return HANDLERS;
++    }
++
++    public static HandlerList getHandlerList() {
++        return HANDLERS;
++    }
++}
+-- 
+2.50.1 (Apple Git-155)
+
