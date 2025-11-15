@@ -1,11 +1,11 @@
-From d5538711e07c612d9f306690e79a5dad84f9ed73 Mon Sep 17 00:00:00 2001
+From cae5103dccca0f364214f802d3bb96cf6b60fdaf Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:15:50 +0100
 Subject: [PATCH] Generic Entity Optimisations
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 089eefd05..5564f6188 100644
+index 0ee47316a..dab8393f1 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -864,7 +864,7 @@ public abstract class Entity implements ICommandListener {
@@ -44,7 +44,7 @@ index 089eefd05..5564f6188 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 8cc0cef0b..ad2a14e63 100644
+index 8cc0cef0b..b7f561cbf 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -224,7 +224,7 @@ public abstract class EntityLiving extends Entity {
@@ -52,7 +52,7 @@ index 8cc0cef0b..ad2a14e63 100644
          }
  
 -        if (this.isAlive() && this.U()) {
-+        if (this.fireTicks != 0 && this.isAlive() && this.U()) { // Blossom
++        if (this.fireTicks > 0 && this.isAlive() && this.U()) { // Blossom
              this.extinguish();
          }
  
@@ -65,5 +65,5 @@ index 8cc0cef0b..ad2a14e63 100644
  
          isTickingEffects = true; // CraftBukkit
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
