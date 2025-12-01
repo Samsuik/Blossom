@@ -1,4 +1,4 @@
-From cae5103dccca0f364214f802d3bb96cf6b60fdaf Mon Sep 17 00:00:00 2001
+From c89abdc5c7fe91eeeaded4de9b74669fbe77cd67 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:15:50 +0100
 Subject: [PATCH] Generic Entity Optimisations
@@ -44,7 +44,7 @@ index 0ee47316a..dab8393f1 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 8cc0cef0b..b7f561cbf 100644
+index 8cc0cef0b..cd9447c95 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -224,7 +224,7 @@ public abstract class EntityLiving extends Entity {
@@ -60,7 +60,7 @@ index 8cc0cef0b..b7f561cbf 100644
      // CraftBukkit end
  
      protected void bi() {
-+        if (this.effects.isEmpty() && this.effectsToProcess.isEmpty()) return; // Blossom
++        if (!this.updateEffects && this.effects.isEmpty() && this.effectsToProcess.isEmpty()) return; // Blossom
          Iterator iterator = this.effects.keySet().iterator();
  
          isTickingEffects = true; // CraftBukkit
