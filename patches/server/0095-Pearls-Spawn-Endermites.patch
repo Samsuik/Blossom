@@ -1,4 +1,4 @@
-From 6c6400f229a3e4b468cb40d85e5c2b4e343d78cb Mon Sep 17 00:00:00 2001
+From 42bf3d7e596fb1d5481c625fe1de700021bb81e3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 21:56:38 +0100
 Subject: [PATCH] Pearls Spawn Endermites
@@ -20,10 +20,10 @@ index 1b8001c0d..3b8f89109 100644
      
  }
 diff --git a/src/main/java/net/minecraft/server/EntityEnderPearl.java b/src/main/java/net/minecraft/server/EntityEnderPearl.java
-index abb88858f..5c8df35e9 100644
+index 8a229f772..74d1a7f0f 100644
 --- a/src/main/java/net/minecraft/server/EntityEnderPearl.java
 +++ b/src/main/java/net/minecraft/server/EntityEnderPearl.java
-@@ -90,7 +90,7 @@ public class EntityEnderPearl extends EntityProjectile {
+@@ -92,7 +92,7 @@ public class EntityEnderPearl extends EntityProjectile {
                      Bukkit.getPluginManager().callEvent(teleEvent);
  
                      if (!teleEvent.isCancelled() && !entityplayer.playerConnection.isDisconnected()) {

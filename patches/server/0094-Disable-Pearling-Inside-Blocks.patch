@@ -1,4 +1,4 @@
-From 2c0f2e899bf882cd2182a6d1df12372b75c4d21c Mon Sep 17 00:00:00 2001
+From e149cb289cd16ed2bd8e0a90a4b975dd400528e3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 18:18:33 +0100
 Subject: [PATCH] Disable Pearling Inside Blocks
@@ -20,7 +20,7 @@ index d9508f6e0..1b8001c0d 100644
      
  }
 diff --git a/src/main/java/net/minecraft/server/EntityEnderPearl.java b/src/main/java/net/minecraft/server/EntityEnderPearl.java
-index 319c0bc6f..abb88858f 100644
+index 319c0bc6f..8a229f772 100644
 --- a/src/main/java/net/minecraft/server/EntityEnderPearl.java
 +++ b/src/main/java/net/minecraft/server/EntityEnderPearl.java
 @@ -21,6 +21,25 @@ public class EntityEnderPearl extends EntityProjectile {
@@ -29,7 +29,7 @@ index 319c0bc6f..abb88858f 100644
  
 +    // Blossom start
 +    private boolean wouldTeleportInsideBlocks(EntityLiving player, double x, double y, double z) {
-+        // check if player is inside blocks
++        // check if the player would teleport inside any blocks
 +        if (!world.a(player.getBoundingBox()).isEmpty()) {
 +            return true;
 +        }
@@ -49,12 +49,14 @@ index 319c0bc6f..abb88858f 100644
      protected void a(MovingObjectPosition movingobjectposition) {
          EntityLiving entityliving = this.getShooter();
  
-@@ -32,6 +51,20 @@ public class EntityEnderPearl extends EntityProjectile {
+@@ -32,6 +51,22 @@ public class EntityEnderPearl extends EntityProjectile {
              movingobjectposition.entity.damageEntity(DamageSource.projectile(this, entityliving), 0.0F);
          }
  
 +        // Blossom start
-+        if (!me.samsuik.blossom.configuration.BlossomConfig.pearlInsideBlocks && this.wouldTeleportInsideBlocks(entityliving, this.locX, this.locY, this.locZ)) {
++        if (!me.samsuik.blossom.configuration.BlossomConfig.pearlInsideBlocks
++            && entityliving != null
++            && this.wouldTeleportInsideBlocks(entityliving, this.locX, this.locY, this.locZ)) {
 +            // center the pearl
 +            this.locX = MathHelper.floor(this.locX) + 0.5;
 +            this.locY = MathHelper.floor(this.locY);
