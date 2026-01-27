@@ -1,4 +1,4 @@
-From 40ea2ebb4ddb0e112ef81e193da072bfdebd0be8 Mon Sep 17 00:00:00 2001
+From 337936c97ab9f8c0354f96c6389538213393694f Mon Sep 17 00:00:00 2001
 From: Shane Freeder <theboyetronic@gmail.com>
 Date: Sun, 14 Apr 2019 20:59:16 +0100
 Subject: [PATCH] Don't drop items into the world if BlockPlaceEvent is
@@ -47,7 +47,7 @@ index 015ce2834..e46dd2f59 100644
                  for (Map.Entry<BlockPosition, TileEntity> e : world.capturedTileEntities.entrySet()) {
                      world.setTileEntity(e.getKey(), e.getValue());
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 3a6f5299a..ae1fc6005 100644
+index a4bde2add..8780cca2f 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -120,6 +120,7 @@ public abstract class World implements IBlockAccess {

@@ -1,4 +1,4 @@
-From 3ba4264e7da71e100a8844419342f62ec016c42f Mon Sep 17 00:00:00 2001
+From 3d6efe79b70292949be2c88a1494a94e0e76b649 Mon Sep 17 00:00:00 2001
 From: Zach Brown <zach.brown@destroystokyo.com>
 Date: Sat, 19 Nov 2016 22:10:34 -0600
 Subject: [PATCH] SPIGOT-2806: Backport an event fix

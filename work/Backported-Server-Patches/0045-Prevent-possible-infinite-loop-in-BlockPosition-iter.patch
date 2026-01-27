@@ -1,4 +1,4 @@
-From d87c13b244142aad9674d1c67f85f55054d58233 Mon Sep 17 00:00:00 2001
+From 6e45d33336d21bd3c3c3deb19009a0c10f4e93d9 Mon Sep 17 00:00:00 2001
 From: DemonWav <demonwav@gmail.com>
 Date: Sat, 26 Mar 2016 21:36:05 -0500
 Subject: [PATCH] Prevent possible infinite loop in BlockPosition iterator

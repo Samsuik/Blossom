@@ -1,4 +1,4 @@
-From edfc2057014bf5d0cc85c2ab81e125ebed909ada Mon Sep 17 00:00:00 2001
+From 49d666bb89b261d1ecf835ecaec6283395b93aa6 Mon Sep 17 00:00:00 2001
 From: Zach Brown <zach@zachbr.io>
 Date: Tue, 23 Oct 2018 22:03:37 -0400
 Subject: [PATCH] Do not let the server load chunks from newer versions

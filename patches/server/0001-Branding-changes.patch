@@ -1,4 +1,4 @@
-From 877801e2acc7ab853e64e9a62cb2838136c2fc4f Mon Sep 17 00:00:00 2001
+From 80922938e0399ff787c854cd175df81e98cadf4f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 Jun 2022 21:47:49 +0100
 Subject: [PATCH] Branding changes
@@ -44,5 +44,5 @@ index 49f1ab608..b85600784 100644
          InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/me.samsuik.blossom/api/pom.properties");
          Properties properties = new Properties();
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 
