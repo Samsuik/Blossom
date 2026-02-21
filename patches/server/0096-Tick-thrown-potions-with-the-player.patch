@@ -1,4 +1,4 @@
-From 48df676bd9ca3198f8f54b9fc31c0b7454146f8c Mon Sep 17 00:00:00 2001
+From cafbcaa3758a9217aeb424c1b8bf63060694883d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -23,7 +23,7 @@ index 3b8f89109..81a950b8d 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 961c44875..d953bf24b 100644
+index 0ebfb8a87..7eb260ca4 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -307,6 +307,7 @@ public abstract class Entity implements ICommandListener {
@@ -114,7 +114,7 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 728816221..324767e8e 100644
+index 4d3ffe624..8d0c4b60c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {
@@ -132,7 +132,7 @@ index 728816221..324767e8e 100644
              if (entity instanceof EntityHuman) {
                  EntityHuman entityhuman = (EntityHuman) entity;
  
-@@ -1825,7 +1833,7 @@ public abstract class World implements IBlockAccess {
+@@ -1826,7 +1834,7 @@ public abstract class World implements IBlockAccess {
              }
  
              this.methodProfiler.a("tick");

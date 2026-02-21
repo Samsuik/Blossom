@@ -1,25 +1,39 @@
-From 857f9d37c21b75ae58fc46a838fbf3b194e39e75 Mon Sep 17 00:00:00 2001
+From 78b84f1668555dfc3fbf53a53a6393dcf76c56e5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 21 Jun 2023 19:33:11 +0100
 Subject: [PATCH] Discard entity metadata on removal
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index ed3f6c92f..425c753df 100644
+index 4e7b94467..4457e8bc7 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
-@@ -452,6 +452,11 @@ public abstract class Entity implements ICommandListener {
-             this.storeMergeHistoryInWorld();
-         }
-         // Blossom end - merge cannoning entities
-+        // Blossom start - discard entity metadata on removal
-+        if (bukkitEntity != null) {
-+            bukkitEntity.removeAllMetaData();
+@@ -393,6 +393,13 @@ public abstract class Entity implements ICommandListener {
+             || this.blockposition != this.lastPosition; // We can get away with just comparing the reference
+     }
+     // Blossom end - reduce entity checks
++    // Blossom start - discard entity metadata on removal
++    public final void discardEntityMetadata() {
++        if (this.bukkitEntity != null) {
++            this.bukkitEntity.removeAllMetaData();
 +        }
-+        // Blossom end - discard entity metadata on removal
-         this.dead = true;
++    }
++    // Blossom end - discard entity metadata on removal
+ 
+     public Entity(World world) {
+         this.id = Entity.entityCount++;
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 5846a8da9..2f08c87e1 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1287,6 +1287,7 @@ public abstract class World implements IBlockAccess {
+         }
+ 
+         entity.valid = false; // CraftBukkit
++        entity.discardEntityMetadata(); // Blossom - discard entity metadata on removal
      }
  
+     public void kill(Entity entity) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
 index b0156abf8..75a947475 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
