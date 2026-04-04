@@ -1,4 +1,4 @@
-From 810e685c7c429b27044c9865446948df78b61676 Mon Sep 17 00:00:00 2001
+From 26835699accd30caf9338ba1d056062036362dc0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -210,10 +210,10 @@ index a17e07910..47d367670 100644
      public float getBlastResistance() {
          return ((durability / 5.0f) + 0.3f) * 0.3f;
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 9929d73ad..2bb218fc2 100644
+index e14a6b603..82881b2fb 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
-@@ -176,6 +176,10 @@ public class Explosion {
+@@ -175,6 +175,10 @@ public class Explosion {
          IBlockData iblockdata = chunk.getBlockData(x, y, z);
          Block block = iblockdata.getBlock();
          float resistance = block.getBlastResistance();
@@ -224,7 +224,7 @@ index 9929d73ad..2bb218fc2 100644
  
          if (block != Blocks.AIR && strength - resistance > 0.0f) {
              long pack = BlockPosition.asLong(x, y, z);
-@@ -343,12 +347,19 @@ public class Explosion {
+@@ -342,12 +346,19 @@ public class Explosion {
              }
              // Blossom end - optimised explosions
              iterator = this.blocks.iterator();
@@ -289,7 +289,7 @@ index b1954785a..199831d69 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 53c91ccb7..728816221 100644
+index f5f7d7cd3..4d3ffe624 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -173,6 +173,7 @@ public abstract class World implements IBlockAccess {

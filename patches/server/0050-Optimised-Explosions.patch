@@ -1,4 +1,4 @@
-From f9f5d66b26e6aec1f367ba97c35aa428a5e838f4 Mon Sep 17 00:00:00 2001
+From c19986545a0ac39e3e73aaed7d23569ea1a3ca24 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -582,7 +582,7 @@ index 44f961d15..7093bc2f8 100644
          this.move(this.motX, this.motY, this.motZ);
  
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 4b288ae8b..1a52be8a8 100644
+index 4b288ae8b..980833ed0 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
 @@ -19,16 +19,17 @@ import org.bukkit.event.block.BlockExplodeEvent;
@@ -609,7 +609,7 @@ index 4b288ae8b..1a52be8a8 100644
      public boolean wasCanceled = false; // CraftBukkit - add field
  
      public Explosion(World world, Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
-@@ -82,124 +83,200 @@ public class Explosion {
+@@ -82,124 +83,199 @@ public class Explosion {
              return;
          }
          // CraftBukkit end
@@ -672,8 +672,7 @@ index 4b288ae8b..1a52be8a8 100644
 +            locateBlocksToDestroy();
 +        }
 +
-+        // Special case: explosions inside blocks on legacy versions cannot affect entities.
-+        if (entities && !block.isInsideBlock(world, blockPos, posX, posY, posZ)) {
++        if (entities) {
 +            locateAndImpactEntities(new Vec3D(posX, posY, posZ), maxDistance);
 +        }
 +    }
@@ -914,7 +913,7 @@ index 4b288ae8b..1a52be8a8 100644
  
      public void a(boolean flag) {
          // PaperSpigot start - Configurable TNT explosion volume.
-@@ -221,7 +298,7 @@ public class Explosion {
+@@ -221,7 +297,7 @@ public class Explosion {
              org.bukkit.entity.Entity explode = this.source == null ? null : this.source.getBukkitEntity();
              Location location = new Location(bworld, this.posX, this.posY, this.posZ);
  
@@ -923,7 +922,7 @@ index 4b288ae8b..1a52be8a8 100644
              for (int i1 = this.blocks.size() - 1; i1 >= 0; i1--) {
                  BlockPosition cpos = (BlockPosition) this.blocks.get(i1);
                  org.bukkit.block.Block bblock = bworld.getBlockAt(cpos.getX(), cpos.getY(), cpos.getZ());
-@@ -260,6 +337,11 @@ public class Explosion {
+@@ -260,6 +336,11 @@ public class Explosion {
                  return;
              }
              // CraftBukkit end
@@ -935,7 +934,7 @@ index 4b288ae8b..1a52be8a8 100644
              iterator = this.blocks.iterator();
  
              while (iterator.hasNext()) {
-@@ -267,27 +349,7 @@ public class Explosion {
+@@ -267,27 +348,7 @@ public class Explosion {
                  Block block = this.world.getType(blockposition).getBlock();
  
                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot

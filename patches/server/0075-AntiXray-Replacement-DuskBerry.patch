@@ -1,4 +1,4 @@
-From fb0b38b09a0ebc4eecbdfa066e7ad3ce4096d641 Mon Sep 17 00:00:00 2001
+From 96017df57446fc3551245a8b32fece9860bcc590 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -374,10 +374,10 @@ index fb07f8a17..0e9b8b603 100644
                              arraylist1.addAll(chunk.tileEntities.values()); // CraftBukkit - Get tile entities directly from the chunk instead of the world
                              iterator1.remove();
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 1a52be8a8..9929d73ad 100644
+index 980833ed0..e14a6b603 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
-@@ -348,7 +348,7 @@ public class Explosion {
+@@ -347,7 +347,7 @@ public class Explosion {
                  blockposition = (BlockPosition) iterator.next();
                  Block block = this.world.getType(blockposition).getBlock();
  
@@ -426,7 +426,7 @@ index f941b7da6..b434de8bf 100644
  
      public void a(BlockPosition blockposition) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index f4ce26fe1..155516346 100644
+index 2f08c87e1..f5f7d7cd3 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {
@@ -487,5 +487,5 @@ index 8e86212aa..80628e946 100644
      public boolean zombieAggressiveTowardsVillager;
      private void zombieAggressiveTowardsVillager()
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
