@@ -1,4 +1,4 @@
-From 7135523469af2250c1a02373a4762cd98b03c67e Mon Sep 17 00:00:00 2001
+From 23123bb418b66d3e21369c256b1c3f4d54390cc6 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
@@ -972,10 +972,10 @@ index 000000000..8e73701e6
 +    PANDAWIRE_EX,
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f6115a88a..de8ebef16 100644
+index 09f02f7b7..af6459424 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -212,4 +212,30 @@ public class BlossomConfig {
+@@ -240,4 +240,30 @@ public class BlossomConfig {
          allowInstantBlockFallingInLazyChunks = getBoolean("sand.instant-falling-in-lazy-chunks", false);
      }
  

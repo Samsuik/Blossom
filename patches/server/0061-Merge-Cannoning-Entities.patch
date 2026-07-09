@@ -1,14 +1,14 @@
-From e1727ebc10325b201ffbf91ae776c4534bfb4540 Mon Sep 17 00:00:00 2001
+From 06e90f3b0cd80c0387500d5bde94077e09b40c49 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:18:04 +0100
 Subject: [PATCH] Merge Cannoning Entities
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index a08bbf1c5..f5dacad4d 100644
+index 3a41a8824..6539bb4e3 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -368,4 +368,11 @@ public class BlossomConfig {
+@@ -396,4 +396,11 @@ public class BlossomConfig {
          hopperOnlyPushIntoEmptyContainer = getBoolean("hoppers.only-push-into-empty-containers", false);
      }
  
@@ -98,7 +98,7 @@ index a043d96d4..3d754bb55 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index fbfb30d61..29a5ebe96 100644
+index 506f8fc65..2c7872be1 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -179,6 +179,85 @@ public abstract class Entity implements ICommandListener {
@@ -348,7 +348,7 @@ index 97cc040d3..e0a25e474 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 015373093..ab1a799e1 100644
+index 75b50a0b0..fa84efd42 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -167,6 +167,11 @@ public abstract class World implements IBlockAccess {

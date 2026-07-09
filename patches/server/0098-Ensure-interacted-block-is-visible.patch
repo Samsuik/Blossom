@@ -1,14 +1,14 @@
-From d540f135e256e56bb309d4f89005b0bc39dd8306 Mon Sep 17 00:00:00 2001
+From 034877594b18bc8218cb828109dae099d926d1eb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 14:31:04 +0100
 Subject: [PATCH] Ensure interacted block is visible
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 441f7080c..abff238c8 100644
+index 8725d4ff6..51d8d300f 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -520,4 +520,9 @@ public class BlossomConfig {
+@@ -548,4 +548,9 @@ public class BlossomConfig {
          playerSuffocationTeleport = getBoolean("player.teleport-up-to-avoid-suffocation", false);
      }
  

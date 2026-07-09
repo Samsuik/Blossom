@@ -1,14 +1,14 @@
-From f14d9a21c84b2168e55a3b25f90b395113ad03e2 Mon Sep 17 00:00:00 2001
+From d7eda6467669c6dfed121993f637b297e982cd8e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 16:32:15 +0100
 Subject: [PATCH] Reduce client skylight lag spikes
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e90972270..64f21f0be 100644
+index 7000d0cb9..cd3f151a5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -319,4 +319,9 @@ public class BlossomConfig {
+@@ -347,4 +347,9 @@ public class BlossomConfig {
          reduceEntityChecks = getBoolean("mobs.reduce-entity-checks", true);
      }
  
@@ -75,5 +75,5 @@ index bfda7fb0e..b7b44d2eb 100644
                  packetplayoutmapchunk_chunkmap.b |= 1 << j;
                  arraylist.add(chunksection);
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

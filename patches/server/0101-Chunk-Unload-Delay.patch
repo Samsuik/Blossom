@@ -1,14 +1,14 @@
-From e292c2e786f65a94cc4e184fc97487b8193f7f6f Mon Sep 17 00:00:00 2001
+From 04a0f926fcaa3fa94bbc00f2fb8ec4845e55a041 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index abff238c8..15445f4a0 100644
+index 51d8d300f..48d319632 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -525,4 +525,15 @@ public class BlossomConfig {
+@@ -553,4 +553,15 @@ public class BlossomConfig {
          ensureInteractedBlockIsVisible = getBoolean("player.ensure-interacted-block-is-visible", true);
      }
  

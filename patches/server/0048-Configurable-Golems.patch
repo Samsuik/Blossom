@@ -1,4 +1,4 @@
-From 99e7b096c099a1ef78002a3e09e650ab1f6243c4 Mon Sep 17 00:00:00 2001
+From b4fdc3738e5c7d5f00ec0dab87af11d57a0ddbaa Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 19 Dec 2020 19:35:00 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Configurable Golems
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 24c1f3b70..fad447cd5 100644
+index 74222d1c1..e29e57b25 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -340,4 +340,11 @@ public class BlossomConfig {
+@@ -368,4 +368,11 @@ public class BlossomConfig {
          potionVerticalOffset = (float) getDouble("projectiles.potion.vertical-offset", -20.0);
      }
  
@@ -59,5 +59,5 @@ index ba09cb2cc..46a09f3dd 100644
          k = 3 + this.random.nextInt(3);
  
 -- 
-2.49.0
+2.50.1 (Apple Git-155)
 

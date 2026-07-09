@@ -1,4 +1,4 @@
-From 70397399d500c2ba83ee31b3bb5f93cf2b0a949f Mon Sep 17 00:00:00 2001
+From 86d06fdb8eae7409d8d6ba38f864dc93e745b703 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 16 Dec 2020 22:10:37 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Pearl Through Special Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 29619c61c..ea5a617de 100644
+index eb0f00d2e..40104b7f6 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -280,4 +280,13 @@ public class BlossomConfig {
+@@ -308,4 +308,13 @@ public class BlossomConfig {
          smoothPotting = getBoolean("projectiles.potion.smooth", true);
      }
  
@@ -51,5 +51,5 @@ index b11a7f83a..6cd060831 100644
                  if (this.dead) {
                      org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this);
 -- 
-2.49.0
+2.50.1 (Apple Git-155)
 

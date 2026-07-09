@@ -1,14 +1,14 @@
-From fe32793f28c91c278fb27b1995e1ad8111d30c70 Mon Sep 17 00:00:00 2001
+From a786fade8c4a81c510b437da67c3c0a9d95ca1ba Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 6 Jul 2022 16:34:42 +0100
 Subject: [PATCH] Rewritten Data Watcher
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f7ff15e1e..ee4ed004a 100644
+index cd3f151a5..6c930c1b5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -324,4 +324,9 @@ public class BlossomConfig {
+@@ -352,4 +352,9 @@ public class BlossomConfig {
          sendEmptyChunkSections = getBoolean("player.send-empty-chunk-sections", false);
      }
  
@@ -243,7 +243,7 @@ index 1fbbfaaed..b0d0667a9 100644
          int i = (datawatcher_watchableobject.c() << 5 | datawatcher_watchableobject.a() & 31) & 255;
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index f48bc865c..d2a39000a 100644
+index ac3b17207..f5994a511 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -311,7 +311,13 @@ public abstract class Entity implements ICommandListener {

@@ -1,14 +1,14 @@
-From cd2883b35d068063028b787cddfd71c040d04084 Mon Sep 17 00:00:00 2001
+From ffdfb3959f6016824af10be22c649733d740f5ea Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 20:47:08 +0000
 Subject: [PATCH] Configurable Spawners
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 992bb89db..36f331e1d 100644
+index af6459424..52e6382ae 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -238,4 +238,25 @@ public class BlossomConfig {
+@@ -266,4 +266,25 @@ public class BlossomConfig {
          }
      }
  
@@ -96,5 +96,5 @@ index 846d8dd86..beacf3e88 100644
                          this.a().triggerEffect(2004, blockposition, 0);
                          if (entityinsentient != null) {
 -- 
-2.49.0
+2.50.1 (Apple Git-155)
 

@@ -1,14 +1,14 @@
-From c3644ad297dc547e660e50ac681389aa0fba7129 Mon Sep 17 00:00:00 2001
+From 2b23e115825ea38caadfd5888bbb8c2f6bf258eb Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 20:30:08 +0100
 Subject: [PATCH] Introduce Book Limits
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ef3ed090b..b287fbfa2 100644
+index 40f03ea86..51110306a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -181,5 +181,18 @@ public class BlossomConfig {
+@@ -209,5 +209,18 @@ public class BlossomConfig {
              limits.put(key, ((Number) value).longValue());
          });
      }
@@ -162,5 +162,5 @@ index ae3341c4e..f90e66f6d 100644
                          this.pages.add(ChatSerializer.a(page));
                          continue;
 -- 
-2.50.0
+2.50.1 (Apple Git-155)
 

@@ -1,14 +1,14 @@
-From 46a9df4b5a2bd39e52334bfaceb413f094e94310 Mon Sep 17 00:00:00 2001
+From d530743012b9f94c06085a1414e03c5ca7134a20 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 00:40:54 +0100
 Subject: [PATCH] Configure Armour Damage Rate
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 91f757ac7..250fe3203 100644
+index c97d86762..e9f4e52f5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -472,4 +472,13 @@ public class BlossomConfig {
+@@ -500,4 +500,13 @@ public class BlossomConfig {
          altKBCalculation = getBoolean("player.knockback.alternate-knockback", false);
      }
  
@@ -23,7 +23,7 @@ index 91f757ac7..250fe3203 100644
 +    
  }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 51830e2a0..96eff7d5b 100644
+index 6d53a3679..82f3d8869 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -1168,6 +1168,19 @@ public abstract class EntityLiving extends Entity {

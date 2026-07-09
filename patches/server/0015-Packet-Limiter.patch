@@ -1,105 +1,230 @@
-From b181eb812d714d086064c61192e3c26287f48d50 Mon Sep 17 00:00:00 2001
+From 4310f77638b4da7ca1c80a846ab36d682276a4d8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 17:48:29 +0100
 Subject: [PATCH] Packet Limiter
 
-kind of scuffed packet limiter
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 9dd3e3273..1f3357cd4 100644
+index 917a235b4..9302cde40 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -118,5 +118,16 @@ public class BlossomConfig {
+@@ -118,5 +118,43 @@ public class BlossomConfig {
          config.addDefault(path, def);
          return config.getString(path, config.getString(path));
      }
+-    
 +
 +    public static boolean packetLimiter;
-+    public static int ppsThreshold;
-+    public static int ppsViolations;
-+    public static int ppsMax;
++    public static int packetSamples;
++    public static me.samsuik.blossom.network.PacketLimit packetLimit;
++    public static me.samsuik.blossom.network.PacketLimit byteLimit;
 +    private static void PacketLimiter() {
-+        packetLimiter = getBoolean("packet-limiter.enabled", true);
-+        ppsThreshold = getInt("packet-limiter.threshold", 120);
-+        ppsViolations = getInt("packet-limiter.violations", 7);
-+        ppsMax = getInt("packet-limiter.max-pps", 400);
-+    }
-     
- }
-diff --git a/src/main/java/me/samsuik/blossom/utils/PacketLimiter.java b/src/main/java/me/samsuik/blossom/utils/PacketLimiter.java
-new file mode 100644
-index 000000000..49264cca1
---- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/utils/PacketLimiter.java
-@@ -0,0 +1,40 @@
-+package me.samsuik.blossom.utils;
++        if (version < 4) {
++            final int violations = config.getInt("packet-limiter.violations", Integer.MIN_VALUE);
++            if (violations != Integer.MIN_VALUE) {
++                set("packet-limiter.samples", violations);
++                set("packet-limit.violations", null);
++            }
 +
-+import me.samsuik.blossom.configuration.BlossomConfig;
++            final int threshold = config.getInt("packet-limiter.threshold", Integer.MIN_VALUE);
++            if (threshold != Integer.MIN_VALUE) {
++                set("packet-limiter.packets.average", threshold);
++                set("packet-limiter.threshold", null);
++            }
 +
-+public class PacketLimiter {
-+
-+    private final int[] samples;
-+    private int vio = 0;
-+    private long last = 0;
-+
-+    public PacketLimiter() {
-+        this.samples = new int[BlossomConfig.ppsViolations + 1];
-+    }
-+
-+    public boolean handle() {
-+        long curr = System.currentTimeMillis();
-+
-+        // is this thread safe?
-+        if (curr - this.last >= 1000) {
-+            this.recalculate();
-+            this.last = curr;
-+        }
-+
-+        return ++this.samples[0] >= BlossomConfig.ppsMax || vio >= BlossomConfig.ppsViolations;
-+    }
-+
-+    private void recalculate() {
-+        this.vio = 0;
-+
-+        for (int sample : samples) {
-+            if (sample >= BlossomConfig.ppsThreshold) {
-+                vio += 1;
++            final int max = config.getInt("packet-limiter.max", Integer.MIN_VALUE);
++            if (max != Integer.MIN_VALUE) {
++                set("packet-limiter.packets.max", max);
++                set("packet-limiter.max-pps", null);
 +            }
 +        }
 +
-+        System.arraycopy(samples, 0, samples, 1, samples.length - 1);
-+        this.samples[0] = 0;
++        packetLimiter = getBoolean("packet-limiter.enabled", true);
++        packetSamples = Math.min(Math.max(getInt("packet-limiter.samples", 8), 1), 32);
++
++        packetLimit = new me.samsuik.blossom.network.PacketLimit(
++            getLong("packet-limiter.packets.average", 120),
++            getLong("packet-limiter.packets.max", 400)
++        );
++
++        byteLimit = new me.samsuik.blossom.network.PacketLimit(
++            getLong("packet-limiter.bytes.average", 65536), // 64 KB
++            getLong("packet-limiter.bytes.max", 131072)     // 128 KB
++        );
++    }
+ }
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketLimit.java b/src/main/java/me/samsuik/blossom/network/PacketLimit.java
+new file mode 100644
+index 000000000..907b26771
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketLimit.java
+@@ -0,0 +1,11 @@
++package me.samsuik.blossom.network;
++
++public final class PacketLimit {
++    public final long average;
++    public final long max;
++
++    public PacketLimit(final long average, final long max) {
++        this.average = average;
++        this.max = max;
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java b/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java
+new file mode 100644
+index 000000000..bb1e63acd
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java
+@@ -0,0 +1,94 @@
++package me.samsuik.blossom.network;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.channel.SimpleChannelInboundHandler;
++
++import java.util.ArrayDeque;
++import java.util.concurrent.TimeUnit;
++
++public final class PacketLimitHandler extends SimpleChannelInboundHandler<ByteBuf> {
++    private static final long SAMPLE_LENGTH = TimeUnit.SECONDS.toMillis(1);
++
++    private final ArrayDeque<Sample> samples = new ArrayDeque<>();
++    private final PacketLimit packetLimit;
++    private final PacketLimit byteLimit;
++
++    private final int maxSamples;
++    private int packets, totalPackets;
++    private long bytes, totalBytes;
++    private long lastSampleTime;
++    private long counter;
++
++    public PacketLimitHandler(final int samples, final PacketLimit packetLimit, final PacketLimit byteLimit) {
++        super(false);
++
++        for (int count = 0; count < samples; count++) {
++            this.samples.addLast(new Sample(0, 0));
++        }
++
++        this.maxSamples = samples;
++        this.packetLimit = packetLimit;
++        this.byteLimit = byteLimit;
 +    }
 +
++    @Override
++    protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf msg) throws Exception {
++        if (++this.packets >= this.packetLimit.max) {
++            throw new PacketRateLimitException("Too many packets received (Packets: " + this.packets + ")");
++        }
++
++        if ((this.bytes += msg.readableBytes()) >= this.byteLimit.max) {
++            throw new PacketRateLimitException("Too many bytes received (Bytes: " + this.bytes + ")");
++        }
++
++        if ((++this.counter & 7) == 0 && this.updateSamples()) {
++            final int packetCount = this.totalPackets / this.maxSamples;
++            if (packetCount >= this.packetLimit.average) {
++                throw new PacketRateLimitException("Packet rate limit exceeded (Ps: " + packetCount + ")");
++            }
++
++            final long receivedByteCount = this.totalBytes / this.maxSamples;
++            if (receivedByteCount >= this.byteLimit.average) {
++                throw new PacketRateLimitException("Byte rate limit exceeded (Bytes: " + receivedByteCount + ")");
++            }
++        }
++
++        ctx.fireChannelRead(msg);
++    }
++
++    private boolean updateSamples() {
++        final long millis = System.currentTimeMillis();
++        if (millis - this.lastSampleTime < SAMPLE_LENGTH) {
++            return false;
++        }
++
++        this.lastSampleTime = millis;
++
++        final ArrayDeque<Sample> samples = this.samples;
++        final Sample removedSample = samples.pollLast();
++        this.samples.push(new Sample(this.packets, this.bytes));
++
++        if (removedSample != null) {
++            this.totalPackets -= removedSample.packets;
++            this.totalBytes -= removedSample.bytes;
++        }
++
++        this.totalPackets += this.packets;
++        this.totalBytes += this.bytes;
++        this.packets = 0;
++        this.bytes = 0;
++
++        return true;
++    }
++
++    private static final class Sample {
++        private final int packets;
++        private final long bytes;
++
++        private Sample(final int packets, final long bytes) {
++            this.packets = packets;
++            this.bytes = bytes;
++        }
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
+new file mode 100644
+index 000000000..8bf375281
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
+@@ -0,0 +1,7 @@
++package me.samsuik.blossom.network;
++
++public final class PacketRateLimitException extends RuntimeException {
++    public PacketRateLimitException(final String message) {
++        super(message);
++    }
 +}
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index 6b91e25a7..95d3f6f48 100644
+index d02f56310..449dc9dbb 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
-@@ -153,9 +153,23 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
-         if (MinecraftServer.getServer().isDebugging()) throwable.printStackTrace(); // Spigot
-     }
+@@ -356,6 +356,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+             } else {
+                 this.channel.pipeline().addBefore("encoder", "compress", new PacketCompressor(i));
+             }
++
++            // Blossom start - security patches; enforce limits on received packets & bytes
++            final io.netty.channel.ChannelHandler limiter = this.channel.pipeline().get("blossom$limiter");
++            if (limiter != null) {
++                this.channel.pipeline().remove("blossom$limiter");
++                this.channel.pipeline().addAfter("decompress", "blossom$limiter", limiter);
++            }
++            // Blossom end - security patches; enforce limits on received packets & bytes
+         } else {
+             if (this.channel.pipeline().get("decompress") instanceof PacketDecompressor) {
+                 this.channel.pipeline().remove("decompress");
+diff --git a/src/main/java/net/minecraft/server/ServerConnection.java b/src/main/java/net/minecraft/server/ServerConnection.java
+index 4585d43e3..8429b2b73 100644
+--- a/src/main/java/net/minecraft/server/ServerConnection.java
++++ b/src/main/java/net/minecraft/server/ServerConnection.java
+@@ -102,6 +102,18 @@ public class ServerConnection {
+                     }
  
-+    // Blossom start - packet limiter
-+    private final me.samsuik.blossom.utils.PacketLimiter packetLimiter = new me.samsuik.blossom.utils.PacketLimiter();
+                     channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30)).addLast("legacy_query", new LegacyPingHandler(ServerConnection.this)).addLast("splitter", new PacketSplitter()).addLast("decoder", new PacketDecoder(EnumProtocolDirection.SERVERBOUND)).addLast("prepender", new PacketPrepender()).addLast("encoder", new PacketEncoder(EnumProtocolDirection.CLIENTBOUND));
++                    // Blossom start - security patches; enforce limits on received packets & bytes
++                    if (me.samsuik.blossom.configuration.BlossomConfig.packetLimiter) {
++                        final me.samsuik.blossom.network.PacketLimitHandler packetLimiter = new me.samsuik.blossom.network.PacketLimitHandler(
++                            me.samsuik.blossom.configuration.BlossomConfig.packetSamples,
++                            me.samsuik.blossom.configuration.BlossomConfig.packetLimit,
++                            me.samsuik.blossom.configuration.BlossomConfig.byteLimit
++                        );
 +
-+    private void kickPlayer(String message) {
-+        IChatBaseComponent reason = new ChatMessage("disconnect.genericReason", message);
-+        this.handle(new PacketPlayOutKickDisconnect(reason));
-+        this.close(reason);
-+    }
++                        channel.pipeline().addBefore("decoder", "blossom$limiter", packetLimiter);
++                    }
++                    // Blossom end - security patches; enforce limits on received packets & bytes
 +
-     protected void a(ChannelHandlerContext channelhandlercontext, Packet packet) throws Exception {
-         if (this.channel.isOpen()) {
-             try {
-+                if (packetLimiter.handle()) {
-+                    this.kickPlayer("Sending packets too quickly!");
-+                    return;
-+                }
-+                // Blossom end
-                 packet.a(this.m);
-             } catch (CancelledPacketHandleException cancelledpackethandleexception) {
-                 ;
+                     NetworkManager networkmanager = new NetworkManager(EnumProtocolDirection.SERVERBOUND);
+ 
+                     pending.add(networkmanager); // Paper
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 

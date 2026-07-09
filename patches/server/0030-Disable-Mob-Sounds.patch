@@ -1,14 +1,14 @@
-From 7f9f5bc82d670b7b2bf57d9339ca5cf91c1474f8 Mon Sep 17 00:00:00 2001
+From 1ceb3b9301c570ebaf005b32ac5938834858eb2b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 21:09:34 +0000
 Subject: [PATCH] Disable Mob Sounds
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index e8e5d9a0e..e0eefe14a 100644
+index 52e6382ae..4b3296ca0 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -259,4 +259,11 @@ public class BlossomConfig {
+@@ -287,4 +287,11 @@ public class BlossomConfig {
          requirePlayers = getBoolean("spawners.nearby.require-players", true);
      }
  
@@ -21,7 +21,7 @@ index e8e5d9a0e..e0eefe14a 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 97e44dd4c..11b017f1d 100644
+index 0f1a9e73b..c259ddc3b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -835,7 +835,11 @@ public abstract class Entity implements ICommandListener {
@@ -71,5 +71,5 @@ index a72956075..49402ca7f 100644
          }
  
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

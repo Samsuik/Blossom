@@ -1,14 +1,14 @@
-From 1dc17088839f4c3ded089a58d900df36d74fdf97 Mon Sep 17 00:00:00 2001
+From 7224f45fedbf88aa9668c5b9feed5ea986185be4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 12 Jun 2023 21:18:02 +0100
 Subject: [PATCH] Optimise Hopper Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8126afa61..a08bbf1c5 100644
+index faf47d6f3..3a41a8824 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -361,4 +361,11 @@ public class BlossomConfig {
+@@ -389,4 +389,11 @@ public class BlossomConfig {
          playerObjectiveUpdates = getBoolean("player.scoreboard-objective-updates", true);
      }
  
@@ -493,7 +493,7 @@ index 8d00cd0a2..f2bd10b45 100644
              if (list.size() > 0) {
                  object = (IInventory) list.get(world.random.nextInt(list.size()));
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index f31ff19de..39cdee725 100644
+index 34c66520d..caa423450 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1710,6 +1710,7 @@ public abstract class World implements IBlockAccess {

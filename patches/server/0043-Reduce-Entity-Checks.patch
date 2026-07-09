@@ -1,14 +1,14 @@
-From a666058f3a214f1a68dfab55e077db00eba5fcf1 Mon Sep 17 00:00:00 2001
+From 501ea9746f3df9cec2946f20d436d2da27a7ca64 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fd65f3c44..1ed5fbf6d 100644
+index bd58589ff..7000d0cb9 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -310,4 +310,13 @@ public class BlossomConfig {
+@@ -338,4 +338,13 @@ public class BlossomConfig {
          trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
      }
  
@@ -218,7 +218,7 @@ index 5f4bc4225..09df308b6 100644
              // PaperSpigot start - Allow nerfed mobs to jump
              if (goalFloat != null) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index ad2a14e63..410c778ae 100644
+index cd9447c95..0e99f61a0 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -176,7 +176,7 @@ public abstract class EntityLiving extends Entity {

@@ -1,14 +1,14 @@
-From eda6a112cc056bda73dd6d6fc991b0501d406b17 Mon Sep 17 00:00:00 2001
+From 9629583c360afedbee2da2e3daad233e06be1724 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 19 Jun 2023 18:57:22 +0100
 Subject: [PATCH] Defence Patches
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 5d9b70e73..1902656ae 100644
+index e1cec7139..d9e4ab0a4 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -389,4 +389,17 @@ public class BlossomConfig {
+@@ -417,4 +417,17 @@ public class BlossomConfig {
          optimisedMovement = getBoolean("tnt.optimised-movement", true);
      }
  

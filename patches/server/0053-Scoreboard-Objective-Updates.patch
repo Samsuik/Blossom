@@ -1,14 +1,14 @@
-From 4c2f59ac8ba406b589a45dcf2b8cef2509de1703 Mon Sep 17 00:00:00 2001
+From 7846a8dd388e378bf85b34dffbc5fa222905f065 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 19:52:00 +0100
 Subject: [PATCH] Scoreboard Objective Updates
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fac7e7f8f..8126afa61 100644
+index 5c6d1f669..faf47d6f3 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -356,4 +356,9 @@ public class BlossomConfig {
+@@ -384,4 +384,9 @@ public class BlossomConfig {
          batchExplosions = getBoolean("explosions.batch-explosions", true);
      }
  

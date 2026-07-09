@@ -1,4 +1,4 @@
-From 09b481457d67cdb1c5bccf1a03139db33b81ba6f Mon Sep 17 00:00:00 2001
+From 7f6ce6a1204ae8ade569f29952f36c448ed55298 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 13:26:34 +0100
 Subject: [PATCH] TPS Graph
@@ -84,7 +84,7 @@ index 000000000..b7d741908
 +
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 752c62bf4..da9d53bfd 100644
+index 92711af12..52489f6f8 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
@@ -101,8 +101,8 @@ index 752c62bf4..da9d53bfd 100644
          commands.put("minimal", new VisualCommand(Visuals.VisualType.MINIMAL, "minimaltnt", "tntlag"));
 +        commands.put("tps", new TPSCommand());
  
-         version = getInt("config-version", 3);
-         set("config-version", 3);
+         version = getInt("config-version", 4);
+         set("config-version", 4);
 diff --git a/src/main/java/me/samsuik/blossom/utils/tps/TPSGraph.java b/src/main/java/me/samsuik/blossom/utils/tps/TPSGraph.java
 new file mode 100644
 index 000000000..9b29241ce
@@ -434,5 +434,5 @@ index b9d185d99..e1be19ad2 100644
  
      public static int playerSample;
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 
