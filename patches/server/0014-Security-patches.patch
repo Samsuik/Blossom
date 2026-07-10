@@ -1,4 +1,4 @@
-From 447ff618c554afaf37bdee8539652818507ffb99 Mon Sep 17 00:00:00 2001
+From 1b2e82dac5b446a9ceaa8520725114dafa3dd623 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -557,16 +557,10 @@ index b8c750a22..dc95a7607 100644
                      this.motX = 0.0D;
                  }
 diff --git a/src/main/java/net/minecraft/server/EntityFireworks.java b/src/main/java/net/minecraft/server/EntityFireworks.java
-index d7be6c268..fe3c642a8 100644
+index d7be6c268..f45715929 100644
 --- a/src/main/java/net/minecraft/server/EntityFireworks.java
 +++ b/src/main/java/net/minecraft/server/EntityFireworks.java
-@@ -31,12 +31,12 @@ public class EntityFireworks extends Entity {
-         int i = 1;
- 
-         if (itemstack != null && itemstack.hasTag()) {
--            this.datawatcher.watch(8, itemstack);
-+            this.datawatcher.watch(8, sanitizeItem(itemstack)); // Blossom - security patches
-             NBTTagCompound nbttagcompound = itemstack.getTag();
+@@ -36,7 +36,7 @@ public class EntityFireworks extends Entity {
              NBTTagCompound nbttagcompound1 = nbttagcompound.getCompound("Fireworks");
  
              if (nbttagcompound1 != null) {
@@ -575,40 +569,7 @@ index d7be6c268..fe3c642a8 100644
              }
          }
  
-@@ -46,6 +46,32 @@ public class EntityFireworks extends Entity {
-         this.expectedLifespan = 10 * i + this.random.nextInt(6) + this.random.nextInt(7);
-     }
- 
-+    // Blossom start - security patches
-+    private ItemStack sanitizeItem(final ItemStack itemstack) {
-+        final ItemStack fireworkItem = new ItemStack(itemstack.getItem());
-+        final NBTTagCompound component = itemstack.getTag();
-+        if (component == null) {
-+            return fireworkItem;
-+        }
-+
-+        final NBTTagList sanitized = new NBTTagList();
-+        final NBTTagList explosions = component.getList("Explosions", 10);
-+        for (int index = 0; index < Math.min(explosions.size(), 16); ++index) {
-+            final NBTTagCompound explosionTag = explosions.get(index);
-+
-+
-+
-+//            try {
-+//                sanitized.add(org.bukkit.craftbukkit.inventory.CraftMetaFirework.sanitizeComponent(explosions.get(index)));
-+//            } catch (final IllegalArgumentException ignored) {
-+//                // Invalid explosion effect
-+//            }
-+        }
-+
-+        return fireworkItem;
-+    }
-+    // Blossom end - security patches
-+
-     public void t_() {
-         this.P = this.locX;
-         this.Q = this.locY;
-@@ -108,8 +134,8 @@ public class EntityFireworks extends Entity {
+@@ -108,8 +108,8 @@ public class EntityFireworks extends Entity {
      }
  
      public void a(NBTTagCompound nbttagcompound) {
@@ -1614,7 +1575,7 @@ index ae3341c4e..be637690c 100644
          }
      }
 diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
-index 62d43088a..8e75bc705 100644
+index 62d43088a..eec2f26e1 100644
 --- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
 +++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
 @@ -89,9 +89,12 @@ class CraftMetaFirework extends CraftMetaItem implements FireworkMeta {
@@ -1632,6 +1593,27 @@ index 62d43088a..8e75bc705 100644
              // PandaSpigot start - Backport SPIGOT-5428
              try {
                  effects.add(getEffect((NBTTagCompound) fireworkEffects.get(i)));
+@@ -108,12 +111,16 @@ class CraftMetaFirework extends CraftMetaItem implements FireworkMeta {
+                 .trail(explosion.getBoolean(EXPLOSION_TRAIL.NBT))
+                 .with(getEffectType(0xff & explosion.getByte(EXPLOSION_TYPE.NBT)));
+ 
+-        for (int color : explosion.getIntArray(EXPLOSION_COLORS.NBT)) {
+-            effect.withColor(Color.fromRGB(color));
++        // Blossom start - security patches
++        final int[] explosionColors = explosion.getIntArray(EXPLOSION_COLORS.NBT);
++        for (int index = 0; index < Math.min(explosionColors.length, 16); index++) {
++            effect.withColor(Color.fromRGB(explosionColors[index]));
+         }
+ 
+-        for (int color : explosion.getIntArray(EXPLOSION_FADE.NBT)) {
+-            effect.withFade(Color.fromRGB(color));
++        final int[] fadeColors = explosion.getIntArray(EXPLOSION_FADE.NBT);
++        for (int index = 0; index < Math.min(fadeColors.length, 16); index++) {
++            effect.withFade(Color.fromRGB(fadeColors[index]));
++            // Blossom end - security patches
+         }
+ 
+         return effect.build();
 diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
 index eaaa6a11a..bc72b864c 100644
 --- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java

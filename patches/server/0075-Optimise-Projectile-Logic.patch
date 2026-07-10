@@ -1,4 +1,4 @@
-From ac8d0634ed35cc5835f64b4ac278eb431b59ae38 Mon Sep 17 00:00:00 2001
+From c59826b93cdfc9c8ea38d33651bbf9c48d241b08 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 7 Jul 2023 00:14:09 +0100
 Subject: [PATCH] Optimise Projectile Logic
@@ -109,10 +109,10 @@ index 7076df012..f346b255b 100644
  
              if (this.V()) {
 diff --git a/src/main/java/net/minecraft/server/EntityFireworks.java b/src/main/java/net/minecraft/server/EntityFireworks.java
-index fe3c642a8..1115b8df0 100644
+index f45715929..01b6189e8 100644
 --- a/src/main/java/net/minecraft/server/EntityFireworks.java
 +++ b/src/main/java/net/minecraft/server/EntityFireworks.java
-@@ -76,33 +76,13 @@ public class EntityFireworks extends Entity {
+@@ -50,33 +50,13 @@ public class EntityFireworks extends Entity {
          this.P = this.locX;
          this.Q = this.locY;
          this.R = this.locZ;
