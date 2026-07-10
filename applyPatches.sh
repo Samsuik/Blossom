@@ -86,7 +86,7 @@ applyPatch "$workdir"/Backported-API "$basedir"/Blossom-API "$basedir"/patches/a
 applyPatch "$workdir"/Backported-Server "$basedir"/Blossom-Server "$basedir"/patches/server HEAD
 
 # ignore
-#applyPatch $workdir/TacoSpigot-API $basedir/Blossom-API $workdir/Backported-API-Patches HEAD
-#applyPatch $workdir/TacoSpigot-Server $basedir/Blossom-Server $workdir/Backported-Server-Patches HEAD
+#applyPatch "$workdir"/TacoSpigot-API "$basedir"/Blossom-API "$workdir"/Backported-API-Patches HEAD
+#applyPatch "$workdir"/TacoSpigot-Server "$basedir"/Blossom-Server "$workdir"/Backported-Server-Patches HEAD
 
 enableCommitSigningIfNeeded

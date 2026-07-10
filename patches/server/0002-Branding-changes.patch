@@ -1,14 +1,14 @@
-From 877801e2acc7ab853e64e9a62cb2838136c2fc4f Mon Sep 17 00:00:00 2001
+From 8c89c99dcb91d828321b7bfdf784f497eb5bbe56 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 Jun 2022 21:47:49 +0100
 Subject: [PATCH] Branding changes
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 18ff3c3c9..d66c3fb43 100644
+index c2d911ee6..873c6288b 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1092,7 +1092,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
+@@ -1109,7 +1109,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
      }
  
      public String getServerModName() {
@@ -44,5 +44,5 @@ index 49f1ab608..b85600784 100644
          InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/me.samsuik.blossom/api/pom.properties");
          Properties properties = new Properties();
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 

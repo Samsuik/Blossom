@@ -1,4 +1,4 @@
-From 1b2e82dac5b446a9ceaa8520725114dafa3dd623 Mon Sep 17 00:00:00 2001
+From d26dd17ebfc6e2b4e71d7ed1b76b85fc5b6f4911 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -969,10 +969,10 @@ index d1967dcb5..a6cb8e28a 100644
  
      public byte getTypeId() {
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index d02f56310..449dc9dbb 100644
+index e4cbc449e..0a331f72f 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
-@@ -356,6 +356,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+@@ -380,6 +380,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
              } else {
                  this.channel.pipeline().addBefore("encoder", "compress", new PacketCompressor(i));
              }

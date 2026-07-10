@@ -1,4 +1,4 @@
-From b7bdb8af911c7b4d00a257a2f9556f6fbb5823f5 Mon Sep 17 00:00:00 2001
+From 70e4aa9fbe88fa590400369b51dee55d43aad597 Mon Sep 17 00:00:00 2001
 From: Spottedleaf <spottedleaf@spottedleaf.dev>
 Date: Sat, 4 Apr 2020 15:27:44 -0700
 Subject: [PATCH] Tuinity Allow controlled flushing for network manager
@@ -162,5 +162,5 @@ index fb230bac3..4a6d5dc12 100644
              } finally {
                  this.j.readLock().unlock();
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 

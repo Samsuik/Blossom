@@ -1,4 +1,4 @@
-From da51f9e3dfb626869ba859280e083a1f6cd57712 Mon Sep 17 00:00:00 2001
+From 463a8568e1289e277e4d0b2a451e64187d2ca118 Mon Sep 17 00:00:00 2001
 From: Spottedleaf <spottedleaf@spottedleaf.dev>
 Date: Sat, 4 Apr 2020 17:00:20 -0700
 Subject: [PATCH] Tuinity Consolidate flush calls for entity tracker packets
@@ -22,7 +22,7 @@ With this change I could get all 200 on at 0ms ping.
 So in general this patch should reduce Netty I/O thread load.
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index d66c3fb43..873c6288b 100644
+index 18ff3c3c9..c2d911ee6 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -868,7 +868,24 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
@@ -51,5 +51,5 @@ index d66c3fb43..873c6288b 100644
                  this.methodProfiler.b();
                  this.methodProfiler.b();
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 

@@ -1,4 +1,4 @@
-From a321d2afe6bb5e5e8985928bf730d4f0dc0238fc Mon Sep 17 00:00:00 2001
+From a36991fb9c050dd1298a5b28d3ea2a677e5012b5 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:09:02 +0100
 Subject: [PATCH] Add missing/wrong block data limits
@@ -320,5 +320,5 @@ index 0a6871b21..ea53e48eb 100644
  
      public int toLegacyData(IBlockData iblockdata) {
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 

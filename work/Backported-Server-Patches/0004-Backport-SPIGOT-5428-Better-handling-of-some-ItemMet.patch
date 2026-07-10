@@ -1,8 +1,9 @@
-From 6471688cbe921266a01d7f4ca60500dcdfea6def Mon Sep 17 00:00:00 2001
+From b1bd9aac4fa0f0b459d670b2cdd9b079cb943e82 Mon Sep 17 00:00:00 2001
 From: Mathias <mail@mathias.is>
 Date: Mon, 16 Dec 2019 19:11:10 +0200
 Subject: [PATCH] Backport SPIGOT-5428: Better handling of some ItemMeta
 
+Credits: https://github.com/hpfxd/PandaSpigot/
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java
 index 80f9ffa9b..d6fd5bf82 100644

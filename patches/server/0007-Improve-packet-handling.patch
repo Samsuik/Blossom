@@ -1,9 +1,165 @@
-From d6c773e67fea48a2b5b078d204cb6b92f20cdfa7 Mon Sep 17 00:00:00 2001
+From 87b05d362cce1dd21f89d47ad8f92b4f343ec518 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 1 Jul 2022 00:10:18 +0100
 Subject: [PATCH] Improve packet handling
 
 
+diff --git a/src/main/java/me/samsuik/blossom/network/ImmediatePackets.java b/src/main/java/me/samsuik/blossom/network/ImmediatePackets.java
+new file mode 100644
+index 000000000..f94c4d233
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/ImmediatePackets.java
+@@ -0,0 +1,28 @@
++package me.samsuik.blossom.network;
++
++import net.minecraft.server.*;
++
++public final class ImmediatePackets {
++    public static boolean needToFlush(final Packet<?> packet) {
++        return packet instanceof PacketPlayOutKeepAlive
++            || packet instanceof PacketLoginOutDisconnect
++            || packet instanceof PacketPlayOutTransaction;
++    }
++
++    public static boolean immediatePacket(final NetworkManager connection, final Packet<?> packet) {
++        return connection.getProtocol() != EnumProtocol.PLAY
++            || needToFlush(packet)
++            || packet instanceof PacketPlayOutChat
++            || packet instanceof PacketPlayOutTabComplete
++            || packet instanceof PacketPlayOutTitle
++            || packet instanceof PacketPlayOutNamedSoundEffect
++            || packet instanceof PacketPlayOutWorldParticles
++            || packet instanceof PacketPlayOutPlayerInfo
++            || packet instanceof PacketPlayOutPlayerListHeaderFooter;
++    }
++
++    public static boolean sendImmediately(final NetworkManager networkManager, final Packet<?> packet) {
++        return immediatePacket(networkManager, packet)
++            || MinecraftServer.getServer().isMainThread() && networkManager.isPacketQueueEmpty();
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
+index 4a6d5dc12..e4cbc449e 100644
+--- a/src/main/java/net/minecraft/server/NetworkManager.java
++++ b/src/main/java/net/minecraft/server/NetworkManager.java
+@@ -108,6 +108,19 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+         }
+     }
+     // Tuinity end - allow controlled flushing
++    // Blossom start - improved packet handling
++    public final EnumProtocol getProtocol() {
++        return this.channel.attr(NetworkManager.c).get();
++    }
++
++    public final boolean isPacketQueueEmpty() {
++        return this.i.isEmpty();
++    }
++
++    public final boolean isConnected() {
++        return this.channel != null && this.channel.isOpen();
++    }
++    // Blossom end - improved packet handling
+ 
+     public NetworkManager(EnumProtocolDirection enumprotocoldirection) {
+         this.h = enumprotocoldirection;
+@@ -206,36 +219,53 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+         this.writePacket(packet, agenericfuturelistener, Boolean.TRUE);
+     }
+     private void writePacket(Packet<?> packet, final GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener, Boolean flushConditional) {
+-        this.packetWrites.getAndIncrement(); // must be befeore using canFlush
+-        boolean effectiveFlush = flushConditional == null ? this.canFlush : flushConditional.booleanValue();
+-        final boolean flush = effectiveFlush || packet instanceof PacketPlayOutKeepAlive || packet instanceof PacketLoginOutDisconnect; // no delay for certain packets
+-        // Tuinity end - add flush parameter
++        // Blossom start - improve packet handling
+         final EnumProtocol enumprotocol = EnumProtocol.a(packet);
+         final EnumProtocol enumprotocol1 = (EnumProtocol) this.channel.attr(NetworkManager.c).get();
+-
+-        if (enumprotocol1 != enumprotocol) {
++        final boolean switchProtocol = enumprotocol != enumprotocol1;
++        if (switchProtocol) {
+             NetworkManager.g.debug("Disabled auto read");
+             this.channel.config().setAutoRead(false);
++            this.channel.attr(NetworkManager.c).set(enumprotocol);
++        }
++
++        if (me.samsuik.blossom.network.ImmediatePackets.sendImmediately(this, packet)) {
++            this.writePacketInEventLoop(packet, agenericfuturelistener, switchProtocol, flushConditional);
++        } else {
++            this.i.add(new NetworkManager.QueuedPacket(packet, agenericfuturelistener));
++            this.flushPacketQueue();
+         }
++    }
+ 
++    private void writePacketInEventLoop(
++        final Packet<?> packet,
++        final GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener,
++        final boolean switchProtocol,
++        final Boolean flushConditional
++    ) {
+         if (this.channel.eventLoop().inEventLoop()) {
+             // Tuinity start - add flush parameter
+-            this.writePacket(packet, agenericfuturelistener, enumprotocol, enumprotocol1, flush);
++            this.doWritePacket(packet, agenericfuturelistener, switchProtocol, flushConditional);
+         } else {
+-            this.channel.eventLoop().execute(new Runnable() {
+-                public void run() {
+-                    NetworkManager.this.writePacket(packet, agenericfuturelistener, enumprotocol, enumprotocol1, flush);
+-                }
+-            });
++            this.channel.eventLoop().execute(() -> NetworkManager.this.doWritePacket(packet, agenericfuturelistener, switchProtocol, flushConditional));
+         }
+-
+     }
+ 
+-    private void writePacket(Packet<?> packet, GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener, EnumProtocol enumprotocol, EnumProtocol enumprotocol1, boolean flush) {
+-        if (enumprotocol != enumprotocol1) {
+-            this.a(enumprotocol);
++    private void doWritePacket(
++        final Packet<?> packet,
++        final GenericFutureListener<? extends Future<? super Void>>[] agenericfuturelistener,
++        final boolean switchProtocol,
++        final Boolean flushConditional
++    ) {
++        this.packetWrites.getAndIncrement(); // must be befeore using canFlush
++        final boolean effectiveFlush = flushConditional == null ? this.canFlush : flushConditional.booleanValue();
++        final boolean flush = effectiveFlush || me.samsuik.blossom.network.ImmediatePackets.needToFlush(packet); // no delay for certain packets
++        // Tuinity end - add flush parameter
++        if (switchProtocol) {
++            NetworkManager.g.debug("Enabled auto read");
++            this.channel.config().setAutoRead(true);
+         }
+-
++        // Blossom end - improve packet handling
+         ChannelFuture channelfuture = flush ? this.channel.writeAndFlush(packet) : this.channel.write(packet);
+ 
+         if (agenericfuturelistener != null) {
+@@ -246,10 +276,15 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+     }
+     // Tuinity end - add flush parameter
+ 
++    // Blossom start - improve packet handling
++    private void flushPacketQueue() { this.m(); }
+     private void m() {
+-        if (this.channel != null && this.channel.isOpen()) {
+-            this.j.readLock().lock();
++        if (!this.isConnected() || this.i.isEmpty()) {
++            return;
++        }
+ 
++        synchronized (this.i) {
++            // Blossom end - improve packet handling
+             // Tuinity start - make only one flush call per sendPacketQueue() call
+             final boolean needsFlush = this.canFlush;
+             boolean hasWrotePacket = false;
+@@ -268,7 +303,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+                     hasWrotePacket = true; // Tuinity - make only one flush call per sendPacketQueue() call
+                 }
+             } finally {
+-                this.j.readLock().unlock();
++                // Blossom - improve packet handling
+             }
+ 
+         }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
 index 2aa3efcda..3a917037b 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java

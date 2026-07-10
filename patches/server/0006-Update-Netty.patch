@@ -1,4 +1,4 @@
-From ec9277e23514307790a5030405f7ac114302725b Mon Sep 17 00:00:00 2001
+From ee9236181807e1ff88871a582be7bc3764b29277 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 15 Aug 2021 20:07:31 +0100
@@ -6,7 +6,7 @@ Subject: [PATCH] Update Netty
 
 
 diff --git a/pom.xml b/pom.xml
-index dcbce916f..2ecb8dc9c 100644
+index f065b1aa1..8f656555d 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -29,6 +29,12 @@
@@ -406,5 +406,5 @@ index 21ab829a6..40e615ff1 100644
          return this.a.refCnt();
      }
 -- 
-2.40.0.windows.1
+2.50.1 (Apple Git-155)
 
