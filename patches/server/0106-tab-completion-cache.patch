@@ -1,0 +1,104 @@
+From 4ef67ad77b411d3e55350b5080143e7745a89607 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 12 May 2024 13:15:59 +0100
+Subject: [PATCH] tab completion cache
+
+
+diff --git a/src/main/java/me/samsuik/blossom/network/TabCompletionCache.java b/src/main/java/me/samsuik/blossom/network/TabCompletionCache.java
+new file mode 100644
+index 000000000..ef7341f10
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/TabCompletionCache.java
+@@ -0,0 +1,62 @@
++package me.samsuik.blossom.network;
++
++import com.google.common.cache.Cache;
++import com.google.common.cache.CacheBuilder;
++import net.minecraft.server.BlockPosition;
++import net.minecraft.server.PacketPlayInTabComplete;
++
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.TimeUnit;
++
++public final class TabCompletionCache {
++    private final Cache<RequestKey, List<String>> cache = CacheBuilder.newBuilder()
++            .expireAfterAccess(10000, TimeUnit.MILLISECONDS)
++            .maximumSize(256)
++            .build();
++
++    public void cache(final PacketPlayInTabComplete request, final List<String> completions) {
++        this.cache.put(new RequestKey(request), completions);
++    }
++
++    public List<String> get(final PacketPlayInTabComplete request) {
++        return this.cache.getIfPresent(new RequestKey(request));
++    }
++
++    private static class RequestKey {
++        private final String request;
++        private final BlockPosition position;
++
++        private RequestKey(final PacketPlayInTabComplete request) {
++            this.request = trim(request.a());
++            this.position = request.b();
++        }
++
++        @Override
++        public final boolean equals(final Object obj) {
++            if (this == obj) return true;
++            if (!(obj instanceof RequestKey)) return false;
++
++            final RequestKey that = (RequestKey) obj;
++            return this.request.equals(that.request)
++                && Objects.equals(this.position, that.position);
++        }
++
++        @Override
++        public int hashCode() {
++            int result = this.request.hashCode();
++            result = 31 * result + Objects.hashCode(this.position);
++            return result;
++        }
++
++        private static String trim(final String request) {
++            final int index = request.lastIndexOf(" ");
++            if (index == -1 || index + 2 >= request.length()) {
++                return request;
++            }
++
++            return request.substring(0, index + 2);
++        }
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index e1840d7cf..492ac6c1c 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -89,6 +89,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+     private double q;
+     private boolean checkMovement = true;
+     private boolean processedDisconnect; // CraftBukkit - added
++    private final me.samsuik.blossom.network.TabCompletionCache tabCompletions = new me.samsuik.blossom.network.TabCompletionCache(); // Blossom - tab completion cache
+ 
+     public PlayerConnection(MinecraftServer minecraftserver, NetworkManager networkmanager, EntityPlayer entityplayer) {
+         this.minecraftServer = minecraftserver;
+@@ -2041,7 +2042,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             blockPos = null;
+         }
+ 
+-        final List<String> completions = this.minecraftServer.tabCompleteCommand(this.player, packetplayintabcomplete.a(), blockPos);
++        // Blossom start - tab completion cache
++        List<String> completions = this.tabCompletions.get(packetplayintabcomplete);
++        if (completions == null) {
++            completions = this.minecraftServer.tabCompleteCommand(this.player, packetplayintabcomplete.a(), blockPos);
++            this.tabCompletions.cache(packetplayintabcomplete, completions);
++        }
++        // Blossom end - tab completion cache
+         this.player.playerConnection.sendPacket(new PacketPlayOutTabComplete(completions.toArray(new String[0])));
+         // Blossom end - security patches
+     }
+-- 
+2.50.1 (Apple Git-155)
+

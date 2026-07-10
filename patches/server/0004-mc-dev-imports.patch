@@ -1,4 +1,4 @@
-From 2237f427230c4cb2694b27a4a1932be0629136b9 Mon Sep 17 00:00:00 2001
+From 025058c6a26c2a578307bcf7f238857b04ef679f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:10:11 +0100
 Subject: [PATCH] mc dev imports
@@ -6127,6 +6127,114 @@ index 000000000..d17904972
 +        }
 +    }
 +}
+diff --git a/src/main/java/net/minecraft/server/NBTReadLimiter.java b/src/main/java/net/minecraft/server/NBTReadLimiter.java
+new file mode 100644
+index 000000000..58253cc08
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTReadLimiter.java
+@@ -0,0 +1,21 @@
++package net.minecraft.server;
++
++public class NBTReadLimiter {
++
++    public static final NBTReadLimiter a = new NBTReadLimiter(0L) {
++        public void a(long i) {}
++    };
++    private final long b;
++    private long c;
++
++    public NBTReadLimiter(long i) {
++        this.b = i;
++    }
++
++    public void a(long i) {
++        this.c += i / 8L;
++        if (this.c > this.b) {
++            throw new RuntimeException("Tried to read NBT tag that was too big; tried to allocate: " + this.c + "bytes where max allowed: " + this.b);
++        }
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagByte.java b/src/main/java/net/minecraft/server/NBTTagByte.java
+new file mode 100644
+index 000000000..01c5afad3
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagByte.java
+@@ -0,0 +1,75 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagByte extends NBTBase.NBTNumber {
++
++    private byte data;
++
++    NBTTagByte() {}
++
++    public NBTTagByte(byte b0) {
++        this.data = b0;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeByte(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(72L);
++        this.data = datainput.readByte();
++    }
++
++    public byte getTypeId() {
++        return (byte) 1;
++    }
++
++    public String toString() {
++        return "" + this.data + "b";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagByte(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagByte nbttagbyte = (NBTTagByte) object;
++
++            return this.data == nbttagbyte.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ this.data;
++    }
++
++    public long c() {
++        return (long) this.data;
++    }
++
++    public int d() {
++        return this.data;
++    }
++
++    public short e() {
++        return (short) this.data;
++    }
++
++    public byte f() {
++        return this.data;
++    }
++
++    public double g() {
++        return (double) this.data;
++    }
++
++    public float h() {
++        return (float) this.data;
++    }
++}
 diff --git a/src/main/java/net/minecraft/server/NBTTagCompound.java b/src/main/java/net/minecraft/server/NBTTagCompound.java
 new file mode 100644
 index 000000000..22d7c2ab3
@@ -6497,6 +6605,518 @@ index 000000000..22d7c2ab3
 +
 +    }
 +}
+diff --git a/src/main/java/net/minecraft/server/NBTTagDouble.java b/src/main/java/net/minecraft/server/NBTTagDouble.java
+new file mode 100644
+index 000000000..cdd20197a
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagDouble.java
+@@ -0,0 +1,77 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagDouble extends NBTBase.NBTNumber {
++
++    private double data;
++
++    NBTTagDouble() {}
++
++    public NBTTagDouble(double d0) {
++        this.data = d0;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeDouble(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(128L);
++        this.data = datainput.readDouble();
++    }
++
++    public byte getTypeId() {
++        return (byte) 6;
++    }
++
++    public String toString() {
++        return "" + this.data + "d";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagDouble(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagDouble nbttagdouble = (NBTTagDouble) object;
++
++            return this.data == nbttagdouble.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        long i = Double.doubleToLongBits(this.data);
++
++        return super.hashCode() ^ (int) (i ^ i >>> 32);
++    }
++
++    public long c() {
++        return (long) Math.floor(this.data);
++    }
++
++    public int d() {
++        return MathHelper.floor(this.data);
++    }
++
++    public short e() {
++        return (short) (MathHelper.floor(this.data) & '\uffff');
++    }
++
++    public byte f() {
++        return (byte) (MathHelper.floor(this.data) & 255);
++    }
++
++    public double g() {
++        return this.data;
++    }
++
++    public float h() {
++        return (float) this.data;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagEnd.java b/src/main/java/net/minecraft/server/NBTTagEnd.java
+new file mode 100644
+index 000000000..376a5a46a
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagEnd.java
+@@ -0,0 +1,28 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagEnd extends NBTBase {
++
++    NBTTagEnd() {}
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(64L);
++    }
++
++    void write(DataOutput dataoutput) throws IOException {}
++
++    public byte getTypeId() {
++        return (byte) 0;
++    }
++
++    public String toString() {
++        return "END";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagEnd();
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagFloat.java b/src/main/java/net/minecraft/server/NBTTagFloat.java
+new file mode 100644
+index 000000000..af7296067
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagFloat.java
+@@ -0,0 +1,75 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagFloat extends NBTBase.NBTNumber {
++
++    private float data;
++
++    NBTTagFloat() {}
++
++    public NBTTagFloat(float f) {
++        this.data = f;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeFloat(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(96L);
++        this.data = datainput.readFloat();
++    }
++
++    public byte getTypeId() {
++        return (byte) 5;
++    }
++
++    public String toString() {
++        return "" + this.data + "f";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagFloat(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagFloat nbttagfloat = (NBTTagFloat) object;
++
++            return this.data == nbttagfloat.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ Float.floatToIntBits(this.data);
++    }
++
++    public long c() {
++        return (long) this.data;
++    }
++
++    public int d() {
++        return MathHelper.d(this.data);
++    }
++
++    public short e() {
++        return (short) (MathHelper.d(this.data) & '\uffff');
++    }
++
++    public byte f() {
++        return (byte) (MathHelper.d(this.data) & 255);
++    }
++
++    public double g() {
++        return (double) this.data;
++    }
++
++    public float h() {
++        return this.data;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagInt.java b/src/main/java/net/minecraft/server/NBTTagInt.java
+new file mode 100644
+index 000000000..9ff899196
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagInt.java
+@@ -0,0 +1,75 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagInt extends NBTBase.NBTNumber {
++
++    private int data;
++
++    NBTTagInt() {}
++
++    public NBTTagInt(int i) {
++        this.data = i;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeInt(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(96L);
++        this.data = datainput.readInt();
++    }
++
++    public byte getTypeId() {
++        return (byte) 3;
++    }
++
++    public String toString() {
++        return "" + this.data;
++    }
++
++    public NBTBase clone() {
++        return new NBTTagInt(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagInt nbttagint = (NBTTagInt) object;
++
++            return this.data == nbttagint.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ this.data;
++    }
++
++    public long c() {
++        return (long) this.data;
++    }
++
++    public int d() {
++        return this.data;
++    }
++
++    public short e() {
++        return (short) (this.data & '\uffff');
++    }
++
++    public byte f() {
++        return (byte) (this.data & 255);
++    }
++
++    public double g() {
++        return (double) this.data;
++    }
++
++    public float h() {
++        return (float) this.data;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagLong.java b/src/main/java/net/minecraft/server/NBTTagLong.java
+new file mode 100644
+index 000000000..84b871d98
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagLong.java
+@@ -0,0 +1,75 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagLong extends NBTBase.NBTNumber {
++
++    private long data;
++
++    NBTTagLong() {}
++
++    public NBTTagLong(long i) {
++        this.data = i;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeLong(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(128L);
++        this.data = datainput.readLong();
++    }
++
++    public byte getTypeId() {
++        return (byte) 4;
++    }
++
++    public String toString() {
++        return "" + this.data + "L";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagLong(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagLong nbttaglong = (NBTTagLong) object;
++
++            return this.data == nbttaglong.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ (int) (this.data ^ this.data >>> 32);
++    }
++
++    public long c() {
++        return this.data;
++    }
++
++    public int d() {
++        return (int) (this.data & -1L);
++    }
++
++    public short e() {
++        return (short) ((int) (this.data & 65535L));
++    }
++
++    public byte f() {
++        return (byte) ((int) (this.data & 255L));
++    }
++
++    public double g() {
++        return (double) this.data;
++    }
++
++    public float h() {
++        return (float) this.data;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagShort.java b/src/main/java/net/minecraft/server/NBTTagShort.java
+new file mode 100644
+index 000000000..690371dad
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagShort.java
+@@ -0,0 +1,75 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagShort extends NBTBase.NBTNumber {
++
++    private short data;
++
++    public NBTTagShort() {}
++
++    public NBTTagShort(short short0) {
++        this.data = short0;
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeShort(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(80L);
++        this.data = datainput.readShort();
++    }
++
++    public byte getTypeId() {
++        return (byte) 2;
++    }
++
++    public String toString() {
++        return "" + this.data + "s";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagShort(this.data);
++    }
++
++    public boolean equals(Object object) {
++        if (super.equals(object)) {
++            NBTTagShort nbttagshort = (NBTTagShort) object;
++
++            return this.data == nbttagshort.data;
++        } else {
++            return false;
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ this.data;
++    }
++
++    public long c() {
++        return (long) this.data;
++    }
++
++    public int d() {
++        return this.data;
++    }
++
++    public short e() {
++        return this.data;
++    }
++
++    public byte f() {
++        return (byte) (this.data & 255);
++    }
++
++    public double g() {
++        return (double) this.data;
++    }
++
++    public float h() {
++        return (float) this.data;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/NBTTagString.java b/src/main/java/net/minecraft/server/NBTTagString.java
+new file mode 100644
+index 000000000..d1967dcb5
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/NBTTagString.java
+@@ -0,0 +1,65 @@
++package net.minecraft.server;
++
++import java.io.DataInput;
++import java.io.DataOutput;
++import java.io.IOException;
++
++public class NBTTagString extends NBTBase {
++
++    private String data;
++
++    public NBTTagString() {
++        this.data = "";
++    }
++
++    public NBTTagString(String s) {
++        this.data = s;
++        if (s == null) {
++            throw new IllegalArgumentException("Empty string not allowed");
++        }
++    }
++
++    void write(DataOutput dataoutput) throws IOException {
++        dataoutput.writeUTF(this.data);
++    }
++
++    void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
++        nbtreadlimiter.a(288L);
++        this.data = datainput.readUTF();
++        nbtreadlimiter.a((long) (16 * this.data.length()));
++    }
++
++    public byte getTypeId() {
++        return (byte) 8;
++    }
++
++    public String toString() {
++        return "\"" + this.data.replace("\"", "\\\"") + "\"";
++    }
++
++    public NBTBase clone() {
++        return new NBTTagString(this.data);
++    }
++
++    public boolean isEmpty() {
++        return this.data.isEmpty();
++    }
++
++    public boolean equals(Object object) {
++        if (!super.equals(object)) {
++            return false;
++        } else {
++            NBTTagString nbttagstring = (NBTTagString) object;
++
++            return this.data == null && nbttagstring.data == null || this.data != null && this.data.equals(nbttagstring.data);
++        }
++    }
++
++    public int hashCode() {
++        return super.hashCode() ^ this.data.hashCode();
++    }
++
++    public String a_() {
++        return this.data;
++    }
++}
 diff --git a/src/main/java/net/minecraft/server/OpList.java b/src/main/java/net/minecraft/server/OpList.java
 new file mode 100644
 index 000000000..26b4e44b0
@@ -6561,6 +7181,613 @@ index 000000000..26b4e44b0
 +
 +    protected String a(GameProfile object) { // Blossom - decompile fix
 +        return this.c((GameProfile) object);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketCompressor.java b/src/main/java/net/minecraft/server/PacketCompressor.java
+new file mode 100644
+index 000000000..8aebeea5f
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketCompressor.java
+@@ -0,0 +1,52 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.MessageToByteEncoder;
++import java.util.zip.Deflater;
++
++public class PacketCompressor extends MessageToByteEncoder<ByteBuf> {
++
++    private final byte[] a = new byte[8192];
++    private final Deflater b;
++    private int c;
++
++    public PacketCompressor(int i) {
++        this.c = i;
++        this.b = new Deflater();
++    }
++
++    protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, ByteBuf bytebuf1) throws Exception {
++        int i = bytebuf.readableBytes();
++        PacketDataSerializer packetdataserializer = new PacketDataSerializer(bytebuf1);
++
++        if (i < this.c) {
++            packetdataserializer.b(0);
++            packetdataserializer.writeBytes(bytebuf);
++        } else {
++            byte[] abyte = new byte[i];
++
++            bytebuf.readBytes(abyte);
++            packetdataserializer.b(abyte.length);
++            this.b.setInput(abyte, 0, i);
++            this.b.finish();
++
++            while (!this.b.finished()) {
++                int j = this.b.deflate(this.a);
++
++                packetdataserializer.writeBytes(this.a, 0, j);
++            }
++
++            this.b.reset();
++        }
++
++    }
++
++    public void a(int i) {
++        this.c = i;
++    }
++
++    protected void encode(ChannelHandlerContext channelhandlercontext, ByteBuf object, ByteBuf bytebuf) throws Exception { // Blossom - decompile fix
++        this.a(channelhandlercontext, (ByteBuf) object, bytebuf);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketDecoder.java b/src/main/java/net/minecraft/server/PacketDecoder.java
+new file mode 100644
+index 000000000..bbebe3a9f
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketDecoder.java
+@@ -0,0 +1,45 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.ByteToMessageDecoder;
++import java.io.IOException;
++import java.util.List;
++import org.apache.logging.log4j.LogManager;
++import org.apache.logging.log4j.Logger;
++import org.apache.logging.log4j.Marker;
++import org.apache.logging.log4j.MarkerManager;
++
++public class PacketDecoder extends ByteToMessageDecoder {
++
++    private static final Logger a = LogManager.getLogger();
++    private static final Marker b = MarkerManager.getMarker("PACKET_RECEIVED", NetworkManager.b);
++    private final EnumProtocolDirection c;
++
++    public PacketDecoder(EnumProtocolDirection enumprotocoldirection) {
++        this.c = enumprotocoldirection;
++    }
++
++    protected void decode(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
++        if (bytebuf.readableBytes() != 0) {
++            PacketDataSerializer packetdataserializer = new PacketDataSerializer(bytebuf);
++            int i = packetdataserializer.e();
++            Packet packet = ((EnumProtocol) channelhandlercontext.channel().attr(NetworkManager.c).get()).a(this.c, i);
++
++            if (packet == null) {
++                throw new IOException("Bad packet id " + i);
++            } else {
++                packet.a(packetdataserializer);
++                if (packetdataserializer.readableBytes() > 0) {
++                    throw new IOException("Packet " + ((EnumProtocol) channelhandlercontext.channel().attr(NetworkManager.c).get()).a() + "/" + i + " (" + packet.getClass().getSimpleName() + ") was larger than I expected, found " + packetdataserializer.readableBytes() + " bytes extra whilst reading packet " + i);
++                } else {
++                    list.add(packet);
++                    if (PacketDecoder.a.isDebugEnabled()) {
++                        PacketDecoder.a.debug(PacketDecoder.b, " IN: [{}:{}] {}", new Object[] { channelhandlercontext.channel().attr(NetworkManager.c).get(), Integer.valueOf(i), packet.getClass().getName()});
++                    }
++
++                }
++            }
++        }
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketDecompressor.java b/src/main/java/net/minecraft/server/PacketDecompressor.java
+new file mode 100644
+index 000000000..300d46475
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketDecompressor.java
+@@ -0,0 +1,54 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.buffer.Unpooled;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.ByteToMessageDecoder;
++import io.netty.handler.codec.DecoderException;
++import java.util.List;
++import java.util.zip.Inflater;
++
++public class PacketDecompressor extends ByteToMessageDecoder {
++
++    private final Inflater a;
++    private int b;
++
++    public PacketDecompressor(int i) {
++        this.b = i;
++        this.a = new Inflater();
++    }
++
++    protected void decode(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
++        if (bytebuf.readableBytes() != 0) {
++            PacketDataSerializer packetdataserializer = new PacketDataSerializer(bytebuf);
++            int i = packetdataserializer.e();
++
++            if (i == 0) {
++                list.add(packetdataserializer.readBytes(packetdataserializer.readableBytes()));
++            } else {
++                if (i < this.b) {
++                    throw new DecoderException("Badly compressed packet - size of " + i + " is below server threshold of " + this.b);
++                }
++
++                if (i > 2097152) {
++                    throw new DecoderException("Badly compressed packet - size of " + i + " is larger than protocol maximum of " + 2097152);
++                }
++
++                byte[] abyte = new byte[packetdataserializer.readableBytes()];
++
++                packetdataserializer.readBytes(abyte);
++                this.a.setInput(abyte);
++                byte[] abyte1 = new byte[i];
++
++                this.a.inflate(abyte1);
++                list.add(Unpooled.wrappedBuffer(abyte1));
++                this.a.reset();
++            }
++
++        }
++    }
++
++    public void a(int i) {
++        this.b = i;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketDecrypter.java b/src/main/java/net/minecraft/server/PacketDecrypter.java
+new file mode 100644
+index 000000000..751d0a21d
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketDecrypter.java
+@@ -0,0 +1,24 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.MessageToMessageDecoder;
++import java.util.List;
++import javax.crypto.Cipher;
++
++public class PacketDecrypter extends MessageToMessageDecoder<ByteBuf> {
++
++    private final PacketEncryptionHandler a;
++
++    public PacketDecrypter(Cipher cipher) {
++        this.a = new PacketEncryptionHandler(cipher);
++    }
++
++    protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
++        list.add(this.a.a(channelhandlercontext, bytebuf));
++    }
++
++    protected void decode(ChannelHandlerContext channelhandlercontext, ByteBuf object, List list) throws Exception { // Blossom - decompile fix
++        this.a(channelhandlercontext, (ByteBuf) object, list);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketEncoder.java b/src/main/java/net/minecraft/server/PacketEncoder.java
+new file mode 100644
+index 000000000..381097564
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketEncoder.java
+@@ -0,0 +1,52 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.MessageToByteEncoder;
++import java.io.IOException;
++import org.apache.logging.log4j.LogManager;
++import org.apache.logging.log4j.Logger;
++import org.apache.logging.log4j.Marker;
++import org.apache.logging.log4j.MarkerManager;
++
++public class PacketEncoder extends MessageToByteEncoder<Packet> {
++
++    private static final Logger a = LogManager.getLogger();
++    private static final Marker b = MarkerManager.getMarker("PACKET_SENT", NetworkManager.b);
++    private final EnumProtocolDirection c;
++
++    public PacketEncoder(EnumProtocolDirection enumprotocoldirection) {
++        this.c = enumprotocoldirection;
++    }
++
++    protected void a(ChannelHandlerContext channelhandlercontext, Packet packet, ByteBuf bytebuf) throws Exception {
++        Integer integer = ((EnumProtocol) channelhandlercontext.channel().attr(NetworkManager.c).get()).a(this.c, packet);
++
++        if (PacketEncoder.a.isDebugEnabled()) {
++            PacketEncoder.a.debug(PacketEncoder.b, "OUT: [{}:{}] {}", new Object[] { channelhandlercontext.channel().attr(NetworkManager.c).get(), integer, packet.getClass().getName()});
++        }
++
++        if (integer == null) {
++            throw new IOException("Can\'t serialize unregistered packet");
++        } else {
++            PacketDataSerializer packetdataserializer = new PacketDataSerializer(bytebuf);
++
++            packetdataserializer.b(integer.intValue());
++
++            try {
++                if (packet instanceof PacketPlayOutNamedEntitySpawn) {
++                    packet = packet;
++                }
++
++                packet.b(packetdataserializer);
++            } catch (Throwable throwable) {
++                PacketEncoder.a.error(throwable);
++            }
++
++        }
++    }
++
++    protected void encode(ChannelHandlerContext channelhandlercontext, Packet object, ByteBuf bytebuf) throws Exception { // Blossom - decompile fix
++        this.a(channelhandlercontext, (Packet) object, bytebuf);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketEncrypter.java b/src/main/java/net/minecraft/server/PacketEncrypter.java
+new file mode 100644
+index 000000000..687635127
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketEncrypter.java
+@@ -0,0 +1,23 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.handler.codec.MessageToByteEncoder;
++import javax.crypto.Cipher;
++
++public class PacketEncrypter extends MessageToByteEncoder<ByteBuf> {
++
++    private final PacketEncryptionHandler a;
++
++    public PacketEncrypter(Cipher cipher) {
++        this.a = new PacketEncryptionHandler(cipher);
++    }
++
++    protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, ByteBuf bytebuf1) throws Exception {
++        this.a.a(bytebuf, bytebuf1);
++    }
++
++    protected void encode(ChannelHandlerContext channelhandlercontext, ByteBuf object, ByteBuf bytebuf) throws Exception { // Blossom - decompile fix
++        this.a(channelhandlercontext, (ByteBuf) object, bytebuf);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketEncryptionHandler.java b/src/main/java/net/minecraft/server/PacketEncryptionHandler.java
+new file mode 100644
+index 000000000..a919da036
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketEncryptionHandler.java
+@@ -0,0 +1,49 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandlerContext;
++import javax.crypto.Cipher;
++import javax.crypto.ShortBufferException;
++
++public class PacketEncryptionHandler {
++
++    private final Cipher a;
++    private byte[] b = new byte[0];
++    private byte[] c = new byte[0];
++
++    protected PacketEncryptionHandler(Cipher cipher) {
++        this.a = cipher;
++    }
++
++    private byte[] a(ByteBuf bytebuf) {
++        int i = bytebuf.readableBytes();
++
++        if (this.b.length < i) {
++            this.b = new byte[i];
++        }
++
++        bytebuf.readBytes(this.b, 0, i);
++        return this.b;
++    }
++
++    protected ByteBuf a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf) throws ShortBufferException {
++        int i = bytebuf.readableBytes();
++        byte[] abyte = this.a(bytebuf);
++        ByteBuf bytebuf1 = channelhandlercontext.alloc().heapBuffer(this.a.getOutputSize(i));
++
++        bytebuf1.writerIndex(this.a.update(abyte, 0, i, bytebuf1.array(), bytebuf1.arrayOffset()));
++        return bytebuf1;
++    }
++
++    protected void a(ByteBuf bytebuf, ByteBuf bytebuf1) throws ShortBufferException {
++        int i = bytebuf.readableBytes();
++        byte[] abyte = this.a(bytebuf);
++        int j = this.a.getOutputSize(i);
++
++        if (this.c.length < j) {
++            this.c = new byte[j];
++        }
++
++        bytebuf1.writeBytes(this.c, 0, this.a.update(abyte, 0, i, this.c));
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInCustomPayload.java b/src/main/java/net/minecraft/server/PacketPlayInCustomPayload.java
+new file mode 100644
+index 000000000..d5d932c08
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketPlayInCustomPayload.java
+@@ -0,0 +1,40 @@
++package net.minecraft.server;
++
++import io.netty.buffer.ByteBuf;
++import java.io.IOException;
++
++public class PacketPlayInCustomPayload implements Packet<PacketListenerPlayIn> {
++
++    private String a;
++    private PacketDataSerializer b;
++
++    public PacketPlayInCustomPayload() {}
++
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        this.a = packetdataserializer.c(20);
++        int i = packetdataserializer.readableBytes();
++
++        if (i >= 0 && i <= 32767) {
++            this.b = new PacketDataSerializer(packetdataserializer.readBytes(i));
++        } else {
++            throw new IOException("Payload may not be larger than 32767 bytes");
++        }
++    }
++
++    public void b(PacketDataSerializer packetdataserializer) throws IOException {
++        packetdataserializer.a(this.a);
++        packetdataserializer.writeBytes((ByteBuf) this.b);
++    }
++
++    public void a(PacketListenerPlayIn packetlistenerplayin) {
++        packetlistenerplayin.a(this);
++    }
++
++    public String a() {
++        return this.a;
++    }
++
++    public PacketDataSerializer b() {
++        return this.b;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java b/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java
+new file mode 100644
+index 000000000..e176c9ca0
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java
+@@ -0,0 +1,33 @@
++package net.minecraft.server;
++
++import java.io.IOException;
++
++public class PacketPlayInSetCreativeSlot implements Packet<PacketListenerPlayIn> {
++
++    private int slot;
++    private ItemStack b;
++
++    public PacketPlayInSetCreativeSlot() {}
++
++    public void a(PacketListenerPlayIn packetlistenerplayin) {
++        packetlistenerplayin.a(this);
++    }
++
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        this.slot = packetdataserializer.readShort();
++        this.b = packetdataserializer.i();
++    }
++
++    public void b(PacketDataSerializer packetdataserializer) throws IOException {
++        packetdataserializer.writeShort(this.slot);
++        packetdataserializer.a(this.b);
++    }
++
++    public int a() {
++        return this.slot;
++    }
++
++    public ItemStack getItemStack() {
++        return this.b;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
+new file mode 100644
+index 000000000..0d811e789
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
+@@ -0,0 +1,54 @@
++package net.minecraft.server;
++
++import java.io.IOException;
++import org.apache.commons.lang3.StringUtils;
++
++public class PacketPlayInTabComplete implements Packet<PacketListenerPlayIn> {
++
++    private String a;
++    private BlockPosition b;
++
++    public PacketPlayInTabComplete() {}
++
++    public PacketPlayInTabComplete(String s) {
++        this(s, (BlockPosition) null);
++    }
++
++    public PacketPlayInTabComplete(String s, BlockPosition blockposition) {
++        this.a = s;
++        this.b = blockposition;
++    }
++
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        this.a = packetdataserializer.c(32767);
++        boolean flag = packetdataserializer.readBoolean();
++
++        if (flag) {
++            this.b = packetdataserializer.c();
++        }
++
++    }
++
++    public void b(PacketDataSerializer packetdataserializer) throws IOException {
++        packetdataserializer.a(StringUtils.substring(this.a, 0, 32767));
++        boolean flag = this.b != null;
++
++        packetdataserializer.writeBoolean(flag);
++        if (flag) {
++            packetdataserializer.a(this.b);
++        }
++
++    }
++
++    public void a(PacketListenerPlayIn packetlistenerplayin) {
++        packetlistenerplayin.a(this);
++    }
++
++    public String a() {
++        return this.a;
++    }
++
++    public BlockPosition b() {
++        return this.b;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
+new file mode 100644
+index 000000000..703e47c52
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
+@@ -0,0 +1,48 @@
++package net.minecraft.server;
++
++import java.io.IOException;
++
++public class PacketPlayInUpdateSign implements Packet<PacketListenerPlayIn> {
++
++    private BlockPosition a;
++    private IChatBaseComponent[] b;
++
++    public PacketPlayInUpdateSign() {}
++
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        this.a = packetdataserializer.c();
++        this.b = new IChatBaseComponent[4];
++
++        for (int i = 0; i < 4; ++i) {
++            String s = packetdataserializer.c(384);
++            IChatBaseComponent ichatbasecomponent = IChatBaseComponent.ChatSerializer.a(s);
++
++            this.b[i] = ichatbasecomponent;
++        }
++
++    }
++
++    public void b(PacketDataSerializer packetdataserializer) throws IOException {
++        packetdataserializer.a(this.a);
++
++        for (int i = 0; i < 4; ++i) {
++            IChatBaseComponent ichatbasecomponent = this.b[i];
++            String s = IChatBaseComponent.ChatSerializer.a(ichatbasecomponent);
++
++            packetdataserializer.a(s);
++        }
++
++    }
++
++    public void a(PacketListenerPlayIn packetlistenerplayin) {
++        packetlistenerplayin.a(this);
++    }
++
++    public BlockPosition a() {
++        return this.a;
++    }
++
++    public IChatBaseComponent[] b() {
++        return this.b;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java b/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java
+new file mode 100644
+index 000000000..a9a2a794d
+--- /dev/null
++++ b/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java
+@@ -0,0 +1,61 @@
++package net.minecraft.server;
++
++import java.io.IOException;
++
++public class PacketPlayInWindowClick implements Packet<PacketListenerPlayIn> {
++
++    private int a;
++    private int slot;
++    private int button;
++    private short d;
++    private ItemStack item;
++    private int shift;
++
++    public PacketPlayInWindowClick() {}
++
++    public void a(PacketListenerPlayIn packetlistenerplayin) {
++        packetlistenerplayin.a(this);
++    }
++
++    public void a(PacketDataSerializer packetdataserializer) throws IOException {
++        this.a = packetdataserializer.readByte();
++        this.slot = packetdataserializer.readShort();
++        this.button = packetdataserializer.readByte();
++        this.d = packetdataserializer.readShort();
++        this.shift = packetdataserializer.readByte();
++        this.item = packetdataserializer.i();
++    }
++
++    public void b(PacketDataSerializer packetdataserializer) throws IOException {
++        packetdataserializer.writeByte(this.a);
++        packetdataserializer.writeShort(this.slot);
++        packetdataserializer.writeByte(this.button);
++        packetdataserializer.writeShort(this.d);
++        packetdataserializer.writeByte(this.shift);
++        packetdataserializer.a(this.item);
++    }
++
++    public int a() {
++        return this.a;
++    }
++
++    public int b() {
++        return this.slot;
++    }
++
++    public int c() {
++        return this.button;
++    }
++
++    public short d() {
++        return this.d;
++    }
++
++    public ItemStack e() {
++        return this.item;
++    }
++
++    public int f() {
++        return this.shift;
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/PacketPlayOutBlockAction.java b/src/main/java/net/minecraft/server/PacketPlayOutBlockAction.java
@@ -6877,5 +8104,5 @@ index 000000000..99259030f
 +    }
 +}
 -- 
-2.50.1
+2.50.1 (Apple Git-155)
 

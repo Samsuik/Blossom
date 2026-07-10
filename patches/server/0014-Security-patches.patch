@@ -1,0 +1,1759 @@
+From 447ff618c554afaf37bdee8539652818507ffb99 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 9 May 2023 16:43:24 +0100
+Subject: [PATCH] Security patches
+
+Fixes numerous exploits that can be used to harm the server and other players.
+
+smiles
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 917a235b4..df8332a4b 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -118,5 +118,70 @@ public class BlossomConfig {
+         config.addDefault(path, def);
+         return config.getString(path, config.getString(path));
+     }
+-    
++
++    public static boolean packetLimiter;
++    public static int packetSamples;
++    public static me.samsuik.blossom.network.PacketLimit packetLimit;
++    public static me.samsuik.blossom.network.PacketLimit byteLimit;
++    private static void PacketLimiter() {
++        if (version < 4) {
++            final int violations = config.getInt("packet-limiter.violations", Integer.MIN_VALUE);
++            if (violations != Integer.MIN_VALUE) {
++                set("packet-limiter.samples", violations);
++                set("packet-limit.violations", null);
++            }
++
++            final int threshold = config.getInt("packet-limiter.threshold", Integer.MIN_VALUE);
++            if (threshold != Integer.MIN_VALUE) {
++                set("packet-limiter.packets.average", threshold);
++                set("packet-limiter.threshold", null);
++            }
++
++            final int max = config.getInt("packet-limiter.max", Integer.MIN_VALUE);
++            if (max != Integer.MIN_VALUE) {
++                set("packet-limiter.packets.max", max);
++                set("packet-limiter.max-pps", null);
++            }
++        }
++
++        packetLimiter = getBoolean("packet-limiter.enabled", true);
++        packetSamples = Math.min(Math.max(getInt("packet-limiter.samples", 8), 1), 32);
++
++        packetLimit = new me.samsuik.blossom.network.PacketLimit(
++            getLong("packet-limiter.packets.average", 120),
++            getLong("packet-limiter.packets.max", 400)
++        );
++
++        byteLimit = new me.samsuik.blossom.network.PacketLimit(
++            getLong("packet-limiter.bytes.average", 65536), // 64 KB
++            getLong("packet-limiter.bytes.max", 131072)     // 128 KB
++        );
++    }
++
++    public static long nbtByteLimit = 2097152L; // use vanilla default until config is loaded
++    private static void NBTByteLimit() {
++        if (version < 4) {
++            set("nbt-reader-byte-limits", null);
++        }
++
++        nbtByteLimit = getLong("nbt-byte-limit", 65536L); // 64 KB
++    }
++
++    public static boolean booksEnabled;
++    public static int bookMaxPages;
++    public static int bookPageLength;
++    public static boolean parseBookComponents;
++    private static void Books() {
++        if (version < 4) {
++            final boolean parseComponents = config.getBoolean("books.component-parsing");
++            set("books.component-parsing", null);
++            set("books.parse-components", parseComponents);
++        }
++
++        booksEnabled = getBoolean("books.enabled", true);
++        bookMaxPages = getInt("books.max-pages", 50);
++        bookPageLength = getInt("books.page-length", 400);
++        parseBookComponents = getBoolean("books.parse-components", false);
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketLimit.java b/src/main/java/me/samsuik/blossom/network/PacketLimit.java
+new file mode 100644
+index 000000000..907b26771
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketLimit.java
+@@ -0,0 +1,11 @@
++package me.samsuik.blossom.network;
++
++public final class PacketLimit {
++    public final long average;
++    public final long max;
++
++    public PacketLimit(final long average, final long max) {
++        this.average = average;
++        this.max = max;
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java b/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java
+new file mode 100644
+index 000000000..c286e260c
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketLimitHandler.java
+@@ -0,0 +1,97 @@
++package me.samsuik.blossom.network;
++
++import io.netty.buffer.ByteBuf;
++import io.netty.channel.ChannelHandler;
++import io.netty.channel.ChannelHandlerContext;
++import io.netty.channel.SimpleChannelInboundHandler;
++import io.netty.handler.codec.DecoderException;
++
++import java.util.ArrayDeque;
++import java.util.concurrent.TimeUnit;
++
++@ChannelHandler.Sharable
++public final class PacketLimitHandler extends SimpleChannelInboundHandler<ByteBuf> {
++    private static final long SAMPLE_LENGTH = TimeUnit.SECONDS.toMillis(1);
++
++    private final ArrayDeque<Sample> samples = new ArrayDeque<>();
++    private final PacketLimit packetLimit;
++    private final PacketLimit byteLimit;
++
++    private final int maxSamples;
++    private int packets, totalPackets;
++    private long bytes, totalBytes;
++    private long lastSampleTime;
++    private long counter;
++
++    public PacketLimitHandler(final int samples, final PacketLimit packetLimit, final PacketLimit byteLimit) {
++        super(false);
++
++        for (int count = 0; count < samples; count++) {
++            this.samples.addLast(new Sample(0, 0));
++        }
++
++        this.maxSamples = samples;
++        this.packetLimit = packetLimit;
++        this.byteLimit = byteLimit;
++    }
++
++    @Override
++    protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf msg) throws Exception {
++        if (++this.packets >= this.packetLimit.max) {
++            throw new DecoderException("Too many packets received (Packets: " + this.packets + ")");
++        }
++
++        if ((this.bytes += msg.readableBytes()) >= this.byteLimit.max) {
++            throw new PacketRateLimitException("Too many bytes received (Bytes: " + this.bytes + ")");
++        }
++
++        if ((++this.counter & 7) == 0 && this.updateSamples()) {
++            final int packetCount = this.totalPackets / this.maxSamples;
++            if (packetCount >= this.packetLimit.average) {
++                throw new PacketRateLimitException("Packet rate limit exceeded (Ps: " + packetCount + ")");
++            }
++
++            final long receivedByteCount = this.totalBytes / this.maxSamples;
++            if (receivedByteCount >= this.byteLimit.average) {
++                throw new PacketRateLimitException("Byte rate limit exceeded (Bytes: " + receivedByteCount + ")");
++            }
++        }
++
++        ctx.fireChannelRead(msg);
++    }
++
++    private boolean updateSamples() {
++        final long millis = System.currentTimeMillis();
++        if (millis - this.lastSampleTime < SAMPLE_LENGTH) {
++            return false;
++        }
++
++        this.lastSampleTime = millis;
++
++        final ArrayDeque<Sample> samples = this.samples;
++        final Sample removedSample = samples.pollLast();
++        this.samples.push(new Sample(this.packets, this.bytes));
++
++        if (removedSample != null) {
++            this.totalPackets -= removedSample.packets;
++            this.totalBytes -= removedSample.bytes;
++        }
++
++        this.totalPackets += this.packets;
++        this.totalBytes += this.bytes;
++        this.packets = 0;
++        this.bytes = 0;
++
++        return true;
++    }
++
++    private static final class Sample {
++        private final int packets;
++        private final long bytes;
++
++        private Sample(final int packets, final long bytes) {
++            this.packets = packets;
++            this.bytes = bytes;
++        }
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
+new file mode 100644
+index 000000000..8bf375281
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
+@@ -0,0 +1,7 @@
++package me.samsuik.blossom.network;
++
++public final class PacketRateLimitException extends RuntimeException {
++    public PacketRateLimitException(final String message) {
++        super(message);
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java b/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java
+new file mode 100644
+index 000000000..ec7d9164f
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java
+@@ -0,0 +1,71 @@
++package me.samsuik.blossom.network.nbt;
++
++import io.netty.buffer.ByteBufInputStream;
++import net.minecraft.server.*;
++import org.bukkit.craftbukkit.inventory.CraftItemStack;
++import org.spigotmc.LimitStream;
++
++import java.io.DataInput;
++import java.io.DataInputStream;
++import java.io.IOException;
++
++public final class ItemNbtReader {
++    public static ItemStack readItemStackUntrusted(final PacketDataSerializer serializer, final long bytes) throws IOException {
++        final short itemId = serializer.readShort();
++        if (itemId < 0) {
++            return null;
++        }
++
++        final Item item = Item.getById(itemId);
++        if (item == null) {
++            return new ItemStack((Item) null, 1);
++        }
++
++        final byte count = serializer.readByte();
++        final short damage = serializer.readShort();
++        final ItemStack stack = new ItemStack(item, count, damage);
++
++        final NBTTagCompound component = readNbtTag(serializer, bytes);
++        if (component != null && !component.isEmpty()) {
++            stack.setTag(component);
++            CraftItemStack.setItemMeta(stack, CraftItemStack.getItemMeta(stack));
++        }
++
++        return stack;
++    }
++
++    private static NBTTagCompound readNbtTag(final PacketDataSerializer serializer, final long bytes) throws IOException {
++        final int index = serializer.readerIndex();
++        try {
++            return serializer.readNbtComponent(bytes);
++        } catch (final NbtByteLimitException byteLimitException) {
++            serializer.readerIndex(index);
++            try {
++                return readRootComponents(serializer, new NBTReadLimiter(bytes), false);
++            } catch (final NbtByteLimitException nbtByteLimitException) {
++                return new NBTTagCompound();
++            }
++        }
++    }
++
++    private static NBTTagCompound readRootComponents(final PacketDataSerializer serializer, final NBTReadLimiter limiter, final boolean named) throws IOException {
++        final DataInput input = new DataInputStream(new LimitStream(new ByteBufInputStream(serializer), limiter));
++        final byte type = input.readByte();
++        if (type != 10) {
++            throw new IOException("Root tag must be a compound tag");
++        }
++
++        final String name = input.readUTF();
++        if (!named && !name.isEmpty()) {
++            throw new IOException("Unexpected root tag name");
++        }
++
++        final NBTTagCompound rootComponent = new NBTTagCompound();
++        try {
++            rootComponent.loadRootComponents(input, limiter);
++            return rootComponent;
++        } catch (final IOException e) {
++            throw new IOException("Something went wrong while reading nbt", e);
++        }
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java b/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java
+new file mode 100644
+index 000000000..092dfe7f3
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java
+@@ -0,0 +1,7 @@
++package me.samsuik.blossom.network.nbt;
++
++public final class NbtByteLimitException extends RuntimeException {
++    public NbtByteLimitException(final String message) {
++        super(message);
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java b/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java
+new file mode 100644
+index 000000000..3fc3cef2b
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java
+@@ -0,0 +1,20 @@
++package me.samsuik.blossom.utils;
++
++import net.minecraft.server.SharedConstants;
++
++public final class SanitizeCharacters {
++    private static boolean isAllowedCharacter(final char charCode) {
++        return SharedConstants.isAllowedChatCharacter(charCode) && charCode < 256;
++    }
++
++    public static String stripDisallowedCharacters(final String string) {
++        final StringBuilder builder = new StringBuilder();
++        for (final char charCode : string.toCharArray()) {
++            if (isAllowedCharacter(charCode)) {
++                builder.append(charCode);
++            }
++        }
++
++        return builder.toString();
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/AttributeBase.java b/src/main/java/net/minecraft/server/AttributeBase.java
+index 9ef9bfec0..a0928013a 100644
+--- a/src/main/java/net/minecraft/server/AttributeBase.java
++++ b/src/main/java/net/minecraft/server/AttributeBase.java
+@@ -10,7 +10,7 @@ public abstract class AttributeBase implements IAttribute {
+     protected AttributeBase(IAttribute iattribute, String s, double d0) {
+         this.a = iattribute;
+         this.b = s;
+-        this.c = d0;
++        this.c = !Double.isFinite(d0) ? 0.0 : d0; // Blossom - security patches
+         if (s == null) {
+             throw new IllegalArgumentException("Name cannot be null!");
+         }
+diff --git a/src/main/java/net/minecraft/server/AttributeRanged.java b/src/main/java/net/minecraft/server/AttributeRanged.java
+index 838daeda8..b34b1d3a8 100644
+--- a/src/main/java/net/minecraft/server/AttributeRanged.java
++++ b/src/main/java/net/minecraft/server/AttributeRanged.java
+@@ -29,6 +29,7 @@ public class AttributeRanged extends AttributeBase {
+     }
+ 
+     public double a(double d0) {
++        if (!Double.isFinite(d0)) return this.a; // Blossom - security patches
+         d0 = MathHelper.a(d0, this.a, this.b);
+         return d0;
+     }
+diff --git a/src/main/java/net/minecraft/server/BaseBlockPosition.java b/src/main/java/net/minecraft/server/BaseBlockPosition.java
+index a685e0812..e94008318 100644
+--- a/src/main/java/net/minecraft/server/BaseBlockPosition.java
++++ b/src/main/java/net/minecraft/server/BaseBlockPosition.java
+@@ -67,6 +67,7 @@ public class BaseBlockPosition implements Comparable<BaseBlockPosition> {
+         return d3 * d3 + d4 * d4 + d5 * d5;
+     }
+ 
++    public final double distanceToCenterSquared(final double x, final double y, final double z) { return this.d(x, y, z); }  // Blossom - security patches
+     public double d(double d0, double d1, double d2) {
+         double d3 = (double) this.getX() + 0.5D - d0;
+         double d4 = (double) this.getY() + 0.5D - d1;
+diff --git a/src/main/java/net/minecraft/server/Container.java b/src/main/java/net/minecraft/server/Container.java
+index c2f7ccd75..029c38bb3 100644
+--- a/src/main/java/net/minecraft/server/Container.java
++++ b/src/main/java/net/minecraft/server/Container.java
+@@ -72,11 +72,17 @@ public abstract class Container {
+     }
+ 
+     public void b() {
++        // Blossom start - security patches
++        this.broadcastDirtyItemUpdates(false, 20);
++    }
++
++    public final void broadcastDirtyItemUpdates(final boolean fullUpdate, final int fullUpdateRate) {
++        // Blossom end - security patches
+         for (int i = 0; i < this.c.size(); ++i) {
+             ItemStack itemstack = ((Slot) this.c.get(i)).getItem();
+             ItemStack itemstack1 = (ItemStack) this.b.get(i);
+ 
+-            if (!ItemStack.fastMatches(itemstack1, itemstack) || (tickCount % 20 == 0 && !ItemStack.matches(itemstack1, itemstack))) { // Spigot
++            if (!ItemStack.fastMatches(itemstack1, itemstack) || fullUpdate && (tickCount % fullUpdateRate == 0 && !ItemStack.matches(itemstack1, itemstack))) { // Spigot // Blossom - security patches
+                 itemstack1 = itemstack == null ? null : itemstack.cloneItemStack();
+                 this.b.set(i, itemstack1);
+ 
+@@ -85,7 +91,7 @@ public abstract class Container {
+                 }
+             }
+         }
+-        tickCount++; // Spigot
++        if (fullUpdate) tickCount++; // Spigot // Blossom - security patches
+ 
+     }
+ 
+@@ -140,7 +146,7 @@ public abstract class Container {
+             } else if (this.g == 1) {
+                 Slot slot = i < this.c.size() ? this.c.get(i) : null; // Paper - Ensure drag in bounds
+ 
+-                if (slot != null && a(slot, playerinventory.getCarried(), true) && slot.isAllowed(playerinventory.getCarried()) && playerinventory.getCarried().count > this.h.size() && this.b(slot)) {
++                if (slot != null && (!slot.hasItem() && playerinventory.getCarried() != null || slot.getItem().doMaterialsMatch(playerinventory.getCarried())) && slot.isAllowed(playerinventory.getCarried()) && playerinventory.getCarried().count > this.h.size() && this.b(slot)) { // Blossom - security patches
+                     this.h.add(slot);
+                 }
+             } else if (this.g == 2) {
+@@ -318,6 +324,12 @@ public abstract class Container {
+                                         k1 = itemstack4.getMaxStackSize() - itemstack1.count;
+                                     }
+ 
++                                    // Blossom start - security patches
++                                    if (k1 < 0) {
++                                        k1 = 0;
++                                    }
++                                    // Blossom end - security patches
++
+                                     itemstack4.cloneAndSubtract(k1);
+                                     if (itemstack4.count == 0) {
+                                         playerinventory.setCarried((ItemStack) null);
+@@ -364,7 +376,7 @@ public abstract class Container {
+                         // CraftBukkit end
+                     }
+                 }
+-            } else if (k == 2 && j >= 0 && j < 9) {
++            } else if (k == 2 && j >= 0 && j < 9 && i >= 0) { // Blossom - security patches
+                 slot2 = (Slot) this.c.get(i);
+                 if (slot2.isAllowed(entityhuman)) {
+                     itemstack1 = playerinventory.getItem(j);
+@@ -392,8 +404,21 @@ public abstract class Container {
+                             slot2.a(entityhuman, itemstack3);
+                         }
+                     } else if (!slot2.hasItem() && itemstack1 != null && slot2.isAllowed(itemstack1)) {
+-                        playerinventory.setItem(j, (ItemStack) null);
+-                        slot2.set(itemstack1);
++                        // Blossom start - security patches
++                        final int itemsToMove = Math.min(itemstack1.count, slot2.getMaxStackSize(itemstack1));
++                        final ItemStack newItemStack = itemstack1.cloneAndSubtract(itemsToMove);
++                        if (itemstack1.count <= 0) {
++                            playerinventory.setItem(j, null);
++                        } else {
++                            ((EntityPlayer) entityhuman).playerConnection.sendPacket(new PacketPlayOutSetSlot(0, j + 36, itemstack1));
++                        }
++
++                        if (newItemStack.count > 0) {
++                            slot2.set(newItemStack);
++                        }
++
++                        ((EntityPlayer) entityhuman).playerConnection.sendPacket(new PacketPlayOutSetSlot(this.windowId, i, newItemStack));
++                        // Blossom end - security patches
+                     }
+                 }
+             } else if (k == 3 && entityhuman.abilities.canInstantlyBuild && playerinventory.getCarried() == null && i >= 0) {
+diff --git a/src/main/java/net/minecraft/server/EnchantmentManager.java b/src/main/java/net/minecraft/server/EnchantmentManager.java
+index 98656815f..80dd93f6f 100644
+--- a/src/main/java/net/minecraft/server/EnchantmentManager.java
++++ b/src/main/java/net/minecraft/server/EnchantmentManager.java
+@@ -27,7 +27,7 @@ public class EnchantmentManager {
+             if (nbttaglist == null) {
+                 return 0;
+             } else {
+-                for (int j = 0; j < nbttaglist.size(); ++j) {
++                for (int j = 0; j < Math.min(nbttaglist.size(), 24); ++j) { // Blossom - security patches
+                     short short0 = nbttaglist.get(j).getShort("id");
+                     short short1 = nbttaglist.get(j).getShort("lvl");
+ 
+@@ -46,7 +46,7 @@ public class EnchantmentManager {
+         NBTTagList nbttaglist = itemstack.getItem() == Items.ENCHANTED_BOOK ? Items.ENCHANTED_BOOK.h(itemstack) : itemstack.getEnchantments();
+ 
+         if (nbttaglist != null) {
+-            for (int i = 0; i < nbttaglist.size(); ++i) {
++            for (int i = 0; i < Math.min(nbttaglist.size(), 24); ++i) { // Blossom - security patches
+                 short short0 = nbttaglist.get(i).getShort("id");
+                 short short1 = nbttaglist.get(i).getShort("lvl");
+ 
+@@ -113,7 +113,7 @@ public class EnchantmentManager {
+             NBTTagList nbttaglist = itemstack.getEnchantments();
+ 
+             if (nbttaglist != null) {
+-                for (int i = 0; i < nbttaglist.size(); ++i) {
++                for (int i = 0; i < Math.min(nbttaglist.size(), 24); ++i) { // Blossom - security patches
+                     short short0 = nbttaglist.get(i).getShort("id");
+                     short short1 = nbttaglist.get(i).getShort("lvl");
+ 
+@@ -185,7 +185,7 @@ public class EnchantmentManager {
+     }
+ 
+     public static int a(EntityLiving entityliving) {
+-        return getEnchantmentLevel(Enchantment.KNOCKBACK.id, entityliving.bA());
++        return MathHelper.clamp(getEnchantmentLevel(Enchantment.KNOCKBACK.id, entityliving.bA()), -16, 16); // Blossom - security patches
+     }
+ 
+     public static int getFireAspectEnchantmentLevel(EntityLiving entityliving) {
+@@ -193,7 +193,7 @@ public class EnchantmentManager {
+     }
+ 
+     public static int getOxygenEnchantmentLevel(Entity entity) {
+-        return a(Enchantment.OXYGEN.id, entity.getEquipment());
++        return Math.min(a(Enchantment.OXYGEN.id, entity.getEquipment()), 16); // Blossom - security patches
+     }
+ 
+     public static int b(Entity entity) {
+@@ -201,7 +201,7 @@ public class EnchantmentManager {
+     }
+ 
+     public static int getDigSpeedEnchantmentLevel(EntityLiving entityliving) {
+-        return getEnchantmentLevel(Enchantment.DIG_SPEED.id, entityliving.bA());
++        return Math.min(getEnchantmentLevel(Enchantment.DIG_SPEED.id, entityliving.bA()), 127); // Blossom - security patches
+     }
+ 
+     public static boolean hasSilkTouchEnchantment(EntityLiving entityliving) {
+@@ -209,7 +209,7 @@ public class EnchantmentManager {
+     }
+ 
+     public static int getBonusBlockLootEnchantmentLevel(EntityLiving entityliving) {
+-        return getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS.id, entityliving.bA());
++        return Math.min(getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS.id, entityliving.bA()), 16); // Blossom - security patches
+     }
+ 
+     public static int g(EntityLiving entityliving) {
+@@ -221,7 +221,7 @@ public class EnchantmentManager {
+     }
+ 
+     public static int getBonusMonsterLootEnchantmentLevel(EntityLiving entityliving) {
+-        return getEnchantmentLevel(Enchantment.LOOT_BONUS_MOBS.id, entityliving.bA());
++        return Math.min(getEnchantmentLevel(Enchantment.LOOT_BONUS_MOBS.id, entityliving.bA()), 16); // Blossom - security patches
+     }
+ 
+     public static boolean j(EntityLiving entityliving) {
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index b8c750a22..dc95a7607 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -308,6 +308,10 @@ public abstract class Entity implements ICommandListener {
+ 
+         this.yaw = f % 360.0F;
+         this.pitch = f1 % 360.0F;
++        // Blossom start - security patches
++        this.lastYaw = this.yaw;
++        this.lastPitch = this.pitch;
++        // Blossom end - security patches
+     }
+ 
+     public void setPosition(double d0, double d1, double d2) {
+@@ -1426,7 +1430,7 @@ public abstract class Entity implements ICommandListener {
+             // CraftBukkit end
+ 
+             // CraftBukkit start - Exempt Vehicles from notch's sanity check
+-            if (!(getBukkitEntity() instanceof Vehicle)) {
++            if (true || !(getBukkitEntity() instanceof Vehicle)) { // Blossom - security patches
+                 if (Math.abs(this.motX) > 10.0D) {
+                     this.motX = 0.0D;
+                 }
+diff --git a/src/main/java/net/minecraft/server/EntityFireworks.java b/src/main/java/net/minecraft/server/EntityFireworks.java
+index d7be6c268..fe3c642a8 100644
+--- a/src/main/java/net/minecraft/server/EntityFireworks.java
++++ b/src/main/java/net/minecraft/server/EntityFireworks.java
+@@ -31,12 +31,12 @@ public class EntityFireworks extends Entity {
+         int i = 1;
+ 
+         if (itemstack != null && itemstack.hasTag()) {
+-            this.datawatcher.watch(8, itemstack);
++            this.datawatcher.watch(8, sanitizeItem(itemstack)); // Blossom - security patches
+             NBTTagCompound nbttagcompound = itemstack.getTag();
+             NBTTagCompound nbttagcompound1 = nbttagcompound.getCompound("Fireworks");
+ 
+             if (nbttagcompound1 != null) {
+-                i += nbttagcompound1.getByte("Flight");
++                i += Math.min(nbttagcompound1.getByte("Flight"), 3); // Blossom - security patches
+             }
+         }
+ 
+@@ -46,6 +46,32 @@ public class EntityFireworks extends Entity {
+         this.expectedLifespan = 10 * i + this.random.nextInt(6) + this.random.nextInt(7);
+     }
+ 
++    // Blossom start - security patches
++    private ItemStack sanitizeItem(final ItemStack itemstack) {
++        final ItemStack fireworkItem = new ItemStack(itemstack.getItem());
++        final NBTTagCompound component = itemstack.getTag();
++        if (component == null) {
++            return fireworkItem;
++        }
++
++        final NBTTagList sanitized = new NBTTagList();
++        final NBTTagList explosions = component.getList("Explosions", 10);
++        for (int index = 0; index < Math.min(explosions.size(), 16); ++index) {
++            final NBTTagCompound explosionTag = explosions.get(index);
++
++
++
++//            try {
++//                sanitized.add(org.bukkit.craftbukkit.inventory.CraftMetaFirework.sanitizeComponent(explosions.get(index)));
++//            } catch (final IllegalArgumentException ignored) {
++//                // Invalid explosion effect
++//            }
++        }
++
++        return fireworkItem;
++    }
++    // Blossom end - security patches
++
+     public void t_() {
+         this.P = this.locX;
+         this.Q = this.locY;
+@@ -108,8 +134,8 @@ public class EntityFireworks extends Entity {
+     }
+ 
+     public void a(NBTTagCompound nbttagcompound) {
+-        this.ticksFlown = nbttagcompound.getInt("Life");
+-        this.expectedLifespan = nbttagcompound.getInt("LifeTime");
++        this.ticksFlown = Math.max(nbttagcompound.getInt("Life"), 0); // Blossom - make sure this is never negative
++        this.expectedLifespan = Math.max(nbttagcompound.getInt("LifeTime"), 60); // Blossom - and cap this to a reasonable number
+         NBTTagCompound nbttagcompound1 = nbttagcompound.getCompound("FireworksItem");
+ 
+         if (nbttagcompound1 != null) {
+diff --git a/src/main/java/net/minecraft/server/EntityLargeFireball.java b/src/main/java/net/minecraft/server/EntityLargeFireball.java
+index b62c0376b..d2ea70eb1 100644
+--- a/src/main/java/net/minecraft/server/EntityLargeFireball.java
++++ b/src/main/java/net/minecraft/server/EntityLargeFireball.java
+@@ -46,7 +46,7 @@ public class EntityLargeFireball extends EntityFireball {
+         super.a(nbttagcompound);
+         if (nbttagcompound.hasKeyOfType("ExplosionPower", 99)) {
+             // CraftBukkit - set bukkitYield when setting explosionpower
+-            bukkitYield = this.yield = nbttagcompound.getInt("ExplosionPower");
++            bukkitYield = Math.min(this.yield = nbttagcompound.getInt("ExplosionPower"), 10); // Blossom - security patches
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 5ac052c80..adc306dec 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -585,6 +585,12 @@ public abstract class EntityLiving extends Entity {
+ 
+     public void addEffect(MobEffect mobeffect) {
+         org.spigotmc.AsyncCatcher.catchOp( "effect add"); // Spigot
++        // Blossom start - security patches; fix health boost soft locking the player
++        final int amplifier = mobeffect.getAmplifier();
++        if (mobeffect.getEffectId() == MobEffectList.HEALTH_BOOST.getId() && (amplifier < 0 || amplifier > 127)) {
++            return;
++        }
++        // Blossom end - security patches; fix health boost soft locking the player
+         // CraftBukkit start
+         if (isTickingEffects) {
+             effectsToProcess.add(mobeffect);
+@@ -1189,7 +1195,16 @@ public abstract class EntityLiving extends Entity {
+         return this.hasEffect(MobEffectList.FASTER_DIG) ? 6 - (1 + this.getEffect(MobEffectList.FASTER_DIG).getAmplifier()) * 1 : (this.hasEffect(MobEffectList.SLOWER_DIG) ? 6 + (1 + this.getEffect(MobEffectList.SLOWER_DIG).getAmplifier()) * 2 : 6);
+     }
+ 
++    // Blossom start - security patches
++    private long lastArmSwing = -1;
+     public void bw() {
++        final long millis = System.currentTimeMillis();
++        if (millis - this.lastArmSwing < 500) {
++            return;
++        }
++        this.lastArmSwing = millis;
++        // Blossom end - security patches
++
+         if (!this.ar || this.as >= this.n() / 2 || this.as < 0) {
+             this.as = -1;
+             this.ar = true;
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index dc1ce7797..bbc2f8751 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -201,8 +201,12 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         
+         // PaperSpigot start - Configurable container update tick rate
+         if (--containerUpdateDelay <= 0) {
+-            this.activeContainer.b();
++            // Blossom start - security patches
++            final int updateRate = world.paperSpigotConfig.containerUpdateTickRate;
++            final int fullUpdateRate = Math.max(20 / updateRate, 1);
++            this.activeContainer.broadcastDirtyItemUpdates(true, fullUpdateRate);
+             containerUpdateDelay = world.paperSpigotConfig.containerUpdateTickRate;
++            // Blossom end - security patches
+         }
+         // PaperSpigot end
+         if (!this.world.isClientSide && !this.activeContainer.a((EntityHuman) this)) {
+diff --git a/src/main/java/net/minecraft/server/EntitySlime.java b/src/main/java/net/minecraft/server/EntitySlime.java
+index c927832b6..c770ab2d2 100644
+--- a/src/main/java/net/minecraft/server/EntitySlime.java
++++ b/src/main/java/net/minecraft/server/EntitySlime.java
+@@ -49,7 +49,7 @@ public class EntitySlime extends EntityInsentient implements IMonster {
+ 
+     public void a(NBTTagCompound nbttagcompound) {
+         super.a(nbttagcompound);
+-        int i = nbttagcompound.getInt("Size");
++        int i = Math.min(nbttagcompound.getInt("Size"), 20); // Blossom - security patches
+ 
+         if (i < 0) {
+             i = 0;
+diff --git a/src/main/java/net/minecraft/server/GameProfileSerializer.java b/src/main/java/net/minecraft/server/GameProfileSerializer.java
+index 998cf70e3..b0b09665a 100644
+--- a/src/main/java/net/minecraft/server/GameProfileSerializer.java
++++ b/src/main/java/net/minecraft/server/GameProfileSerializer.java
+@@ -30,6 +30,12 @@ public final class GameProfileSerializer {
+                 uuid = null;
+             }
+ 
++            // Blossom start - security patches; prevent blank game profiles
++            if (uuid == null && org.apache.commons.lang3.StringUtils.isBlank(s)) {
++                return null;
++            }
++            // Blossom end - security patches; prevent blank game profiles
++
+             GameProfile gameprofile = new GameProfile(uuid, s);
+ 
+             if (nbttagcompound.hasKeyOfType("Properties", 10)) {
+diff --git a/src/main/java/net/minecraft/server/GenericAttributes.java b/src/main/java/net/minecraft/server/GenericAttributes.java
+index 0cc3e2fb6..824f78a23 100644
+--- a/src/main/java/net/minecraft/server/GenericAttributes.java
++++ b/src/main/java/net/minecraft/server/GenericAttributes.java
+@@ -107,7 +107,24 @@ public class GenericAttributes {
+         UUID uuid = new UUID(nbttagcompound.getLong("UUIDMost"), nbttagcompound.getLong("UUIDLeast"));
+ 
+         try {
+-            return new AttributeModifier(uuid, nbttagcompound.getString("Name"), nbttagcompound.getDouble("Amount"), nbttagcompound.getInt("Operation"));
++            // Blossom start - security patches
++            String name = nbttagcompound.getString("Name");
++            if (name == null || name.isEmpty() || name.length() > 64) {
++                name = uuid.toString();
++            }
++
++            int operation = nbttagcompound.getInt("Operation");
++            if (operation < 0 || operation > 2L) {
++                operation = 0;
++            }
++
++            double amount = nbttagcompound.getDouble("Amount");
++            if (!Double.isFinite(amount)) {
++                amount = 0.0;
++            }
++
++            return new AttributeModifier(uuid, name, amount, operation);
++            // Blossom end - security patches
+         } catch (Exception exception) {
+             GenericAttributes.f.warn("Unable to create attribute: " + exception.getMessage());
+             return null;
+diff --git a/src/main/java/net/minecraft/server/ItemArmorStand.java b/src/main/java/net/minecraft/server/ItemArmorStand.java
+index d8de61902..81ae6d220 100644
+--- a/src/main/java/net/minecraft/server/ItemArmorStand.java
++++ b/src/main/java/net/minecraft/server/ItemArmorStand.java
+@@ -44,6 +44,7 @@ public class ItemArmorStand extends Item {
+                             this.a(entityarmorstand, world.random);
+                             NBTTagCompound nbttagcompound = itemstack.getTag();
+ 
++                            /* // Blossom start - security patches
+                             if (nbttagcompound != null && nbttagcompound.hasKeyOfType("EntityTag", 10)) {
+                                 NBTTagCompound nbttagcompound1 = new NBTTagCompound();
+ 
+@@ -51,6 +52,7 @@ public class ItemArmorStand extends Item {
+                                 nbttagcompound1.a(nbttagcompound.getCompound("EntityTag"));
+                                 entityarmorstand.f(nbttagcompound1);
+                             }
++                            */ // Blossom end - security patches
+ 
+                             world.addEntity(entityarmorstand);
+                         }
+diff --git a/src/main/java/net/minecraft/server/ItemBookAndQuill.java b/src/main/java/net/minecraft/server/ItemBookAndQuill.java
+index a34550702..5a4f4555b 100644
+--- a/src/main/java/net/minecraft/server/ItemBookAndQuill.java
++++ b/src/main/java/net/minecraft/server/ItemBookAndQuill.java
+@@ -19,6 +19,11 @@ public class ItemBookAndQuill extends Item {
+             return false;
+         } else {
+             NBTTagList nbttaglist = nbttagcompound.getList("pages", 8);
++            // Blossom start - security patches
++            if (nbttaglist.size() > me.samsuik.blossom.configuration.BlossomConfig.bookMaxPages) {
++                return false;
++            }
++            // Blossom end - security patches
+ 
+             for (int i = 0; i < nbttaglist.size(); ++i) {
+                 String s = nbttaglist.getString(i);
+@@ -27,7 +32,7 @@ public class ItemBookAndQuill extends Item {
+                     return false;
+                 }
+ 
+-                if (s.length() > 32767) {
++                if (s.length() > me.samsuik.blossom.configuration.BlossomConfig.bookPageLength) { // Blossom - security patches
+                     return false;
+                 }
+             }
+diff --git a/src/main/java/net/minecraft/server/ItemSkull.java b/src/main/java/net/minecraft/server/ItemSkull.java
+index 519574bcb..42ad56421 100644
+--- a/src/main/java/net/minecraft/server/ItemSkull.java
++++ b/src/main/java/net/minecraft/server/ItemSkull.java
+@@ -117,7 +117,7 @@ public class ItemSkull extends Item {
+ 
+     public boolean a(final NBTTagCompound nbttagcompound) { // Spigot - make final
+         super.a(nbttagcompound);
+-        if (nbttagcompound.hasKeyOfType("SkullOwner", 8) && nbttagcompound.getString("SkullOwner").length() > 0) {
++        if (nbttagcompound.hasKeyOfType("SkullOwner", 8) && !org.apache.commons.lang3.StringUtils.isBlank(nbttagcompound.getString("SkullOwner"))) { // Blossom - security patches; prevent blank game profiles
+             GameProfile gameprofile = new GameProfile((UUID) null, nbttagcompound.getString("SkullOwner"));
+ 
+             // Spigot start
+diff --git a/src/main/java/net/minecraft/server/ItemWrittenBook.java b/src/main/java/net/minecraft/server/ItemWrittenBook.java
+index d17904972..00297cf3c 100644
+--- a/src/main/java/net/minecraft/server/ItemWrittenBook.java
++++ b/src/main/java/net/minecraft/server/ItemWrittenBook.java
+@@ -46,7 +46,7 @@ public class ItemWrittenBook extends Item {
+     }
+ 
+     private void a(ItemStack itemstack, EntityHuman entityhuman) {
+-        if (itemstack != null && itemstack.getTag() != null) {
++        if (itemstack != null && itemstack.getTag() != null && me.samsuik.blossom.configuration.BlossomConfig.parseBookComponents) { // Blossom - security patches
+             NBTTagCompound nbttagcompound = itemstack.getTag();
+ 
+             if (!nbttagcompound.getBoolean("resolved")) {
+diff --git a/src/main/java/net/minecraft/server/LoginListener.java b/src/main/java/net/minecraft/server/LoginListener.java
+index 6e8d4d327..eb51d4e2e 100644
+--- a/src/main/java/net/minecraft/server/LoginListener.java
++++ b/src/main/java/net/minecraft/server/LoginListener.java
+@@ -164,7 +164,16 @@ public class LoginListener implements PacketLoginInListener, IUpdatePlayerListBo
+     }
+ 
+     public String d() {
+-        return this.i != null ? this.i.toString() + " (" + this.networkManager.getSocketAddress().toString() + ")" : String.valueOf(this.networkManager.getSocketAddress());
++        // Blossom start - security patches
++        final String socketAddress;
++        if (this.networkManager == null || this.networkManager.getSocketAddress() == null) {
++            socketAddress = null;
++        } else {
++            socketAddress = this.networkManager.getSocketAddress().toString();
++        }
++
++        return this.i != null ? this.i + " (" + socketAddress + ")" : socketAddress;
++        // Blossom end - security patches
+     }
+ 
+     public void a(PacketLoginInStart packetlogininstart) {
+diff --git a/src/main/java/net/minecraft/server/MobEffectList.java b/src/main/java/net/minecraft/server/MobEffectList.java
+index 863e9d8e9..478c3d21a 100644
+--- a/src/main/java/net/minecraft/server/MobEffectList.java
++++ b/src/main/java/net/minecraft/server/MobEffectList.java
+@@ -119,7 +119,7 @@ public class MobEffectList {
+             }
+         } else if ((this.id != MobEffectList.HEAL.id || entityliving.bm()) && (this.id != MobEffectList.HARM.id || !entityliving.bm())) {
+             if (this.id == MobEffectList.HARM.id && !entityliving.bm() || this.id == MobEffectList.HEAL.id && entityliving.bm()) {
+-                entityliving.damageEntity(DamageSource.MAGIC, (float) (6 << i));
++                entityliving.damageEntity(DamageSource.MAGIC, (float) Math.abs(6 << i)); // Blossom - security patches; prevent "creative kill" potions
+             }
+         } else {
+             entityliving.heal((float) Math.max(4 << i, 0), RegainReason.MAGIC); // CraftBukkit
+@@ -132,7 +132,7 @@ public class MobEffectList {
+ 
+         if ((this.id != MobEffectList.HEAL.id || entityliving.bm()) && (this.id != MobEffectList.HARM.id || !entityliving.bm())) {
+             if (this.id == MobEffectList.HARM.id && !entityliving.bm() || this.id == MobEffectList.HEAL.id && entityliving.bm()) {
+-                j = (int) (d0 * (double) (6 << i) + 0.5D);
++                j = (int) (d0 * (double) Math.abs(6 << i) + 0.5D); // Blossom - security patches; prevent "creative kill" potions
+                 if (entity == null) {
+                     entityliving.damageEntity(DamageSource.MAGIC, (float) j);
+                 } else {
+@@ -140,7 +140,7 @@ public class MobEffectList {
+                 }
+             }
+         } else {
+-            j = (int) (d0 * (double) (4 << i) + 0.5D);
++            j = (int) (d0 * (double) Math.abs(4 << i) + 0.5D); // Blossom - security patches; prevent "creative kill" potions
+             entityliving.heal((float) j, RegainReason.MAGIC); // CraftBukkit
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/NBTReadLimiter.java b/src/main/java/net/minecraft/server/NBTReadLimiter.java
+index 58253cc08..e9c51492c 100644
+--- a/src/main/java/net/minecraft/server/NBTReadLimiter.java
++++ b/src/main/java/net/minecraft/server/NBTReadLimiter.java
+@@ -15,7 +15,7 @@ public class NBTReadLimiter {
+     public void a(long i) {
+         this.c += i / 8L;
+         if (this.c > this.b) {
+-            throw new RuntimeException("Tried to read NBT tag that was too big; tried to allocate: " + this.c + "bytes where max allowed: " + this.b);
++            throw new me.samsuik.blossom.network.nbt.NbtByteLimitException("Tried to read NBT tag that was too big; tried to allocate: " + this.c + "bytes where max allowed: " + this.b); // Blossom - security patches
+         }
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/NBTTagByteArray.java b/src/main/java/net/minecraft/server/NBTTagByteArray.java
+index 13e9d0b39..14aa3a587 100644
+--- a/src/main/java/net/minecraft/server/NBTTagByteArray.java
++++ b/src/main/java/net/minecraft/server/NBTTagByteArray.java
+@@ -23,9 +23,12 @@ public class NBTTagByteArray extends NBTBase {
+     void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
+         nbtreadlimiter.a(192L);
+         int j = datainput.readInt();
+-       com.google.common.base.Preconditions.checkArgument( j < 1 << 24);
++        // Blossom start - security patches
++        com.google.common.base.Preconditions.checkArgument(j < 1 << 24, "tag length too large");
++        com.google.common.base.Preconditions.checkArgument(j >= 0, "tag length must be a positive integer");
+ 
+-        nbtreadlimiter.a((long) (8 * j));
++        nbtreadlimiter.a(8L * j);
++        // Blossom end - security patches
+         this.data = new byte[j];
+         datainput.readFully(this.data);
+     }
+diff --git a/src/main/java/net/minecraft/server/NBTTagCompound.java b/src/main/java/net/minecraft/server/NBTTagCompound.java
+index 22d7c2ab3..6d9f0fffe 100644
+--- a/src/main/java/net/minecraft/server/NBTTagCompound.java
++++ b/src/main/java/net/minecraft/server/NBTTagCompound.java
+@@ -16,6 +16,34 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public NBTTagCompound() {}
+ 
++    // Blossom start - security patches
++    public final void loadRootComponents(final DataInput input, final NBTReadLimiter limiter) throws IOException {
++        limiter.a(448L);
++        this.map.clear();
++
++        byte type;
++        while ((type = a(input, limiter)) != 0) {
++            final String name = b(input, limiter);
++            limiter.a(224L + 16L * name.length());
++
++            final NBTBase nbtbase;
++            if (type > 0 && type < 7 || type == 8) { // primitives and strings
++                nbtbase = a(type, name, input, 1, limiter);
++            } else {
++                nbtbase = NBTBase.createTag(type);
++                if (nbtbase == null) {
++                    continue; // invalid tag
++                }
++                limiter.a(448L); // better to overestimate
++            }
++
++            if (this.map.put(name, nbtbase) != null) {
++                limiter.a(288L);
++            }
++        }
++    }
++    // Blossom end - security patches
++
+     void write(DataOutput dataoutput) throws IOException {
+         Iterator iterator = this.map.keySet().iterator();
+ 
+@@ -30,7 +58,7 @@ public class NBTTagCompound extends NBTBase {
+     }
+ 
+     void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
+-        nbtreadlimiter.a(384L);
++        nbtreadlimiter.a(448L); // Blossom - security patches
+         if (i > 512) {
+             throw new RuntimeException("Tried to read NBT tag with too high complexity, depth > 512");
+         } else {
+@@ -41,7 +69,7 @@ public class NBTTagCompound extends NBTBase {
+             while ((b0 = a(datainput, nbtreadlimiter)) != 0) {
+                 String s = b(datainput, nbtreadlimiter);
+ 
+-                nbtreadlimiter.a((long) (224 + 16 * s.length()));
++                nbtreadlimiter.a(224L + 16L * s.length()); // Blossom - security patches
+                 NBTBase nbtbase = a(b0, s, datainput, i + 1, nbtreadlimiter);
+ 
+                 if (this.map.put(s, nbtbase) != null) {
+diff --git a/src/main/java/net/minecraft/server/NBTTagIntArray.java b/src/main/java/net/minecraft/server/NBTTagIntArray.java
+index e206e509b..8301c3069 100644
+--- a/src/main/java/net/minecraft/server/NBTTagIntArray.java
++++ b/src/main/java/net/minecraft/server/NBTTagIntArray.java
+@@ -27,9 +27,12 @@ public class NBTTagIntArray extends NBTBase {
+     void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
+         nbtreadlimiter.a(192L);
+         int j = datainput.readInt();
+-       com.google.common.base.Preconditions.checkArgument( j < 1 << 24);
++        // Blossom start - security patches
++        com.google.common.base.Preconditions.checkArgument(j < 1 << 24, "tag length too large");
++        com.google.common.base.Preconditions.checkArgument(j >= 0, "tag length must be a positive integer");
+ 
+-        nbtreadlimiter.a((long) (32 * j));
++        nbtreadlimiter.a(32L * j);
++        // Blossom end - security patches
+         this.data = new int[j];
+ 
+         for (int k = 0; k < j; ++k) {
+diff --git a/src/main/java/net/minecraft/server/NBTTagList.java b/src/main/java/net/minecraft/server/NBTTagList.java
+index d0d0fc38e..29b5052d7 100644
+--- a/src/main/java/net/minecraft/server/NBTTagList.java
++++ b/src/main/java/net/minecraft/server/NBTTagList.java
+@@ -40,7 +40,12 @@ public class NBTTagList extends NBTBase {
+         } else {
+             this.type = datainput.readByte();
+             int j = datainput.readInt();
+-            nbtreadlimiter.a(j * 8); // CraftBukkit
++            // Blossom start - security patches
++            com.google.common.base.Preconditions.checkArgument(j < 1 << 24, "tag length too large");
++            com.google.common.base.Preconditions.checkArgument(j >= 0, "tag length must be a positive integer");
++
++            nbtreadlimiter.a(j * 8L); // Blossom - security patches // CraftBukkit
++            // Blossom end - security patches
+ 
+             if (this.type == 0 && j > 0) {
+                 throw new RuntimeException("Missing type on ListTag");
+diff --git a/src/main/java/net/minecraft/server/NBTTagString.java b/src/main/java/net/minecraft/server/NBTTagString.java
+index d1967dcb5..a6cb8e28a 100644
+--- a/src/main/java/net/minecraft/server/NBTTagString.java
++++ b/src/main/java/net/minecraft/server/NBTTagString.java
+@@ -26,7 +26,7 @@ public class NBTTagString extends NBTBase {
+     void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
+         nbtreadlimiter.a(288L);
+         this.data = datainput.readUTF();
+-        nbtreadlimiter.a((long) (16 * this.data.length()));
++        nbtreadlimiter.a(16L * this.data.length()); // Blossom - security patches
+     }
+ 
+     public byte getTypeId() {
+diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
+index d02f56310..449dc9dbb 100644
+--- a/src/main/java/net/minecraft/server/NetworkManager.java
++++ b/src/main/java/net/minecraft/server/NetworkManager.java
+@@ -356,6 +356,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+             } else {
+                 this.channel.pipeline().addBefore("encoder", "compress", new PacketCompressor(i));
+             }
++
++            // Blossom start - security patches; enforce limits on received packets & bytes
++            final io.netty.channel.ChannelHandler limiter = this.channel.pipeline().get("blossom$limiter");
++            if (limiter != null) {
++                this.channel.pipeline().remove("blossom$limiter");
++                this.channel.pipeline().addAfter("decompress", "blossom$limiter", limiter);
++            }
++            // Blossom end - security patches; enforce limits on received packets & bytes
+         } else {
+             if (this.channel.pipeline().get("decompress") instanceof PacketDecompressor) {
+                 this.channel.pipeline().remove("decompress");
+diff --git a/src/main/java/net/minecraft/server/PacketDataSerializer.java b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+index 40e615ff1..136f8018e 100644
+--- a/src/main/java/net/minecraft/server/PacketDataSerializer.java
++++ b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+@@ -34,6 +34,7 @@ import java.nio.channels.FileChannel;
+ public class PacketDataSerializer extends ByteBuf {
+ 
+     private final ByteBuf a;
++    private final long nbtByteLimit = me.samsuik.blossom.configuration.BlossomConfig.nbtByteLimit; // Blossom - security patches
+ 
+     // TacoSpigot start
+     private final boolean allowLargePackets;
+@@ -183,6 +184,12 @@ public class PacketDataSerializer extends ByteBuf {
+     }
+ 
+     public NBTTagCompound h() throws IOException {
++        // Blossom start - security patches
++        return this.readNbtComponent(this.nbtByteLimit);
++    }
++
++    public final NBTTagCompound readNbtComponent(final long bytes) throws IOException {
++        // Blossom end - security patches
+         int i = this.readerIndex();
+         byte b0 = this.readByte();
+ 
+@@ -190,7 +197,7 @@ public class PacketDataSerializer extends ByteBuf {
+             return null;
+         } else {
+             this.readerIndex(i);
+-            return NBTCompressedStreamTools.a((DataInput) (new ByteBufInputStream(this)), new NBTReadLimiter(2097152L));
++            return NBTCompressedStreamTools.a((DataInput) (new ByteBufInputStream(this)), new NBTReadLimiter(bytes)); // Blossom - security patches
+         }
+     }
+ 
+@@ -216,6 +223,17 @@ public class PacketDataSerializer extends ByteBuf {
+ 
+     }
+ 
++    // Blossom start - security patches
++    public final ItemStack readItemStackUntrusted() throws IOException {
++        return readItemStackUntrusted(this.nbtByteLimit);
++    }
++
++    public final ItemStack readItemStackUntrusted(final long bytes) throws IOException {
++        final long byteLimit = Math.min(bytes, this.nbtByteLimit);
++        return me.samsuik.blossom.network.nbt.ItemNbtReader.readItemStackUntrusted(this, byteLimit);
++    }
++    // Blossom end - security patches
++
+     public ItemStack i() throws IOException {
+         ItemStack itemstack = null;
+         short short0 = this.readShort();
+diff --git a/src/main/java/net/minecraft/server/PacketDecoder.java b/src/main/java/net/minecraft/server/PacketDecoder.java
+index bbebe3a9f..34c5268e1 100644
+--- a/src/main/java/net/minecraft/server/PacketDecoder.java
++++ b/src/main/java/net/minecraft/server/PacketDecoder.java
+@@ -29,7 +29,14 @@ public class PacketDecoder extends ByteToMessageDecoder {
+             if (packet == null) {
+                 throw new IOException("Bad packet id " + i);
+             } else {
+-                packet.a(packetdataserializer);
++                // Blossom start - security patches
++                try {
++                    packet.a(packetdataserializer);
++                } catch (final Exception exception) {
++                    throw new IOException("Failed to decode packet " + packet.getClass().getSimpleName(), exception);
++                }
++                // Blossom end - security patches
++
+                 if (packetdataserializer.readableBytes() > 0) {
+                     throw new IOException("Packet " + ((EnumProtocol) channelhandlercontext.channel().attr(NetworkManager.c).get()).a() + "/" + i + " (" + packet.getClass().getSimpleName() + ") was larger than I expected, found " + packetdataserializer.readableBytes() + " bytes extra whilst reading packet " + i);
+                 } else {
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInBlockPlace.java b/src/main/java/net/minecraft/server/PacketPlayInBlockPlace.java
+index 02d8e07f8..b6fe62345 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInBlockPlace.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInBlockPlace.java
+@@ -33,7 +33,8 @@ public class PacketPlayInBlockPlace implements Packet<PacketListenerPlayIn> {
+         timestamp = System.currentTimeMillis(); // CraftBukkit
+         this.b = packetdataserializer.c();
+         this.c = packetdataserializer.readUnsignedByte();
+-        this.d = packetdataserializer.i();
++        // This might flag acs that use protocollib when handling large items
++        this.d = packetdataserializer.readItemStackUntrusted(Short.MAX_VALUE); // Blossom - security patches
+         this.e = (float) packetdataserializer.readUnsignedByte() / 16.0F;
+         this.f = (float) packetdataserializer.readUnsignedByte() / 16.0F;
+         this.g = (float) packetdataserializer.readUnsignedByte() / 16.0F;
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java b/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java
+index e176c9ca0..6ac4ec483 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInSetCreativeSlot.java
+@@ -15,7 +15,7 @@ public class PacketPlayInSetCreativeSlot implements Packet<PacketListenerPlayIn>
+ 
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+         this.slot = packetdataserializer.readShort();
+-        this.b = packetdataserializer.i();
++        this.b = packetdataserializer.readItemStackUntrusted(); // Blossom - security patches
+     }
+ 
+     public void b(PacketDataSerializer packetdataserializer) throws IOException {
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
+index 0d811e789..11daaa427 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
+@@ -20,7 +20,7 @@ public class PacketPlayInTabComplete implements Packet<PacketListenerPlayIn> {
+     }
+ 
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+-        this.a = packetdataserializer.c(32767);
++        this.a = packetdataserializer.c(128); // Blossom - security patches
+         boolean flag = packetdataserializer.readBoolean();
+ 
+         if (flag) {
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
+index 703e47c52..805196d67 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
+@@ -14,7 +14,7 @@ public class PacketPlayInUpdateSign implements Packet<PacketListenerPlayIn> {
+         this.b = new IChatBaseComponent[4];
+ 
+         for (int i = 0; i < 4; ++i) {
+-            String s = packetdataserializer.c(384);
++            String s = packetdataserializer.c(64); // Blossom - security patches
+             IChatBaseComponent ichatbasecomponent = IChatBaseComponent.ChatSerializer.a(s);
+ 
+             this.b[i] = ichatbasecomponent;
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java b/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java
+index a9a2a794d..288dc184d 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInWindowClick.java
+@@ -23,7 +23,7 @@ public class PacketPlayInWindowClick implements Packet<PacketListenerPlayIn> {
+         this.button = packetdataserializer.readByte();
+         this.d = packetdataserializer.readShort();
+         this.shift = packetdataserializer.readByte();
+-        this.item = packetdataserializer.i();
++        this.item = packetdataserializer.readItemStackUntrusted(Short.MAX_VALUE); // Blossom - security patches
+     }
+ 
+     public void b(PacketDataSerializer packetdataserializer) throws IOException {
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 3a917037b..0c56b7407 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -792,20 +792,20 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+         }
+ 
+         itemstack = this.player.inventory.getItemInHand();
+-        if (itemstack != null && itemstack.count == 0) {
++        if (itemstack != null && itemstack.count <= 0) { // Blossom - security patches
+             this.player.inventory.items[this.player.inventory.itemInHandIndex] = null;
+             itemstack = null;
+         }
+ 
+         if (itemstack == null || itemstack.l() == 0) {
+             this.player.g = true;
+-            this.player.inventory.items[this.player.inventory.itemInHandIndex] = ItemStack.b(this.player.inventory.items[this.player.inventory.itemInHandIndex]);
++            // Blossom - security patches; unnecessary item clone?
+             Slot slot = this.player.activeContainer.getSlot(this.player.inventory, this.player.inventory.itemInHandIndex);
+ 
+             this.player.activeContainer.b();
+             this.player.g = false;
+             // CraftBukkit - TODO CHECK IF NEEDED -- new if structure might not need 'always'. Kept it in for now, but may be able to remove in future
+-            if (!ItemStack.matches(this.player.inventory.getItemInHand(), packetplayinblockplace.getItemStack()) || always) {
++            if (!ItemStack.fastMatches(this.player.inventory.getItemInHand(), packetplayinblockplace.getItemStack()) || always) { // Blossom - security patches
+                 this.sendPacket(new PacketPlayOutSetSlot(this.player.activeContainer.windowId, slot.rawSlotIndex, this.player.inventory.getItemInHand()));
+             }
+         }
+@@ -1020,7 +1020,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             }
+ 
+             // CraftBukkit start
+-            if (isSync) {
++            // Blossom start - security patches
++            if (!isSync && s.startsWith("/")) {
++                final ChatMessage chatCannotSend = new ChatMessage("chat.cannotSend");
++                chatCannotSend.getChatModifier().setColor(EnumChatFormat.RED);
++                this.sendPacket(new PacketPlayOutChat(chatCannotSend));
++            } else if (isSync) {
++                // Blossom end - security patches
+                 try {
+                     this.minecraftServer.server.playerCommandState = true;
+                     this.handleCommand(s);
+@@ -1460,6 +1466,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+         if (this.player.dead) return; // CraftBukkit
+         if (this.ensureMainThread(packetplayinclosewindow)) return; // Blossom - improve packet handling
+ 
++        // todo: is it possible to call this in vanilla with just your default inventory?
+         CraftEventFactory.handleInventoryCloseEvent(this.player); // CraftBukkit
+ 
+         this.player.p();
+@@ -1486,6 +1493,18 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+                     return;
+                 }
+ 
++                // Blossom start - security patches
++                // Window click can only be called in creative mode when a UI is open.
++                if (this.player.activeContainer == this.player.defaultContainer && this.player.playerInteractManager.isCreative()) {
++                    return;
++                }
++
++                // Clicked slot out of bounds
++                if (packetplayinwindowclick.b() >= this.player.activeContainer.c.size()) {
++                    return;
++                }
++                // Blossom end - security patches
++
+                 InventoryView inventory = this.player.activeContainer.getBukkitView();
+                 SlotType type = CraftInventoryView.getSlotType(inventory, packetplayinwindowclick.b());
+ 
+@@ -1602,7 +1621,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+                 } else if (packetplayinwindowclick.f() == 3) {
+                     if (packetplayinwindowclick.c() == 2) {
+                         click = ClickType.MIDDLE;
+-                        if (packetplayinwindowclick.b() == -999) {
++                        if (packetplayinwindowclick.b() < 0) { // Blossom - security patches
+                             action = InventoryAction.NOTHING;
+                         } else {
+                             Slot slot = this.player.activeContainer.getSlot(packetplayinwindowclick.b());
+@@ -1802,6 +1821,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+                 if (nbttagcompound.hasKey("x") && nbttagcompound.hasKey("y") && nbttagcompound.hasKey("z")) {
+                     BlockPosition blockposition = new BlockPosition(nbttagcompound.getInt("x"), nbttagcompound.getInt("y"), nbttagcompound.getInt("z"));
++                    // Blossom start - security patches
++                    if (this.player.c(blockposition) >= CREATIVE_PLACE_DISTANCE_SQUARED) {
++                        return;
++                    }
++                    // Blossom end - security patches
++
+                     TileEntity tileentity = this.player.world.getTileEntity(blockposition);
+ 
+                     if (tileentity != null) {
+@@ -1821,7 +1846,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             boolean flag2 = itemstack == null || itemstack.getItem() != null && (!invalidItems.contains(Item.getId(itemstack.getItem())) || !org.spigotmc.SpigotConfig.filterCreativeItems); // Spigot
+             boolean flag3 = itemstack == null || itemstack.getData() >= 0 && itemstack.count <= 64 && itemstack.count > 0;
+             // CraftBukkit start - Call click event
+-            if (flag || (flag1 && !ItemStack.matches(this.player.defaultContainer.getSlot(packetplayinsetcreativeslot.a()).getItem(), packetplayinsetcreativeslot.getItemStack()))) { // Insist on valid slot
++            if (flag || (flag1 && !ItemStack.fastMatches(this.player.defaultContainer.getSlot(packetplayinsetcreativeslot.a()).getItem(), packetplayinsetcreativeslot.getItemStack()))) { // Blossom - security patches; use fast matches to avoid comparing nbt // Insist on valid slot
+ 
+                 org.bukkit.entity.HumanEntity player = this.player.getBukkitEntity();
+                 InventoryView inventory = new CraftInventoryView(player, player.getInventory(), this.player.defaultContainer);
+@@ -1923,7 +1948,14 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             String[] lines = new String[4];
+ 
+             for (int i = 0; i < aichatbasecomponent.length; ++i) {
+-                lines[i] = EnumChatFormat.a(aichatbasecomponent[i].c());
++                // Blossom start - security patches
++                String signText = EnumChatFormat.a(aichatbasecomponent[i].c());
++                if (signText.length() > 45) {
++                    signText = signText.substring(0, 45);
++                }
++
++                lines[i] = me.samsuik.blossom.utils.SanitizeCharacters.stripDisallowedCharacters(signText);
++                // Blossom end - security patches
+             }
+             SignChangeEvent event = new SignChangeEvent((org.bukkit.craftbukkit.block.CraftBlock) player.getWorld().getBlockAt(x, y, z), this.server.getPlayer(this.player), lines);
+             this.server.getPluginManager().callEvent(event);
+@@ -1970,22 +2002,22 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+     public void a(PacketPlayInTabComplete packetplayintabcomplete) {
+         if (this.ensureMainThread(packetplayintabcomplete)) return; // Blossom - improve packet handling
++        if (this.player.dead) return; // Blossom - security patches
+         // CraftBukkit start
+         if (chatSpamField.addAndGet(this, 10) > 500 && !this.minecraftServer.getPlayerList().isOp(this.player.getProfile())) {
+             this.disconnect("disconnect.spam");
+             return;
+         }
+         // CraftBukkit end
+-        ArrayList arraylist = Lists.newArrayList();
+-        Iterator iterator = this.minecraftServer.tabCompleteCommand(this.player, packetplayintabcomplete.a(), packetplayintabcomplete.b()).iterator();
+-
+-        while (iterator.hasNext()) {
+-            String s = (String) iterator.next();
+-
+-            arraylist.add(s);
++        // Blossom start - security patches
++        BlockPosition blockPos = packetplayintabcomplete.b();
++        if (blockPos != null && blockPos.distanceToCenterSquared(this.player.locX, this.player.locY, this.player.locZ) > 32.0 * 32.0) {
++            blockPos = null;
+         }
+ 
+-        this.player.playerConnection.sendPacket(new PacketPlayOutTabComplete((String[]) arraylist.toArray(new String[arraylist.size()])));
++        final List<String> completions = this.minecraftServer.tabCompleteCommand(this.player, packetplayintabcomplete.a(), blockPos);
++        this.player.playerConnection.sendPacket(new PacketPlayOutTabComplete(completions.toArray(new String[0])));
++        // Blossom end - security patches
+     }
+ 
+     public void a(PacketPlayInSettings packetplayinsettings) {
+@@ -2001,6 +2033,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+         try { // CraftBukkit
+         if ("MC|BEdit".equals(packetplayincustompayload.a())) {
++            // Blossom start - security patches
++            if (!me.samsuik.blossom.configuration.BlossomConfig.booksEnabled) {
++                return;
++            }
++
++            final ItemStack heldItem = this.player.inventory.getItemInHand();
++            if (heldItem != null && heldItem.getItem() != Items.WRITABLE_BOOK) {
++                return;
++            }
++            // Blossom end - security patches
+             packetdataserializer = new PacketDataSerializer(Unpooled.wrappedBuffer(packetplayincustompayload.b()));
+ 
+             try {
+@@ -2033,6 +2075,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+ 
+             return;
+         } else if ("MC|BSign".equals(packetplayincustompayload.a())) {
++            // Blossom start - security patches
++            if (!me.samsuik.blossom.configuration.BlossomConfig.booksEnabled) {
++                return;
++            }
++
++            final ItemStack heldItem = this.player.inventory.getItemInHand();
++            if (heldItem != null && heldItem.getItem() != Items.WRITABLE_BOOK) {
++                return;
++            }
++            // Blossom end - security patches
+             packetdataserializer = new PacketDataSerializer(Unpooled.wrappedBuffer(packetplayincustompayload.b()));
+ 
+             try {
+@@ -2092,7 +2144,15 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+                     CommandBlockListenerAbstract commandblocklistenerabstract = null;
+ 
+                     if (b0 == 0) {
+-                        TileEntity tileentity = this.player.world.getTileEntity(new BlockPosition(packetdataserializer.readInt(), packetdataserializer.readInt(), packetdataserializer.readInt()));
++                        // Blossom start - security patches
++                        final BlockPosition position = new BlockPosition(
++                            packetdataserializer.readInt(),
++                            packetdataserializer.readInt(),
++                            packetdataserializer.readInt()
++                        );
++                        final Chunk chunk = this.player.world.getChunkIfLoaded(position);
++                        final TileEntity tileentity = chunk != null ? chunk.a(position, Chunk.EnumTileEntityState.IMMEDIATE) : null;
++                        // Blossom end - security patches
+ 
+                         if (tileentity instanceof TileEntityCommand) {
+                             commandblocklistenerabstract = ((TileEntityCommand) tileentity).getCommandBlock();
+@@ -2153,7 +2213,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+             ContainerAnvil containeranvil = (ContainerAnvil) this.player.activeContainer;
+ 
+             if (packetplayincustompayload.b() != null && packetplayincustompayload.b().readableBytes() >= 1) {
+-                String s1 = SharedConstants.a(packetplayincustompayload.b().c(32767));
++                String s1 = me.samsuik.blossom.utils.SanitizeCharacters.stripDisallowedCharacters(packetplayincustompayload.b().c(64)); // Blossom - security patches
+ 
+                 if (s1.length() <= 30) {
+                     containeranvil.a(s1);
+diff --git a/src/main/java/net/minecraft/server/ServerConnection.java b/src/main/java/net/minecraft/server/ServerConnection.java
+index 4585d43e3..8429b2b73 100644
+--- a/src/main/java/net/minecraft/server/ServerConnection.java
++++ b/src/main/java/net/minecraft/server/ServerConnection.java
+@@ -102,6 +102,18 @@ public class ServerConnection {
+                     }
+ 
+                     channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30)).addLast("legacy_query", new LegacyPingHandler(ServerConnection.this)).addLast("splitter", new PacketSplitter()).addLast("decoder", new PacketDecoder(EnumProtocolDirection.SERVERBOUND)).addLast("prepender", new PacketPrepender()).addLast("encoder", new PacketEncoder(EnumProtocolDirection.CLIENTBOUND));
++                    // Blossom start - security patches; enforce limits on received packets & bytes
++                    if (me.samsuik.blossom.configuration.BlossomConfig.packetLimiter) {
++                        final me.samsuik.blossom.network.PacketLimitHandler packetLimiter = new me.samsuik.blossom.network.PacketLimitHandler(
++                            me.samsuik.blossom.configuration.BlossomConfig.packetSamples,
++                            me.samsuik.blossom.configuration.BlossomConfig.packetLimit,
++                            me.samsuik.blossom.configuration.BlossomConfig.byteLimit
++                        );
++
++                        channel.pipeline().addBefore("decoder", "blossom$limiter", packetLimiter);
++                    }
++                    // Blossom end - security patches; enforce limits on received packets & bytes
++
+                     NetworkManager networkmanager = new NetworkManager(EnumProtocolDirection.SERVERBOUND);
+ 
+                     pending.add(networkmanager); // Paper
+diff --git a/src/main/java/net/minecraft/server/Slot.java b/src/main/java/net/minecraft/server/Slot.java
+index 3e8e7af9b..67a964bd0 100644
+--- a/src/main/java/net/minecraft/server/Slot.java
++++ b/src/main/java/net/minecraft/server/Slot.java
+@@ -45,7 +45,7 @@ public class Slot {
+     }
+ 
+     public boolean hasItem() {
+-        if (getItem() != null && getItem().count == 0) {
++        if (getItem() != null && getItem().count <= 0) { // Blossom - security patches
+             set(null);
+         }
+         return this.getItem() != null;
+diff --git a/src/main/java/net/minecraft/server/TileEntityBanner.java b/src/main/java/net/minecraft/server/TileEntityBanner.java
+index aa5ad2ef0..14e6fe135 100644
+--- a/src/main/java/net/minecraft/server/TileEntityBanner.java
++++ b/src/main/java/net/minecraft/server/TileEntityBanner.java
+@@ -13,17 +13,47 @@ public class TileEntityBanner extends TileEntity {
+ 
+     public TileEntityBanner() {}
+ 
++    // Blossom start - security patches; sanitize components
++    private static final java.util.Set<String> PATTERN_IDENTIFIERS = new java.util.HashSet<>();
++    static {
++        for (final EnumBannerPatternType type : EnumBannerPatternType.values()) {
++            PATTERN_IDENTIFIERS.add(type.name());
++        }
++    }
++
++    private NBTTagList sanitizeComponents(final NBTTagCompound compound) {
++        final NBTTagList sanitized = new NBTTagList();
++        final NBTTagList patterns = compound.getList("Patterns", 10);
++
++        for (int index = 0; index < Math.min(patterns.size(), 20); index++) {
++            final NBTTagCompound patternTag = patterns.get(index);
++            if (!patternTag.hasKeyOfType("Color", 99) || !patternTag.hasKeyOfType("Pattern", 8)) {
++                continue;
++            }
++
++            final int color = patternTag.getInt("Color");
++            final String pattern = patternTag.getString("Pattern");
++
++            if (PATTERN_IDENTIFIERS.contains(pattern)) {
++                final NBTTagCompound sanitizedTag = new NBTTagCompound();
++                sanitizedTag.setInt("Color", color & 0xff);
++                sanitizedTag.setString("Pattern", pattern);
++
++                sanitized.add(sanitizedTag);
++            }
++        }
++
++        return sanitized;
++    }
++    // Blossom end - security patches; sanitize components
++
+     public void a(ItemStack itemstack) {
+         this.patterns = null;
+         if (itemstack.hasTag() && itemstack.getTag().hasKeyOfType("BlockEntityTag", 10)) {
+             NBTTagCompound nbttagcompound = itemstack.getTag().getCompound("BlockEntityTag");
+ 
+             if (nbttagcompound.hasKey("Patterns")) {
+-                this.patterns = (NBTTagList) nbttagcompound.getList("Patterns", 10).clone();
+-                // CraftBukkit start
+-                while (this.patterns.size() > 20) {
+-                    this.patterns.a(20); // PAIL Rename remove
+-                }
++                this.patterns = sanitizeComponents(nbttagcompound); // Blossom - security patches; sanitize components
+                 // CraftBukkit end
+             }
+ 
+@@ -58,12 +88,7 @@ public class TileEntityBanner extends TileEntity {
+     public void a(NBTTagCompound nbttagcompound) {
+         super.a(nbttagcompound);
+         this.color = nbttagcompound.getInt("Base");
+-        this.patterns = nbttagcompound.getList("Patterns", 10);
+-        // CraftBukkit start
+-        while (this.patterns.size() > 20) {
+-            this.patterns.a(20); // PAIL Rename remove
+-        }
+-        // CraftBukkit end
++        this.patterns = sanitizeComponents(nbttagcompound); // Blossom - security patches; sanitize components
+         this.h = null;
+         this.i = null;
+         this.j = null;
+@@ -143,6 +168,7 @@ public class TileEntityBanner extends TileEntity {
+             this.P[2] = s4;
+         }
+ 
++        public String identifier() { return this.b(); } // Blossom - security patches
+         public String b() {
+             return this.O;
+         }
+diff --git a/src/main/java/net/minecraft/server/TileEntitySkull.java b/src/main/java/net/minecraft/server/TileEntitySkull.java
+index 58014c5f1..b0b78dcac 100644
+--- a/src/main/java/net/minecraft/server/TileEntitySkull.java
++++ b/src/main/java/net/minecraft/server/TileEntitySkull.java
+@@ -103,7 +103,7 @@ public class TileEntitySkull extends TileEntity {
+             } else if (nbttagcompound.hasKeyOfType("ExtraType", 8)) {
+                 String s = nbttagcompound.getString("ExtraType");
+ 
+-                if (!UtilColor.b(s)) {
++                if (!UtilColor.b(s) && !org.apache.commons.lang3.StringUtils.isBlank(s)) { // Blossom - security patches prevent blank game profiles
+                     this.g = new GameProfile((UUID) null, s);
+                     this.e();
+                 }
+diff --git a/src/main/java/net/minecraft/server/WorldMap.java b/src/main/java/net/minecraft/server/WorldMap.java
+index a65588f53..c391b8836 100644
+--- a/src/main/java/net/minecraft/server/WorldMap.java
++++ b/src/main/java/net/minecraft/server/WorldMap.java
+@@ -175,7 +175,7 @@ public class WorldMap extends PersistentBase {
+         if (itemstack.hasTag() && itemstack.getTag().hasKeyOfType("Decorations", 9)) {
+             NBTTagList nbttaglist = itemstack.getTag().getList("Decorations", 10);
+ 
+-            for (int j = 0; j < nbttaglist.size(); ++j) {
++            for (int j = 0; j < Math.min(nbttaglist.size(), 16); ++j) { // Blossom - security patches
+                 NBTTagCompound nbttagcompound = nbttaglist.get(j);
+ 
+                 // Spigot - start
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index f3ddf17f2..8c68ce0e6 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -310,7 +310,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+ 
+     protected void e() {
+         this.O = false;
+-        Iterator iterator = this.players.iterator();
++        Iterator iterator = new ArrayList<>(this.players).iterator(); // Blossom - security patches; players can be removed inside the loop
+ 
+         while (iterator.hasNext()) {
+             EntityHuman entityhuman = (EntityHuman) iterator.next();
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBook.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBook.java
+index 0b5ada011..4f2f21909 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBook.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBook.java
+@@ -33,8 +33,11 @@ public class CraftMetaBook extends CraftMetaItem implements BookMeta {
+     static final ItemMetaKey BOOK_PAGES = new ItemMetaKey("pages");
+     static final ItemMetaKey RESOLVED = new ItemMetaKey("resolved");
+     static final ItemMetaKey GENERATION = new ItemMetaKey("generation");
+-    static final int MAX_PAGE_LENGTH = Short.MAX_VALUE; // TODO: Check me
+-    static final int MAX_TITLE_LENGTH = 0xffff;
++    // Blossom start - security patches
++    static final int MAX_PAGE_LENGTH = me.samsuik.blossom.configuration.BlossomConfig.bookPageLength;
++    static final int MAX_PAGES = me.samsuik.blossom.configuration.BlossomConfig.bookMaxPages;
++    static final int MAX_TITLE_LENGTH = 128;
++    // Blossom end - security patches
+ 
+     protected String title;
+     protected String author;
+@@ -61,11 +64,11 @@ public class CraftMetaBook extends CraftMetaItem implements BookMeta {
+         super(tag);
+ 
+         if (tag.hasKey(BOOK_TITLE.NBT)) {
+-            this.title = limit( tag.getString(BOOK_TITLE.NBT), 1024 ); // Spigot
++            this.title = limit( tag.getString(BOOK_TITLE.NBT), MAX_TITLE_LENGTH ); // Blossom - security patches // Spigot
+         }
+ 
+         if (tag.hasKey(BOOK_AUTHOR.NBT)) {
+-            this.author = limit( tag.getString(BOOK_AUTHOR.NBT), 1024 ); // Spigot
++            this.author = limit( tag.getString(BOOK_AUTHOR.NBT), MAX_TITLE_LENGTH ); // Blossom - security patches // Spigot
+         }
+ 
+         boolean resolved = false;
+@@ -77,20 +80,13 @@ public class CraftMetaBook extends CraftMetaItem implements BookMeta {
+             generation = tag.getInt(GENERATION.NBT);
+         }
+ 
+-        if (tag.hasKey(BOOK_PAGES.NBT) && handlePages) {
++        if (tag.hasKey(BOOK_PAGES.NBT) && handlePages && me.samsuik.blossom.configuration.BlossomConfig.booksEnabled) { // Blossom - security patches
+             NBTTagList pages = tag.getList(BOOK_PAGES.NBT, 8);
+ 
+-            for (int i = 0; i < pages.size(); i++) {
+-                String page = pages.getString(i);
+-                if (resolved) {
+-                    try {
+-                        this.pages.add(ChatSerializer.a(page));
+-                        continue;
+-                    } catch (Exception e) {
+-                        // Ignore and treat as an old book
+-                    }
+-                }
+-                addPage( limit( page, 2048 ) ); // Spigot
++            // Blossom start - security patches
++            for (int i = 0; i < Math.min(pages.size(), MAX_PAGES); i++) {
++                addPage(limit(pages.getString(i), MAX_PAGE_LENGTH)); // Spigot
++                // Blossom end - security patches
+             }
+         }
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBookSigned.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBookSigned.java
+index ae3341c4e..be637690c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBookSigned.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBookSigned.java
+@@ -33,12 +33,12 @@ class CraftMetaBookSigned extends CraftMetaBook implements BookMeta {
+             resolved = tag.getBoolean(RESOLVED.NBT);
+         }
+ 
+-        if (tag.hasKey(BOOK_PAGES.NBT)) {
++        if (tag.hasKey(BOOK_PAGES.NBT) && me.samsuik.blossom.configuration.BlossomConfig.booksEnabled) { // Blossom - security patches
+             NBTTagList pages = tag.getList(BOOK_PAGES.NBT, 8);
+ 
+-            for (int i = 0; i < pages.size(); i++) {
++            for (int i = 0; i < Math.min(pages.size(), CraftMetaBook.MAX_PAGES); i++) { // Blossom - security patches
+                 String page = pages.getString(i);
+-                if (resolved) {
++                if (resolved || !me.samsuik.blossom.configuration.BlossomConfig.parseBookComponents) { // Blossom - security patches
+                     try {
+                         this.pages.add(ChatSerializer.a(page));
+                         continue;
+@@ -46,7 +46,7 @@ class CraftMetaBookSigned extends CraftMetaBook implements BookMeta {
+                         // Ignore and treat as an old book
+                     }
+                 }
+-                addPage(page);
++                addPage(org.spigotmc.ValidateUtils.limit(page, CraftMetaBook.MAX_PAGE_LENGTH)); // Blossom - security patches
+             }
+         }
+     }
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
+index 62d43088a..8e75bc705 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaFirework.java
+@@ -89,9 +89,12 @@ class CraftMetaFirework extends CraftMetaItem implements FireworkMeta {
+         }
+ 
+         NBTTagList fireworkEffects = fireworks.getList(EXPLOSIONS.NBT, 10);
+-        List<FireworkEffect> effects = this.effects = new ArrayList<FireworkEffect>(fireworkEffects.size());
++        // Blossom start - security patches
++        final int effectCount = Math.min(fireworkEffects.size(), 16);
++        List<FireworkEffect> effects = this.effects = new ArrayList<FireworkEffect>(effectCount);
+ 
+-        for (int i = 0; i < fireworkEffects.size(); i++) {
++        for (int i = 0; i < effectCount; i++) {
++            // Blossom end - security patches
+             // PandaSpigot start - Backport SPIGOT-5428
+             try {
+                 effects.add(getEffect((NBTTagCompound) fireworkEffects.get(i)));
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
+index eaaa6a11a..bc72b864c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
+@@ -256,15 +256,18 @@ class CraftMetaItem implements ItemMeta, Repairable {
+             NBTTagCompound display = tag.getCompound(DISPLAY.NBT);
+ 
+             if (display.hasKey(NAME.NBT)) {
+-                displayName = limit( display.getString(NAME.NBT), 1024 ); // Spigot
++                displayName = limit( display.getString(NAME.NBT), 256 ); // Blossom - security patches // Spigot
+             }
+ 
+             if (display.hasKey(LORE.NBT)) {
+                 NBTTagList list = display.getList(LORE.NBT, 8);
+-                lore = new ArrayList<String>(list.size());
++                // Blossom start - security patches
++                final int loreCount = Math.min(list.size(), 128);
++                lore = new ArrayList<String>(loreCount);
+ 
+-                for (int index = 0; index < list.size(); index++) {
+-                    String line = limit( list.getString(index), 1024 ); // Spigot
++                for (int index = 0; index < loreCount; index++) {
++                    // Blossom end - security patches
++                    String line = limit( list.getString(index), 512 ); // Blossom - security patches // Spigot
+                     lore.add(line);
+                 }
+             }
+@@ -305,7 +308,7 @@ class CraftMetaItem implements ItemMeta, Repairable {
+             List<NBTTagCompound> op1 = new ArrayList<NBTTagCompound>();
+             List<NBTTagCompound> op2 = new ArrayList<NBTTagCompound>();
+ 
+-            for ( int i = 0; i < oldList.size(); ++i )
++            for ( int i = 0; i < Math.min(oldList.size(), 16); ++i ) // Blossom - security patches
+             {
+                 NBTTagCompound nbttagcompound = oldList.get( i );
+                 if ( nbttagcompound == null ) continue;
+@@ -463,9 +466,10 @@ class CraftMetaItem implements ItemMeta, Repairable {
+         }
+ 
+         NBTTagList ench = tag.getList(key.NBT, 10);
++        final int enchCount = Math.min(ench.size(), 24); // Blossom - security patches
+         Map<Enchantment, Integer> enchantments = new HashMap<Enchantment, Integer>(ench.size());
+ 
+-        for (int i = 0; i < ench.size(); i++) {
++        for (int i = 0; i < enchCount; i++) { // Blossom - security patches
+             int id = 0xffff & ((NBTTagCompound) ench.get(i)).getShort(ENCHANTMENTS_ID.NBT);
+             int level = 0xffff & ((NBTTagCompound) ench.get(i)).getShort(ENCHANTMENTS_LVL.NBT);
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaPotion.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaPotion.java
+index 5b2d12bb6..ce0533580 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaPotion.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaPotion.java
+@@ -46,7 +46,7 @@ class CraftMetaPotion extends CraftMetaItem implements PotionMeta {
+ 
+         if (tag.hasKey(POTION_EFFECTS.NBT)) {
+             NBTTagList list = tag.getList(POTION_EFFECTS.NBT, 10);
+-            int length = list.size();
++            int length = Math.min(list.size(), 23); // Blossom - security patches
+             customEffects = new ArrayList<PotionEffect>(length);
+ 
+             for (int i = 0; i < length; i++) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaSkull.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaSkull.java
+index 55bbad76b..77a7a7b73 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaSkull.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaSkull.java
+@@ -45,7 +45,13 @@ class CraftMetaSkull extends CraftMetaItem implements SkullMeta {
+         if (tag.hasKeyOfType(SKULL_OWNER.NBT, 10)) {
+             profile = GameProfileSerializer.deserialize(tag.getCompound(SKULL_OWNER.NBT));
+         } else if (tag.hasKeyOfType(SKULL_OWNER.NBT, 8) && !tag.getString(SKULL_OWNER.NBT).isEmpty()) {
+-            profile = new GameProfile(null, tag.getString(SKULL_OWNER.NBT));
++            // Blossom start - security patches
++            try {
++                profile = new GameProfile(null, tag.getString(SKULL_OWNER.NBT));
++            } catch (final IllegalArgumentException ignored) {
++                // Invalid player username
++            }
++            // Blossom end - security patches
+         }
+     }
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/map/CraftMapRenderer.java b/src/main/java/org/bukkit/craftbukkit/map/CraftMapRenderer.java
+index ad47bdd4d..f575ba13a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/map/CraftMapRenderer.java
++++ b/src/main/java/org/bukkit/craftbukkit/map/CraftMapRenderer.java
+@@ -43,7 +43,7 @@ public class CraftMapRenderer extends MapRenderer {
+             }
+       
+             MapIcon decoration = (MapIcon) worldMap.decorations.get(key);
+-            cursors.addCursor(decoration.getX(), decoration.getY(), (byte) (decoration.getRotation() & 15), decoration.getType());
++            cursors.addCursor(decoration.getX(), decoration.getY(), (byte) (decoration.getRotation() & 15), (byte) (decoration.getType() & 15)); // Blossom - security patches
+         }
+     }
+ 
+diff --git a/src/main/java/org/spigotmc/LimitStream.java b/src/main/java/org/spigotmc/LimitStream.java
+index 8c32e8b62..7657bcfdb 100644
+--- a/src/main/java/org/spigotmc/LimitStream.java
++++ b/src/main/java/org/spigotmc/LimitStream.java
+@@ -19,21 +19,21 @@ public class LimitStream extends FilterInputStream
+     @Override
+     public int read() throws IOException
+     {
+-        limit.a( 8 );
++        limit.a( 8L ); // Blossom - security patches
+         return super.read();
+     }
+ 
+     @Override
+     public int read(byte[] b) throws IOException
+     {
+-        limit.a( b.length * 8 );
++        limit.a( b.length * 8L ); // Blossom - security patches
+         return super.read( b );
+     }
+ 
+     @Override
+     public int read(byte[] b, int off, int len) throws IOException
+     {
+-        limit.a( len * 8 );
++        limit.a( len * 8L ); // Blossom - security patches
+         return super.read( b, off, len );
+     }
+ }
+-- 
+2.50.1 (Apple Git-155)
+

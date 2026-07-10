@@ -1,0 +1,36 @@
+From a5cf9a4d0aa89e40e0291179ddfda23584b3e49c Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sat, 27 May 2023 19:52:00 +0100
+Subject: [PATCH] Scoreboard Objective Updates
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 6504b03a0..07aff408c 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -345,4 +345,9 @@ public class BlossomConfig {
+         batchExplosions = getBoolean("explosions.batch-explosions", true);
+     }
+ 
++    public static boolean playerObjectiveUpdates;
++    private static void PlayerObjectiveUpdates() {
++        playerObjectiveUpdates = getBoolean("player.scoreboard-objective-updates", true);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 396294570..9cda8bee8 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -847,7 +847,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     }
+ 
+     public void a(Statistic statistic, int i) {
+-        if (statistic != null) {
++        if (statistic != null && me.samsuik.blossom.configuration.BlossomConfig.playerObjectiveUpdates) { // Blossom
+             this.bK.b(this, statistic, i);
+             Iterator iterator = this.getScoreboard().getObjectivesForCriteria(statistic.k()).iterator();
+ 
+-- 
+2.50.1 (Apple Git-155)
+
