@@ -1,13 +1,31 @@
-From 08659211978bf5924fd2f9652749a7d683e12645 Mon Sep 17 00:00:00 2001
+From 622ad5440176a4e7ef3f55c2bc7386ea00856ee0 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 6c39ebc06..29f634a28 100644
+index 6c39ebc06..96e9adb12 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -26,7 +26,7 @@ public final class BlossomConfig {
+     private static final String HEADER = "This is the main configuration file for Blossom.\n";
+     /*========================================================================*/
+     public static YamlConfiguration config;
+-    static int version;
++    static int version = Integer.MAX_VALUE;
+     static Map<String, Command> commands;
+     /*========================================================================*/
+ 
+@@ -48,7 +48,7 @@ public final class BlossomConfig {
+         commands = new HashMap<>();
+         BlossomCommands.register(commands);
+ 
+-        version = getInt("config-version", 4);
++        version = Math.min(getInt("config-version", 4), version);
+         set("config-version", 4);
+         readConfig(BlossomConfig.class, null);
+     }
 @@ -408,4 +408,9 @@ public final class BlossomConfig {
          projectileTimeout = getInt("projectiles.time-out", 1200);
      }
@@ -19,7 +37,7 @@ index 6c39ebc06..29f634a28 100644
 +
  }
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-index 960c6fce1..d2088d25d 100644
+index df4e30391..85b6eebe5 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 @@ -1,8 +1,11 @@
@@ -34,38 +52,49 @@ index 960c6fce1..d2088d25d 100644
  import org.bukkit.configuration.file.YamlConfiguration;
  
  public final class BlossomWorldConfig {
-@@ -82,4 +85,34 @@ public final class BlossomWorldConfig {
+@@ -82,4 +85,45 @@ public final class BlossomWorldConfig {
          me.samsuik.blossom.antixray.AntiXrayEngine.setEngine(new me.samsuik.blossom.antixray.DuskBerry(hiddenBlocks, berryIntensity, sections, radius));
      }
  
 +    public Map<Block, Map.Entry<Integer, Double>> durabilityMap;
++    public static boolean migrated;
 +    private void BlockDurability() {
-+        durabilityMap = new java.util.HashMap<>();
++        if (BlossomConfig.version < 4 && !migrated) {
++            final ConfigurationSection section = this.config.getConfigurationSection("explosions.durability");
++            for (final String name : section.getValues(false).keySet()) {
++                final double resistance = section.getDouble(name + ".resistance", Double.MAX_VALUE);
++                if (resistance != Double.MAX_VALUE) {
++                    final double adjustedResistance = (resistance / 0.3f) + 0.3f;
++                    section.set(name + ".resistance", Math.round(adjustedResistance * 2.0) / 2.0);
++                }
++            }
 +
-+        // init config
-+        if (!config.contains("explosions.durability.obsidian")) {
-+            defaultDura("obsidian", 5, 0.0);
-+            defaultDura("enchanting_table", 0, 0.0);
-+            defaultDura("ender_chest", 0, 0.0);
-+            defaultDura("anvil", 0, 0.0);
++            migrated = true;
 +        }
 +
-+        ConfigurationSection section = config.getConfigurationSection("explosions.durability");
++        this.durabilityMap = new java.util.HashMap<>();
++        if (!this.config.contains("explosions.durability.obsidian")) {
++            this.defaultDura("obsidian", 5, net.minecraft.server.Blocks.STONE.getBlastResistance());
++            this.defaultDura("enchanting_table", 0, net.minecraft.server.Blocks.STONE.getBlastResistance());
++            this.defaultDura("ender_chest", 0, net.minecraft.server.Blocks.STONE.getBlastResistance());
++            this.defaultDura("anvil", 0, net.minecraft.server.Blocks.STONE.getBlastResistance());
++        }
 +
-+        for (String name : section.getValues(false).keySet()) {
-+            Block block = Block.getByName(name);
++        final ConfigurationSection section = this.config.getConfigurationSection("explosions.durability");
++        for (final String name : section.getValues(false).keySet()) {
++            final Block block = Block.getByName(name);
 +            if (block != null) {
-+                int durability = section.getInt(name + ".durability", 0);
-+                double resistance = section.getDouble(name + ".resistance", block.durability());
++                final int durability = section.getInt(name + ".durability", 0);
++                final double resistance = section.getDouble(name + ".resistance", block.getBlastResistance());
 +
-+                durabilityMap.put(block, new java.util.AbstractMap.SimpleEntry<>(durability, resistance));
++                this.durabilityMap.put(block, new java.util.AbstractMap.SimpleEntry<>(durability, resistance));
 +            }
 +        }
 +    }
 +
-+    private void defaultDura(String name, int durability, double resistance) {
-+        config.addDefault("explosions.durability." + name + ".durability", durability);
-+        config.addDefault("explosions.durability." + name + ".resistance", resistance);
++    private void defaultDura(final String name, final int durability, final double resistance) {
++        this.config.addDefault("explosions.durability." + name + ".durability", durability);
++        this.config.addDefault("explosions.durability." + name + ".resistance", resistance);
 +    }
 +
  }
@@ -197,7 +226,7 @@ index 000000000..cd249dbfd
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index a17e07910..47d367670 100644
+index b66e47237..9d484c26e 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -61,7 +61,7 @@ public class Block {
@@ -207,24 +236,26 @@ index a17e07910..47d367670 100644
 -    protected float durability;
 +    protected float durability; public float durability() { return durability; } // Blossom
      // Blossom start
-     public float getBlastResistance() {
-         return ((durability / 5.0f) + 0.3f) * 0.3f;
+     public float getEffectiveBlastResistance() {
+         return (this.getBlastResistance() + 0.3f) * 0.3f;
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index e14a6b603..82881b2fb 100644
+index 2f279aa02..5780c6759 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
-@@ -175,6 +175,10 @@ public class Explosion {
+@@ -174,6 +174,12 @@ public class Explosion {
          IBlockData iblockdata = chunk.getBlockData(x, y, z);
          Block block = iblockdata.getBlock();
-         float resistance = block.getBlastResistance();
+         float resistance = block.getEffectiveBlastResistance();
 +        // Blossom start
 +        float durableResistance = world.durableManager.getResistance(block, x, y, z, this.source instanceof EntityTNTPrimed);
-+        if (durableResistance != -1.0f) resistance = durableResistance;
++        if (durableResistance != -1.0f) {
++            resistance = (durableResistance + 0.3f) * 0.3f;
++        }
 +        // Blossom end
  
          if (block != Blocks.AIR && strength - resistance > 0.0f) {
              long pack = BlockPosition.asLong(x, y, z);
-@@ -342,12 +346,19 @@ public class Explosion {
+@@ -341,12 +347,19 @@ public class Explosion {
              }
              // Blossom end - optimised explosions
              iterator = this.blocks.iterator();
@@ -289,7 +320,7 @@ index 953f5b62b..4a3b053a0 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 2379b475f..77aaf4cc9 100644
+index f27824e2e..11846da8d 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -173,6 +173,7 @@ public abstract class World implements IBlockAccess {

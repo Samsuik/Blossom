@@ -1,14 +1,14 @@
-From 0164b85101ee460f9b2cce4b9263faa1e565ebec Mon Sep 17 00:00:00 2001
+From 218a97dfc1790187b7988dcc4bc39e4e3035af98 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
 
 
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index f9d63d580..a17e07910 100644
+index 4bf6630ab..b66e47237 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -110,6 +110,23 @@ public class Block {
+@@ -114,6 +114,23 @@ public class Block {
      protected final BlockStateList blockStateList;
      private IBlockData blockData;
      private String name;
@@ -32,7 +32,7 @@ index f9d63d580..a17e07910 100644
  
      public static int getId(Block block) {
          return Block.REGISTRY.b(block);
-@@ -1113,6 +1130,7 @@ public class Block {
+@@ -1117,6 +1134,7 @@ public class Block {
      }
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {

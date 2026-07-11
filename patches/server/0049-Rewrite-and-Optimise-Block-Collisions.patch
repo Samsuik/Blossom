@@ -1,4 +1,4 @@
-From 4fdf2ed391c9b3ec545979e055fa4cd5e6afa10f Mon Sep 17 00:00:00 2001
+From 0ba78c9067b5aa6ac4410f886ac7d578e52744b4 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -129,10 +129,10 @@ index 431097ec3..ab5fe46dc 100644
          if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
              double d1;
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 8efe45ea2..f9d63d580 100644
+index 305437e50..4bf6630ab 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -288,6 +288,7 @@ public class Block {
+@@ -292,6 +292,7 @@ public class Block {
          return this.isTileEntity;
      }
  
@@ -140,7 +140,7 @@ index 8efe45ea2..f9d63d580 100644
      protected final void a(float f, float f1, float f2, float f3, float f4, float f5) {
          this.minX = (double) f;
          this.minY = (double) f1;
-@@ -301,6 +302,23 @@ public class Block {
+@@ -305,6 +306,23 @@ public class Block {
          return iblockaccess.getType(blockposition).getBlock().getMaterial().isBuildable();
      }
  
@@ -164,7 +164,7 @@ index 8efe45ea2..f9d63d580 100644
      public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
          AxisAlignedBB axisalignedbb1 = this.a(world, blockposition, iblockdata);
  
-@@ -310,6 +328,12 @@ public class Block {
+@@ -314,6 +332,12 @@ public class Block {
  
      }
  
@@ -177,7 +177,7 @@ index 8efe45ea2..f9d63d580 100644
      public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
          return new AxisAlignedBB((double) blockposition.getX() + this.minX, (double) blockposition.getY() + this.minY, (double) blockposition.getZ() + this.minZ, (double) blockposition.getX() + this.maxX, (double) blockposition.getY() + this.maxY, (double) blockposition.getZ() + this.maxZ);
      }
-@@ -622,6 +646,14 @@ public class Block {
+@@ -626,6 +650,14 @@ public class Block {
          return vec3d;
      }
  
@@ -192,7 +192,7 @@ index 8efe45ea2..f9d63d580 100644
      public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {}
  
      public final double B() {
-@@ -1067,10 +1099,17 @@ public class Block {
+@@ -1071,10 +1103,17 @@ public class Block {
                  int i = Block.REGISTRY.b(block13) << 4 | block13.toLegacyData(iblockdata);
                  // TacoSpigot start
  
@@ -852,7 +852,7 @@ index 3c3ab0c59..b002875c5 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 5a1b29cdd..974c42f05 100644
+index ad69bf577..cb6ca7e62 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;

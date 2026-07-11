@@ -1,4 +1,4 @@
-From d2c9b1b567cc0f8f66c3d18ff1fbc35e63507690 Mon Sep 17 00:00:00 2001
+From e285c321e53119720bd3ff75e10ca6ea28f81d42 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
@@ -468,16 +468,20 @@ index 88b6fe532..431097ec3 100644
 +    // Blossom end
  }
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 9facefa1f..8efe45ea2 100644
+index 9facefa1f..305437e50 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -62,6 +62,27 @@ public class Block {
+@@ -62,6 +62,31 @@ public class Block {
      protected boolean v;
      protected float strength;
      protected float durability;
 +    // Blossom start
++    public float getEffectiveBlastResistance() {
++        return (this.getBlastResistance() + 0.3f) * 0.3f;
++    }
++
 +    public float getBlastResistance() {
-+        return ((durability / 5.0f) + 0.3f) * 0.3f;
++        return this.durability / 5.0f;
 +    }
 +
 +    public boolean isInsideBlock(IBlockAccess world, BlockPosition pos, double x, double y, double z) {
@@ -582,7 +586,7 @@ index 44f961d15..7093bc2f8 100644
          this.move(this.motX, this.motY, this.motZ);
  
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 4b288ae8b..980833ed0 100644
+index 4b288ae8b..c9a92151f 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
 @@ -19,16 +19,17 @@ import org.bukkit.event.block.BlockExplodeEvent;
@@ -609,7 +613,7 @@ index 4b288ae8b..980833ed0 100644
      public boolean wasCanceled = false; // CraftBukkit - add field
  
      public Explosion(World world, Entity entity, double d0, double d1, double d2, float f, boolean flag, boolean flag1) {
-@@ -82,124 +83,199 @@ public class Explosion {
+@@ -82,124 +83,198 @@ public class Explosion {
              return;
          }
          // CraftBukkit end
@@ -666,9 +670,8 @@ index 4b288ae8b..980833ed0 100644
 +        Block block = state.getBlock();
 +
 +        // Make sure we can destroy blocks
-+        if (destroyBlocks() && !block.getMaterial().isLiquid() && block.getBlastResistance() < 100.0f
-+            && !isRegionProtected(chunk) && posY - maxDistance < 256
-+        ) {
++        if (destroyBlocks() && !block.getMaterial().isLiquid() && block.getEffectiveBlastResistance() < 100.0f
++            && !isRegionProtected(chunk) && posY - maxDistance < 256) {
 +            locateBlocksToDestroy();
 +        }
 +
@@ -749,7 +752,7 @@ index 4b288ae8b..980833ed0 100644
 +    private float traverseBlock(it.unimi.dsi.fastutil.longs.LongOpenHashSet found, java.util.concurrent.locks.StampedLock lock, float strength, Chunk chunk, int x, int y, int z) {
 +        IBlockData iblockdata = chunk.getBlockData(x, y, z);
 +        Block block = iblockdata.getBlock();
-+        float resistance = block.getBlastResistance();
++        float resistance = block.getEffectiveBlastResistance();
 +
 +        if (block != Blocks.AIR && strength - resistance > 0.0f) {
 +            long pack = BlockPosition.asLong(x, y, z);
@@ -913,7 +916,7 @@ index 4b288ae8b..980833ed0 100644
  
      public void a(boolean flag) {
          // PaperSpigot start - Configurable TNT explosion volume.
-@@ -221,7 +297,7 @@ public class Explosion {
+@@ -221,7 +296,7 @@ public class Explosion {
              org.bukkit.entity.Entity explode = this.source == null ? null : this.source.getBukkitEntity();
              Location location = new Location(bworld, this.posX, this.posY, this.posZ);
  
@@ -922,7 +925,7 @@ index 4b288ae8b..980833ed0 100644
              for (int i1 = this.blocks.size() - 1; i1 >= 0; i1--) {
                  BlockPosition cpos = (BlockPosition) this.blocks.get(i1);
                  org.bukkit.block.Block bblock = bworld.getBlockAt(cpos.getX(), cpos.getY(), cpos.getZ());
-@@ -260,6 +336,11 @@ public class Explosion {
+@@ -260,6 +335,11 @@ public class Explosion {
                  return;
              }
              // CraftBukkit end
@@ -934,7 +937,7 @@ index 4b288ae8b..980833ed0 100644
              iterator = this.blocks.iterator();
  
              while (iterator.hasNext()) {
-@@ -267,27 +348,7 @@ public class Explosion {
+@@ -267,27 +347,7 @@ public class Explosion {
                  Block block = this.world.getType(blockposition).getBlock();
  
                  world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
@@ -1005,7 +1008,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 6bfdce08e..655c34cef 100644
+index 3475c0d19..b2aba44f8 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {

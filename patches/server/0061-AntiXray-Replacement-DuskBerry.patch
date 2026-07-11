@@ -1,4 +1,4 @@
-From 0612dc9da1a57e1576d6d236e47868cfbbaeb11f Mon Sep 17 00:00:00 2001
+From 7128845e972663a83bca6ebe846fcbd6a9ef4732 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -296,7 +296,7 @@ index 000000000..412e979df
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-index f5ce9210a..960c6fce1 100644
+index 98b731347..df4e30391 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 @@ -60,4 +60,26 @@ public final class BlossomWorldConfig {
@@ -374,10 +374,10 @@ index 26b7a8d5f..841fb926c 100644
                              arraylist1.addAll(chunk.tileEntities.values()); // CraftBukkit - Get tile entities directly from the chunk instead of the world
                              iterator1.remove();
 diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
-index 980833ed0..e14a6b603 100644
+index c9a92151f..2f279aa02 100644
 --- a/src/main/java/net/minecraft/server/Explosion.java
 +++ b/src/main/java/net/minecraft/server/Explosion.java
-@@ -347,7 +347,7 @@ public class Explosion {
+@@ -346,7 +346,7 @@ public class Explosion {
                  blockposition = (BlockPosition) iterator.next();
                  Block block = this.world.getType(blockposition).getBlock();
  
@@ -426,7 +426,7 @@ index f941b7da6..b434de8bf 100644
  
      public void a(BlockPosition blockposition) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 768d2bb9f..2379b475f 100644
+index 2a6655916..f27824e2e 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {
