@@ -1,4 +1,4 @@
-From d26dd17ebfc6e2b4e71d7ed1b76b85fc5b6f4911 Mon Sep 17 00:00:00 2001
+From 6edc251cf2bab7e497ee5f6b0f08ec6d48784fd3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -8,15 +8,13 @@ Fixes numerous exploits that can be used to harm the server and other players.
 smiles
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 917a235b4..df8332a4b 100644
+index f283caf6d..16beffbdf 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -118,5 +118,70 @@ public class BlossomConfig {
-         config.addDefault(path, def);
-         return config.getString(path, config.getString(path));
+@@ -125,4 +125,69 @@ public final class BlossomConfig {
+         remove("books.character-checking");
      }
--    
-+
+ 
 +    public static boolean packetLimiter;
 +    public static int packetSamples;
 +    public static me.samsuik.blossom.network.PacketLimit packetLimit;
@@ -306,13 +304,13 @@ index 000000000..092dfe7f3
 +        super(message);
 +    }
 +}
-diff --git a/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java b/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java
+diff --git a/src/main/java/me/samsuik/blossom/util/SanitizeCharacters.java b/src/main/java/me/samsuik/blossom/util/SanitizeCharacters.java
 new file mode 100644
-index 000000000..3fc3cef2b
+index 000000000..8193cf947
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/utils/SanitizeCharacters.java
++++ b/src/main/java/me/samsuik/blossom/util/SanitizeCharacters.java
 @@ -0,0 +1,20 @@
-+package me.samsuik.blossom.utils;
++package me.samsuik.blossom.util;
 +
 +import net.minecraft.server.SharedConstants;
 +
@@ -1126,7 +1124,7 @@ index a9a2a794d..288dc184d 100644
  
      public void b(PacketDataSerializer packetdataserializer) throws IOException {
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 3a917037b..0c56b7407 100644
+index 3a917037b..007b1d4cb 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -792,20 +792,20 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -1237,7 +1235,7 @@ index 3a917037b..0c56b7407 100644
 +                    signText = signText.substring(0, 45);
 +                }
 +
-+                lines[i] = me.samsuik.blossom.utils.SanitizeCharacters.stripDisallowedCharacters(signText);
++                lines[i] = me.samsuik.blossom.util.SanitizeCharacters.stripDisallowedCharacters(signText);
 +                // Blossom end - security patches
              }
              SignChangeEvent event = new SignChangeEvent((org.bukkit.craftbukkit.block.CraftBlock) player.getWorld().getBlockAt(x, y, z), this.server.getPlayer(this.player), lines);
@@ -1329,7 +1327,7 @@ index 3a917037b..0c56b7407 100644
  
              if (packetplayincustompayload.b() != null && packetplayincustompayload.b().readableBytes() >= 1) {
 -                String s1 = SharedConstants.a(packetplayincustompayload.b().c(32767));
-+                String s1 = me.samsuik.blossom.utils.SanitizeCharacters.stripDisallowedCharacters(packetplayincustompayload.b().c(64)); // Blossom - security patches
++                String s1 = me.samsuik.blossom.util.SanitizeCharacters.stripDisallowedCharacters(packetplayincustompayload.b().c(64)); // Blossom - security patches
  
                  if (s1.length() <= 30) {
                      containeranvil.a(s1);

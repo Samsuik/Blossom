@@ -1,0 +1,59 @@
+From dcefed84bd17d8870ca89dd8426aae81a50cfdd8 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Sun, 11 Jun 2023 17:53:17 +0100
+Subject: [PATCH] Optimise canSee Player
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index 59b9b9871..8a536c6c5 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -69,6 +69,7 @@ import org.bukkit.scoreboard.Scoreboard;
+ // PaperSpigot start
+ import org.github.paperspigot.Title;
+ // PaperSpigot end
++import it.unimi.dsi.fastutil.ints.IntOpenHashSet; // Blossom
+ 
+ @DelegateDeserialization(CraftOfflinePlayer.class)
+ public class CraftPlayer extends CraftHumanEntity implements Player {
+@@ -78,6 +79,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+     private final ConversationTracker conversationTracker = new ConversationTracker();
+     private final Set<String> channels = new HashSet<String>();
+     private final Set<UUID> hiddenPlayers = new HashSet<UUID>();
++    private final IntOpenHashSet fastHiddenPlayers = new IntOpenHashSet();
+     private int hash = 0;
+     private double health = 20;
+     private boolean scaledHealth = false;
+@@ -981,6 +983,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+         if (equals(player)) return;
+         if (hiddenPlayers.contains(player.getUniqueId())) return;
+         hiddenPlayers.add(player.getUniqueId());
++        fastHiddenPlayers.add(player.getEntityId()); // Blossom
+ 
+         //remove this player from the hidden player's EntityTrackerEntry
+         EntityTracker tracker = ((WorldServer) entity.world).tracker;
+@@ -1001,6 +1004,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+         if (equals(player)) return;
+         if (!hiddenPlayers.contains(player.getUniqueId())) return;
+         hiddenPlayers.remove(player.getUniqueId());
++        fastHiddenPlayers.remove(player.getEntityId()); // Blossom
+ 
+         EntityTracker tracker = ((WorldServer) entity.world).tracker;
+         EntityPlayer other = ((CraftPlayer) player).getHandle();
+@@ -1015,11 +1019,12 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+ 
+     public void removeDisconnectingPlayer(Player player) {
+         hiddenPlayers.remove(player.getUniqueId());
++        fastHiddenPlayers.remove(player.getEntityId()); // Blossom
+     }
+ 
+     @Override
+     public boolean canSee(Player player) {
+-        return !hiddenPlayers.contains(player.getUniqueId());
++        return !fastHiddenPlayers.contains(player.getEntityId()) && !hiddenPlayers.contains(player.getUniqueId()); // Blossom
+     }
+ 
+     @Override
+-- 
+2.50.1 (Apple Git-155)
+

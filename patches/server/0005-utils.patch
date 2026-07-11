@@ -1,86 +1,82 @@
-From 37f56eb021ce7a6918a06349ec3e525578e4cc04 Mon Sep 17 00:00:00 2001
+From a08b51ede4d848bda0faae7d0575739ae002efad Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 23 May 2023 23:07:20 +0100
 Subject: [PATCH] utils
 
 
-diff --git a/src/main/java/me/samsuik/blossom/utils/collections/OrderedComparatorList.java b/src/main/java/me/samsuik/blossom/utils/collections/OrderedComparatorList.java
+diff --git a/src/main/java/me/samsuik/blossom/util/collections/OrderedComparatorList.java b/src/main/java/me/samsuik/blossom/util/collections/OrderedComparatorList.java
 new file mode 100644
-index 000000000..351a78a2e
+index 000000000..2597affed
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/utils/collections/OrderedComparatorList.java
-@@ -0,0 +1,51 @@
-+package me.samsuik.blossom.utils.collections;
++++ b/src/main/java/me/samsuik/blossom/util/collections/OrderedComparatorList.java
+@@ -0,0 +1,49 @@
++package me.samsuik.blossom.util.collections;
 +
 +import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 +
 +import java.util.Arrays;
 +import java.util.Comparator;
 +
-+public class OrderedComparatorList<T> extends ObjectArrayList<T> {
-+
++public final class OrderedComparatorList<T> extends ObjectArrayList<T> {
 +    private final Comparator<T> comparator;
 +    private boolean binarySearch = true;
 +
-+    public OrderedComparatorList(int capacity, Comparator<T> comparator) {
++    public OrderedComparatorList(final int capacity, final Comparator<T> comparator) {
 +        super(capacity);
 +        this.comparator = Comparator.nullsLast(comparator);
 +    }
 +
-+    public OrderedComparatorList(Comparator<T> comparator) {
++    public OrderedComparatorList(final Comparator<T> comparator) {
 +        this(DEFAULT_INITIAL_CAPACITY, comparator);
 +    }
 +
-+    private void validateBounds(int index, T t, boolean up) {
-+        if (index != 0 && comparator.compare(get(index - 1), t) > 0) {
-+            binarySearch = false;
-+        } else if (up && index < size() - 1 && comparator.compare(get(index + 1), t) < 0) {
-+            binarySearch = false;
++    private void validateBounds(final int index, final T element, final boolean up) {
++        if (index != 0 && this.comparator.compare(get(index - 1), element) > 0) {
++            this.binarySearch = false;
++        } else if (up && index < size() - 1 && this.comparator.compare(get(index + 1), element) < 0) {
++            this.binarySearch = false;
 +        }
 +    }
 +
 +    @Override
-+    public boolean add(T t) {
-+        validateBounds(size(), t, false);
-+        return super.add(t);
++    public boolean add(final T element) {
++        this.validateBounds(size(), element, false);
++        return super.add(element);
 +    }
 +
 +    @Override
-+    public void add(int index, T t) {
-+        validateBounds(index, t, true);
-+        super.add(index, t);
++    public void add(final int index, final T element) {
++        this.validateBounds(index, element, true);
++        super.add(index, element);
 +    }
 +
 +    @Override
-+    public int indexOf(final Object k) {
-+        if (binarySearch) {
-+            return Math.max(Arrays.binarySearch(a, (T) k, comparator), -1);
++    public int indexOf(final Object element) {
++        if (this.binarySearch) {
++            return Math.max(Arrays.binarySearch(this.a, (T) element, this.comparator), -1);
 +        } else {
-+            return super.indexOf(k);
++            return super.indexOf(element);
 +        }
 +    }
-+
 +}
-diff --git a/src/main/java/me/samsuik/blossom/utils/collections/UnorderedIndexedList.java b/src/main/java/me/samsuik/blossom/utils/collections/UnorderedIndexedList.java
+diff --git a/src/main/java/me/samsuik/blossom/util/collections/UnorderedIndexedList.java b/src/main/java/me/samsuik/blossom/util/collections/UnorderedIndexedList.java
 new file mode 100644
-index 000000000..9f40c06f3
+index 000000000..4ac236ca8
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/utils/collections/UnorderedIndexedList.java
-@@ -0,0 +1,63 @@
-+package me.samsuik.blossom.utils.collections;
++++ b/src/main/java/me/samsuik/blossom/util/collections/UnorderedIndexedList.java
+@@ -0,0 +1,62 @@
++package me.samsuik.blossom.util.collections;
 +
 +import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 +import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 +
-+public class UnorderedIndexedList<T> extends ObjectArrayList<T> {
-+
++public final class UnorderedIndexedList<T> extends ObjectArrayList<T> {
 +    private final Int2IntOpenHashMap elementToIndex = new Int2IntOpenHashMap();
-+
 +    {
-+        elementToIndex.defaultReturnValue(-1);
++        this.elementToIndex.defaultReturnValue(-1);
 +    }
 +
-+    public UnorderedIndexedList(int capacity) {
++    public UnorderedIndexedList(final int capacity) {
 +        super(capacity);
 +    }
 +
@@ -89,129 +85,130 @@ index 000000000..9f40c06f3
 +    }
 +
 +    @Override
-+    public boolean add(final T t) {
-+        elementToIndex.put(t.hashCode(), size());
-+        return super.add(t);
++    public boolean add(final T element) {
++        this.elementToIndex.put(element.hashCode(), this.size());
++        return super.add(element);
 +    }
 +
 +    @Override
 +    public T remove(final int index) {
-+        final int tail = size() - 1;
-+        final T at = a[index];
-+
++        final int tail = this.size() - 1;
++        final T at = this.a[index];
 +        if (index != tail) {
-+            final T tailObj = a[tail];
-+            if (tailObj != null)
-+            elementToIndex.put(tailObj.hashCode(), index);
-+            a[index] = tailObj;
++            final T tailObj = this.a[tail];
++            if (tailObj != null) {
++                this.elementToIndex.put(tailObj.hashCode(), index);
++            }
++            this.a[index] = tailObj;
 +        }
 +
-+        if (at != null)
-+        elementToIndex.remove(at.hashCode());
-+        a[tail] = null;
-+        size--;
++        if (at != null) {
++            this.elementToIndex.remove(at.hashCode());
++        }
++
++        this.a[tail] = null;
++        this.size--;
 +        return at;
 +    }
 +
 +    @Override
 +    public void clear() {
-+        elementToIndex.clear();
++        this.elementToIndex.clear();
 +        super.clear();
 +    }
 +
 +    @Override
 +    public int indexOf(final Object k) {
-+        return elementToIndex.get(k.hashCode());
++        return this.elementToIndex.get(k.hashCode());
 +    }
 +
 +    @Override
-+    public void add(final int index, final T t) {
++    public void add(final int index, final T element) {
 +        throw new UnsupportedOperationException();
 +    }
-+
 +}
 diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
-index ac43e5a90..04766afdf 100644
+index ac43e5a90..1ce794bd2 100644
 --- a/src/main/java/net/minecraft/server/BlockPosition.java
 +++ b/src/main/java/net/minecraft/server/BlockPosition.java
 @@ -152,6 +152,32 @@ public class BlockPosition extends BaseBlockPosition {
          return ((long) this.getX() & BlockPosition.h) << BlockPosition.g | ((long) this.getY() & BlockPosition.i) << BlockPosition.f | ((long) this.getZ() & BlockPosition.j) << 0;
      }
  
-+    // Blossom start
-+    public static long asLong(int x, int y, int z) {
++    // Blossom start - utils
++    public static long asLong(final int x, final int y, final int z) {
 +        return ((long) x & BlockPosition.h) << BlockPosition.g | ((long) y & BlockPosition.i) << BlockPosition.f | ((long) z & BlockPosition.j);
 +    }
 +
-+    public static int getX(long pack) {
++    public static int getX(final long pack) {
 +        return (int) (pack >> BlockPosition.g & BlockPosition.h);
 +    }
 +
-+    public static int getY(long pack) {
++    public static int getY(final long pack) {
 +        return (int) (pack >> BlockPosition.f & BlockPosition.i);
 +    }
 +
-+    public static int getZ(long pack) {
++    public static int getZ(final long pack) {
 +        return (int) (pack & BlockPosition.j);
 +    }
 +
-+    public BlockPosition.MutableBlockPosition mutable() {
-+        return new MutableBlockPosition(getX(), getY(), getZ());
++    public final BlockPosition.MutableBlockPosition mutable() {
++        return new MutableBlockPosition(this.getX(), this.getY(), this.getZ());
 +    }
 +
-+    public BlockPosition immutable() {
-+        return new BlockPosition(getX(), getY(), getZ());
++    public final BlockPosition immutable() {
++        return new BlockPosition(this.getX(), this.getY(), this.getZ());
 +    }
-+    // Blossom end
++    // Blossom end - utils
 +
      public static BlockPosition fromLong(long i) {
          int j = (int) (i << 64 - BlockPosition.g - BlockPosition.c >> 64 - BlockPosition.c);
          int k = (int) (i << 64 - BlockPosition.f - BlockPosition.e >> 64 - BlockPosition.e);
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index a7281229f..2a57ffa09 100644
+index a7281229f..fba785e19 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -519,6 +519,26 @@ public class Chunk {
      }
  
      // PaperSpigot start - Optimize getBlockData
-+    // Blossom start - expand utility methods
-+    public boolean isWithin(int x, int z) {
-+        return locX == x && locZ == z && isLoaded();
++    // Blossom start - utils
++    public final boolean isWithin(final int x, final int z) {
++        return this.locX == x && this.locZ == z && this.isLoaded();
 +    }
 +
-+    public boolean isWithin(BlockPosition blockposition) {
-+        return isWithin(blockposition.getX() >> 4, blockposition.getZ() >> 4);
++    public final boolean isWithin(final BlockPosition blockposition) {
++        return this.isWithin(blockposition.getX() >> 4, blockposition.getZ() >> 4);
 +    }
 +
-+    public IBlockData getBlockData(int x, int y, int z) {
++    public final IBlockData getBlockData(final int x, final int y, final int z) {
 +        if (y >= 0 && y >> 4 < this.sections.length) {
-+            ChunkSection chunksection = this.sections[y >> 4];
++            final ChunkSection chunksection = this.sections[y >> 4];
 +            if (chunksection != null) {
 +                return chunksection.getType(x & 15, y & 15, z & 15);
 +            }
 +        }
 +        return Blocks.AIR.getBlockData();
 +    }
-+    // Blossom end
++    // Blossom end - utils
 +
      public IBlockData getBlockData(final BlockPosition blockposition) {
          if (blockposition.getY() >= 0 && blockposition.getY() >> 4 < this.sections.length) {
              ChunkSection chunksection = this.sections[blockposition.getY() >> 4];
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 70560d6d1..ead6326c1 100644
+index a0a445f18..bc3b18608 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -831,6 +831,12 @@ public abstract class World implements IBlockAccess {
          return null;
      }
      // Paper end
-+    // Blossom start - expand utilty methods
-+    public IBlockData getTypeIfLoaded(int x, int y, int z) {
-+        Chunk chunk = getChunkIfLoaded(x >> 4, z >> 4);
++    // Blossom start - utils
++    public final IBlockData getTypeIfLoaded(final int x, final int y, final int z) {
++        final Chunk chunk = this.getChunkIfLoaded(x >> 4, z >> 4);
 +        return chunk != null ? chunk.getBlockData(x, y, z) : null;
 +    }
-+    // Blossom end
++    // Blossom end - utils
  
      // Spigot start
      public IBlockData getType(BlockPosition blockposition)

@@ -1,0 +1,22 @@
+From 4f6c188feb72f6959dc9594e615d639fb0fb4211 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Mon, 21 Sep 2020 04:56:07 +0100
+Subject: [PATCH] Fix instant block falling in lazy chunks
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockFalling.java b/src/main/java/net/minecraft/server/BlockFalling.java
+index 1d952b82a..3af2c3ef4 100644
+--- a/src/main/java/net/minecraft/server/BlockFalling.java
++++ b/src/main/java/net/minecraft/server/BlockFalling.java
+@@ -34,7 +34,7 @@ public class BlockFalling extends Block {
+         if (canFall(world, blockposition.down()) && blockposition.getY() >= 0) {
+             byte b0 = 32;
+ 
+-            if (!BlockFalling.instaFall && world.areChunksLoadedBetween(blockposition.a(-b0, -b0, -b0), blockposition.a(b0, b0, b0))) {
++            if (false || !BlockFalling.instaFall && world.areChunksLoadedBetween(blockposition.a(-b0, -b0, -b0), blockposition.a(b0, b0, b0))) { // Blossom - Fix falling blocks in lazy chunks
+                 if (!world.isClientSide) {
+                     // PaperSpigot start - Add FallingBlock source location API
+                     org.bukkit.Location loc = new org.bukkit.Location(world.getWorld(), (double) ((float) blockposition.getX() + 0.5F), (double) blockposition.getY(), (double) ((float) blockposition.getZ() + 0.5F));
+-- 
+2.50.1 (Apple Git-155)
+

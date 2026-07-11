@@ -1,4 +1,4 @@
-From 1366daed4ac6ac2ebbc3e3a73bd990b2c1998e0d Mon Sep 17 00:00:00 2001
+From c2c4b532a4eb1c40fabbcf933a19307dae512f17 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -6,10 +6,10 @@ Subject: [PATCH] Blossom Configuration File
 
 diff --git a/src/main/java/me/samsuik/blossom/commands/BaseCommand.java b/src/main/java/me/samsuik/blossom/commands/BaseCommand.java
 new file mode 100644
-index 000000000..365da416d
+index 000000000..a52b43d55
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/BaseCommand.java
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,18 @@
 +package me.samsuik.blossom.commands;
 +
 +import org.bukkit.command.Command;
@@ -19,26 +19,23 @@ index 000000000..365da416d
 +import java.util.Map;
 +
 +public abstract class BaseCommand extends Command {
-+
-+    static final Map<Class<?>, BaseCommand> commandMap = new HashMap<>();
-+    static final Collection<BaseCommand> commands = commandMap.values();
++    static final Map<Class<?>, BaseCommand> COMMAND_MAP = new HashMap<>();
++    static final Collection<BaseCommand> COMMANDS = COMMAND_MAP.values();
 +
 +    protected BaseCommand(String name) {
 +        super(name);
 +        this.setPermission("blossom." + name);
-+        BaseCommand.commandMap.put(getClass(), this);
++        BaseCommand.COMMAND_MAP.put(getClass(), this);
 +    }
-+
 +}
 diff --git a/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java b/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java
 new file mode 100644
-index 000000000..96c24e2f0
+index 000000000..f33e04bc9
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,59 @@
 +package me.samsuik.blossom.commands;
 +
-+import com.google.common.collect.ImmutableList;
 +import net.md_5.bungee.api.chat.BaseComponent;
 +import net.md_5.bungee.api.chat.ComponentBuilder;
 +import org.bukkit.ChatColor;
@@ -50,37 +47,36 @@ index 000000000..96c24e2f0
 +import java.util.Arrays;
 +import java.util.List;
 +
-+public class BlossomCommand extends Command {
-+
++public final class BlossomCommand extends Command {
 +    public BlossomCommand() {
 +        super("blossom");
 +    }
 +
 +    @Override
-+    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
++    public boolean execute(final CommandSender sender, final String label, final String[] args) {
 +        if (args.length > 0) {
-+            List<Command> commands = new ArrayList<>(BaseCommand.commands);
++            final List<Command> commands = new ArrayList<>(BaseCommand.COMMANDS);
 +            commands.add(SimpleCommandMap.versionCommand);
 +
-+            for (Command base : commands) {
++            for (final Command base : commands) {
 +                if (base.getName().equalsIgnoreCase(args[0])) {
-+                    return base.execute(sender, commandLabel, Arrays.copyOfRange(args, 1, args.length));
++                    return base.execute(sender, label, Arrays.copyOfRange(args, 1, args.length));
 +                }
 +            }
 +        }
 +
-+        sender.sendMessage(createHelpMessage(sender));
++        sender.sendMessage(this.createHelpMessage(sender));
 +        return false;
 +    }
 +
-+    private BaseComponent[] createHelpMessage(CommandSender sender) {
-+        ComponentBuilder builder = new ComponentBuilder("")
++    private BaseComponent[] createHelpMessage(final CommandSender sender) {
++        final ComponentBuilder builder = new ComponentBuilder("")
 +                .append(ChatColor.GRAY + " .\n")
 +                .append(ChatColor.translateAlternateColorCodes('&', "&7 | &fThis is the main command for &eBlos&csom.\n"))
 +                .append(ChatColor.translateAlternateColorCodes('&', "&7 | &fAll exclusive commands are listed below.\n"))
 +                .append(ChatColor.GRAY + " |\n");
 +
-+        for (BaseCommand base : BaseCommand.commands) {
++        for (final BaseCommand base : BaseCommand.COMMANDS) {
 +            if (!base.testPermissionSilent(sender)) {
 +                continue;
 +            }
@@ -96,14 +92,32 @@ index 000000000..96c24e2f0
 +
 +        return builder.append(ChatColor.GRAY + " '").create();
 +    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java b/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java
+new file mode 100644
+index 000000000..424b9c371
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java
+@@ -0,0 +1,13 @@
++package me.samsuik.blossom.commands;
 +
++import me.samsuik.blossom.commands.subcommands.ConfigCommand;
++import org.bukkit.command.Command;
++
++import java.util.Map;
++
++public class BlossomCommands {
++    public static void register(final Map<String, Command> commands) {
++        commands.put("blossom", new BlossomCommand());
++        commands.put("config", new ConfigCommand());
++    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
 new file mode 100644
-index 000000000..4ac129dc9
+index 000000000..9456e5d03
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/commands/subcommands/ConfigCommand.java
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,37 @@
 +package me.samsuik.blossom.commands.subcommands;
 +
 +import me.samsuik.blossom.commands.BaseCommand;
@@ -115,21 +129,20 @@ index 000000000..4ac129dc9
 +
 +import java.io.File;
 +
-+public class ConfigCommand extends BaseCommand {
-+
++public final class ConfigCommand extends BaseCommand {
 +    public ConfigCommand() {
 +        super("config");
 +        this.setPermission("blossom.config");
 +    }
 +
 +    @Override
-+    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-+        if (!testPermission(sender)) {
++    public boolean execute(final CommandSender sender, final String label, final String[] args) {
++        if (!this.testPermission(sender)) {
 +            return true;
 +        }
 +
 +        me.samsuik.blossom.configuration.BlossomConfig.init((File) MinecraftServer.getServer().options.valueOf("blossom-settings"));
-+        for (World world : MinecraftServer.getServer().worlds) {
++        for (final World world : MinecraftServer.getServer().worlds) {
 +            world.blossomConfig.init();
 +        }
 +        me.samsuik.blossom.configuration.BlossomConfig.registerCommands();
@@ -141,19 +154,17 @@ index 000000000..4ac129dc9
 +
 +        return true;
 +    }
-+
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 new file mode 100644
-index 000000000..917a235b4
+index 000000000..f283caf6d
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,128 @@
 +package me.samsuik.blossom.configuration;
 +
 +import com.google.common.base.Throwables;
-+import me.samsuik.blossom.commands.BlossomCommand;
-+import me.samsuik.blossom.commands.subcommands.ConfigCommand;
++import me.samsuik.blossom.commands.BlossomCommands;
 +import net.minecraft.server.MinecraftServer;
 +import org.bukkit.command.Command;
 +import org.bukkit.configuration.InvalidConfigurationException;
@@ -170,7 +181,7 @@ index 000000000..917a235b4
 +import java.util.logging.Level;
 +import java.util.logging.Logger;
 +
-+public class BlossomConfig {
++public final class BlossomConfig {
 +
 +    private static final Logger LOGGER = Logger.getLogger("Blossom");
 +
@@ -182,14 +193,14 @@ index 000000000..917a235b4
 +    static Map<String, Command> commands;
 +    /*========================================================================*/
 +
-+    public static void init(File file) {
++    public static void init(final File file) {
 +        CONFIG_FILE = file;
 +        config = new YamlConfiguration();
 +
 +        try {
 +            config.load(CONFIG_FILE);
-+        } catch (IOException ignored) {
-+        } catch (InvalidConfigurationException ex) {
++        } catch (final IOException ignored) {
++        } catch (final InvalidConfigurationException ex) {
 +            LOGGER.log(Level.SEVERE, "Could not load blossom.yml, please correct your syntax errors", ex);
 +            throw Throwables.propagate(ex);
 +        }
@@ -198,9 +209,7 @@ index 000000000..917a235b4
 +        config.options().copyDefaults(true);
 +
 +        commands = new HashMap<>();
-+
-+        commands.put("blossom", new BlossomCommand());
-+        commands.put("config", new ConfigCommand());
++        BlossomCommands.register(commands);
 +
 +        version = getInt("config-version", 4);
 +        set("config-version", 4);
@@ -208,13 +217,13 @@ index 000000000..917a235b4
 +    }
 +
 +    public static void registerCommands() {
-+        for (Map.Entry<String, Command> entry : commands.entrySet()) {
++        for (final Map.Entry<String, Command> entry : commands.entrySet()) {
 +            MinecraftServer.getServer().server.getCommandMap().register(entry.getKey(), "Blossom", entry.getValue());
 +        }
 +    }
 +
-+    static void readConfig(Class<?> clazz, Object instance) {
-+        for (Method method : clazz.getDeclaredMethods()) {
++    static void readConfig(final Class<?> clazz, final Object instance) {
++        for (final Method method : clazz.getDeclaredMethods()) {
 +            if (Modifier.isPrivate(method.getModifiers())) {
 +                if (method.getParameterTypes().length == 0 && method.getReturnType() == Void.TYPE) {
 +                    try {
@@ -231,52 +240,61 @@ index 000000000..917a235b4
 +
 +        try {
 +            config.save(CONFIG_FILE);
-+        } catch (IOException ex) {
++        } catch (final IOException ex) {
 +            LOGGER.log(Level.SEVERE, "Could not save " + CONFIG_FILE, ex);
 +        }
 +    }
 +
-+    private static void set(String path, Object val) {
++    private static void set(final String path, final Object val) {
 +        config.set(path, val);
 +    }
 +
-+    private static boolean getBoolean(String path, boolean def) {
++    private static void remove(final String path) {
++        set(path, null);
++    }
++
++    private static boolean getBoolean(final String path, final boolean def) {
 +        config.addDefault(path, def);
 +        return config.getBoolean(path, config.getBoolean(path));
 +    }
 +
-+    private static double getDouble(String path, double def) {
++    private static double getDouble(final String path, final double def) {
 +        config.addDefault(path, def);
 +        return config.getDouble(path, config.getDouble(path));
 +    }
 +
-+    private static long getLong(String path, long def) {
++    private static long getLong(final String path, final long def) {
 +        config.addDefault(path, def);
 +        return config.getLong(path, config.getLong(path));
 +    }
 +
-+    private static int getInt(String path, int def) {
++    private static int getInt(final String path, final int def) {
 +        config.addDefault(path, def);
 +        return config.getInt(path, config.getInt(path));
 +    }
 +
-+    private static <T> List getList(String path, T def) {
++    private static <T> List<T> getList(final String path, final T def) {
 +        config.addDefault(path, def);
 +        return (List<T>) config.getList(path, config.getList(path));
 +    }
 +
-+    private static String getString(String path, String def) {
++    private static String getString(final String path, final String def) {
 +        config.addDefault(path, def);
 +        return config.getString(path, config.getString(path));
 +    }
-+    
++
++    private static void remove() {
++        remove("command-signs");
++        remove("books.character-checking");
++    }
++
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 new file mode 100644
-index 000000000..ab9a52e80
+index 000000000..98b731347
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,63 @@
 +package me.samsuik.blossom.configuration;
 +
 +import java.util.List;
@@ -284,82 +302,228 @@ index 000000000..ab9a52e80
 +import org.bukkit.Bukkit;
 +import org.bukkit.configuration.file.YamlConfiguration;
 +
-+public class BlossomWorldConfig {
++public final class BlossomWorldConfig {
 +
 +    private final String worldName;
 +    private final YamlConfiguration config;
-+    private boolean verbose;
 +
-+    public BlossomWorldConfig(String worldName) {
++    public BlossomWorldConfig(final String worldName) {
 +        this.worldName = worldName;
 +        this.config = BlossomConfig.config;
-+        init();
++        this.init();
 +    }
 +
 +    public void init() {
 +        BlossomConfig.readConfig(BlossomWorldConfig.class, this);
 +    }
 +
-+    private void log(String s) {
-+        if (verbose) {
-+            Bukkit.getLogger().info(s);
-+        }
++    private void set(final String path, final Object val) {
++        this.config.set(path, val);
 +    }
 +
-+    private void set(String path, Object val) {
-+        config.set(path, val);
++    private void remove(final String path) {
++        set(path, null);
 +    }
 +
-+    private boolean getBoolean(String path, boolean def) {
-+        config.addDefault(path, def);
-+        return config.getBoolean("world-settings." + worldName + "." + path, config.getBoolean(path));
++    private String path(final String path) {
++        return "world-settings." + this.worldName + "." + path;
 +    }
 +
-+    private double getDouble(String path, double def) {
-+        config.addDefault(path, def);
-+        return config.getDouble("world-settings." + worldName + "." + path, config.getDouble(path));
++    private boolean getBoolean(final String path, final boolean def) {
++        this.config.addDefault(path, def);
++        return this.config.getBoolean(this.path(path), this.config.getBoolean(path));
 +    }
 +
-+    private int getInt(String path, int def) {
-+        config.addDefault(path, def);
-+        return config.getInt("world-settings." + worldName + "." + path, config.getInt(path));
++    private double getDouble(final String path, final double def) {
++        this.config.addDefault(path, def);
++        return this.config.getDouble(this.path(path), this.config.getDouble(path));
 +    }
 +
-+    private <T> List getList(String path, T def) {
-+        config.addDefault(path, def);
-+        return (List<T>) config.getList("world-settings." + worldName + "." + path, config.getList(path));
++    private int getInt(final String path, final int def) {
++        this.config.addDefault(path, def);
++        return this.config.getInt(this.path(path), this.config.getInt(path));
 +    }
 +
-+    private String getString(String path, String def) {
-+        config.addDefault(path, def);
-+        return config.getString("world-settings." + worldName + "." + path, config.getString(path));
++    private <T extends List<?>> T getList(final String path, final T def) {
++        this.config.addDefault(path, def);
++        return (T) this.config.getList(this.path(path), this.config.getList(path));
++    }
++
++    private String getString(final String path, final String def) {
++        this.config.addDefault(path, def);
++        return this.config.getString(this.path(path), this.config.getString(path));
++    }
++
++    private void remove() {
 +    }
 +
 +}
+diff --git a/src/main/java/me/samsuik/blossom/util/MessageUtil.java b/src/main/java/me/samsuik/blossom/util/MessageUtil.java
+new file mode 100644
+index 000000000..0f3b1dc03
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/util/MessageUtil.java
+@@ -0,0 +1,39 @@
++package me.samsuik.blossom.util;
++
++import org.bukkit.ChatColor;
++
++import java.util.HashMap;
++import java.util.Map;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++public final class MessageUtil {
++    private static final Pattern TAG_PATTERN = Pattern.compile("%([^%]+)?%?");
++
++    public static String format(String message, final Object... args) {
++        final Map<String, String> placeholders = new HashMap<>();
++        for (int index = 0; index < args.length; index += 2) {
++            placeholders.put(args[index].toString(), args[index + 1].toString());
++        }
++
++        final Matcher tagMatcher = TAG_PATTERN.matcher(message);
++        while (tagMatcher.find()) {
++            final String tag = tagMatcher.group(1);
++            final String[] parts = tag.split("\\$");
++
++            String placeholder = placeholders.get(parts[0]);
++            for (int i = 1; i < parts.length; i++) {
++                final String part = parts[i];
++                final String[] replacement = part.split("=");
++
++                if (replacement.length == 2) {
++                    placeholder = placeholder.replaceAll(replacement[0], replacement[1]);
++                }
++            }
++
++            message = message.replace("%" + tag + "%", placeholder);
++        }
++
++        return ChatColor.translateAlternateColorCodes('&', message);
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/util/ModernMaterial.java b/src/main/java/me/samsuik/blossom/util/ModernMaterial.java
+new file mode 100644
+index 000000000..43ad0a419
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/util/ModernMaterial.java
+@@ -0,0 +1,91 @@
++package me.samsuik.blossom.util;
++
++import org.bukkit.Material;
++import org.bukkit.inventory.ItemStack;
++
++import java.util.*;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++public final class ModernMaterial {
++    private final Material material;
++    private final int data;
++
++    public static int getData(final String materialName) {
++        return getMaterial(materialName).getData();
++    }
++
++    public static ModernMaterial getMaterial(final String materialName) {
++        final Matcher extracted = DataMapping.DATA_PATTERN.matcher(materialName);
++        if (extracted.find()) {
++            final int data = DataMapping.MATERIAL_DATA.getOrDefault(extracted.group(1), 0);
++            final String legacyMaterial = extracted.group(2);
++            return new ModernMaterial(Material.getMaterial(legacyMaterial), data);
++        } else {
++            return new ModernMaterial(Material.getMaterial(materialName), 0);
++        }
++    }
++
++    public ModernMaterial(final Material material, final int data) {
++        this.material = material;
++        this.data = data;
++    }
++
++    public Material getMaterial() {
++        return this.material;
++    }
++
++    public int getData() {
++        return this.data;
++    }
++
++    public ItemStack createItem(final int count) {
++        return new ItemStack(this.material, count, (short) this.data);
++    }
++
++    @Override
++    public boolean equals(final Object o) {
++        if (!(o instanceof ModernMaterial)) return false;
++        final ModernMaterial that = (ModernMaterial) o;
++        return data == that.data && material == that.material;
++    }
++
++    @Override
++    public int hashCode() {
++        return Objects.hash(material, data);
++    }
++
++    @Override
++    public String toString() {
++        return "ModernMaterial{" +
++                "material=" + material +
++                ", data=" + data +
++                '}';
++    }
++
++    private static final class DataMapping {
++        private static final List<String> COLORS;
++        private static final Map<String, Integer> MATERIAL_DATA = new HashMap<>();
++        private static final Pattern DATA_PATTERN;
++
++        static {
++            COLORS = Arrays.asList(
++                "WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE", "YELLOW", "LIME", "PINK", "GRAY", "LIGHT_GRAY", "CYAN", "PURPLE", "BLUE", "BROWN", "GREEN", "RED", "BLACK"
++            );
++
++            for (int index = 0; index < COLORS.size(); index++) {
++                MATERIAL_DATA.put(COLORS.get(index), index);
++            }
++
++            final StringBuilder builder = new StringBuilder();
++            for (final String color : COLORS) {
++                if (builder.length() > 0) {
++                    builder.append('|');
++                }
++                builder.append(color);
++            }
++
++            DATA_PATTERN = Pattern.compile("^(" + builder.toString() + ")_(.+)");
++        }
++    }
++}
 diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
-index 088beb22b..8b4554d6c 100644
+index 088beb22b..d2013851b 100644
 --- a/src/main/java/net/minecraft/server/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/DedicatedServer.java
 @@ -181,6 +181,10 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
              org.github.paperspigot.PaperSpigotConfig.init((File) options.valueOf("paper-settings"));
              org.github.paperspigot.PaperSpigotConfig.registerCommands();
              // PaperSpigot end
-+            // Blossom start
++            // Blossom start - blossom configuration files
 +            me.samsuik.blossom.configuration.BlossomConfig.init((File) options.valueOf("blossom-settings"));
 +            me.samsuik.blossom.configuration.BlossomConfig.registerCommands();
-+            // Blossom end
++            // Blossom end - blossom configuration files
  
              DedicatedServer.LOGGER.info("Generating keypair");
              this.a(MinecraftEncryption.b());
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 8780cca2f..70560d6d1 100644
+index 8780cca2f..a0a445f18 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -164,6 +164,7 @@ public abstract class World implements IBlockAccess {
  
      public final co.aikar.timings.WorldTimingsHandler timings; // Spigot
      public final net.techcable.tacospigot.TacoSpigotWorldConfig tacoSpigotConfig;
-+    public final me.samsuik.blossom.configuration.BlossomWorldConfig blossomConfig; // Blossom
++    public final me.samsuik.blossom.configuration.BlossomWorldConfig blossomConfig; // Blossom - blossom configuration files
  
      public CraftWorld getWorld() {
          return this.world;
@@ -367,19 +531,19 @@ index 8780cca2f..70560d6d1 100644
          this.spigotConfig = new org.spigotmc.SpigotWorldConfig( worlddata.getName() ); // Spigot
          this.paperSpigotConfig = new org.github.paperspigot.PaperSpigotWorldConfig( worlddata.getName() ); // PaperSpigot
          this.tacoSpigotConfig = new net.techcable.tacospigot.TacoSpigotWorldConfig(worlddata.getName()); // TacoSpigot
-+        this.blossomConfig = new me.samsuik.blossom.configuration.BlossomWorldConfig(worlddata.getName()); // Blossom
++        this.blossomConfig = new me.samsuik.blossom.configuration.BlossomWorldConfig(worlddata.getName()); // Blossom - blossom configuration files
          this.generator = gen;
          this.world = new CraftWorld((WorldServer) this, gen, env);
          this.ticksPerAnimalSpawns = this.getServer().getTicksPerAnimalSpawns(); // CraftBukkit
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 17831f9f4..c122455c9 100644
+index 17831f9f4..9bbb6c43a 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -715,6 +715,7 @@ public final class CraftServer implements Server {
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          org.github.paperspigot.PaperSpigotConfig.init((File) console.options.valueOf("paper-settings")); // PaperSpigot
          net.techcable.tacospigot.TacoSpigotConfig.init((File) console.options.valueOf("taco-settings")); // TacoSpigot
-+        me.samsuik.blossom.configuration.BlossomConfig.init((File) console.options.valueOf("blossom-settings")); // Blossom
++        me.samsuik.blossom.configuration.BlossomConfig.init((File) console.options.valueOf("blossom-settings")); // Blossom - blossom configuration files
          for (WorldServer world : console.worlds) {
              world.worldData.setDifficulty(difficulty);
              world.setSpawnFlags(monsters, animals);
@@ -387,7 +551,7 @@ index 17831f9f4..c122455c9 100644
              world.spigotConfig.init(); // Spigot
              world.paperSpigotConfig.init(); // PaperSpigot
              world.tacoSpigotConfig.init(); // TacoSpigot
-+            world.blossomConfig.init(); // Blossom
++            world.blossomConfig.init(); // Blossom - blossom configuration files
          }
  
          pluginManager.clearPlugins();
@@ -395,12 +559,12 @@ index 17831f9f4..c122455c9 100644
          resetRecipes();
          org.spigotmc.SpigotConfig.registerCommands(); // Spigot
          org.github.paperspigot.PaperSpigotConfig.registerCommands(); // PaperSpigot
-+        me.samsuik.blossom.configuration.BlossomConfig.registerCommands(); // Blossom
++        me.samsuik.blossom.configuration.BlossomConfig.registerCommands(); // Blossom - blossom configuration files
  
          overrideAllCommandBlockCommands = commandsConfiguration.getStringList("command-block-overrides").contains("*");
  
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 569a8846b..8366a2933 100644
+index 569a8846b..210d8b1d3 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
 @@ -152,6 +152,14 @@ public class Main {
@@ -408,13 +572,13 @@ index 569a8846b..8366a2933 100644
                          .describedAs("Yml file");
                  // TacoSpigot end
 +
-+                // TacoSpigot start
++                // Blossom start - blossom configuration files
 +                acceptsAll(asList("blossom", "blossom-settings"), "File for blossom settings")
 +                        .withRequiredArg()
 +                        .ofType(File.class)
 +                        .defaultsTo(new File("blossom.yml"))
 +                        .describedAs("Yml file");
-+                // TacoSpigot end
++                // Blossom end - blossom configuration files
              }
          };
  
@@ -422,10 +586,23 @@ index 569a8846b..8366a2933 100644
                  }
                  // Spigot End
                  net.techcable.tacospigot.TacoSpigotConfig.init((File) options.valueOf("taco-settings")); // TacoSpigot - load config before we load libraries to allow access while loading
-+                me.samsuik.blossom.configuration.BlossomConfig.init((File) options.valueOf("blossom-settings")); // Blossom
++                me.samsuik.blossom.configuration.BlossomConfig.init((File) options.valueOf("blossom-settings")); // Blossom - blossom configuration files
                  System.out.println("Loading libraries, please wait...");
                  MinecraftServer.main(options);
              } catch (Throwable t) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index ad07563d2..788216d03 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -20,6 +20,8 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
++
++import me.samsuik.blossom.visuals.Visuals;
+ import net.md_5.bungee.api.chat.BaseComponent;
+ 
+ import net.minecraft.server.*;
 -- 
 2.50.1 (Apple Git-155)
 

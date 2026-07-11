@@ -1,0 +1,146 @@
+From 5f7e414009fe38791b23827175b256dc9a5491fd Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Fri, 14 Jul 2023 22:22:51 +0100
+Subject: [PATCH] Tick thrown potions with the player
+
+Keeps potion ticking in sync with the player that threw them. This helps
+a lot with poor connections and low tps.
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 7da658f28..a3a93d61c 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -494,5 +494,10 @@ public final class BlossomConfig {
+     private static void PearlSpawnEndermite() {
+         pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
+     }
+-    
++
++    public static boolean playerBoundPotions;
++    private static void PlayerBoundPotions() {
++        playerBoundPotions = getBoolean("projectiles.potion.player-bound-potions", true);
++    }
++
+ }
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 927326fc8..a1f4c669e 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -307,6 +307,7 @@ public abstract class Entity implements ICommandListener {
+         return true; // possibly?
+     }
+     // Blossom end
++    public boolean boundEntity; // Blossom
+ 
+     public int getId() {
+         return this.id;
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 841fb926c..57fb7763e 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -81,6 +81,36 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     // Spigot end
+     public final boolean realPlayer; // Blossom - optimise entity tracker
+     public int movementTick = 0; // Blossom - lag compensated block breaking
++    // Blossom start - tick thrown potions with the player
++    public final List<Entity> boundEntities = new ArrayList<>();
++    
++    public void tickBoundEntities() {
++        for (int i = 0; i < boundEntities.size(); ++i) {
++            Entity entity = boundEntities.get(i);
++            if (!entity.dead && entity.ticksLived > 0) {
++                world.g(entity);
++            } else {
++                entity.ticksLived++;
++            }
++            if (entity.dead) {
++                entity.boundEntity = false;
++                boundEntities.remove(i--);
++            }
++        }
++    }
++
++    public void bindEntity(Entity entity) {
++        entity.boundEntity = true;
++        boundEntities.add(entity);
++    }
++
++    public void releaseBounds() {
++        for (Entity entity : boundEntities) {
++            entity.boundEntity = false;
++        }
++        boundEntities.clear();
++    }
++    // Blossom end - tick thrown potions with the player
+ 
+     public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
+         super(worldserver, gameprofile);
+@@ -304,6 +334,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+ 
+     public void l() {
+         try {
++            this.tickBoundEntities(); // Blossom
+             super.t_();
+ 
+             for (int i = 0; i < this.inventory.getSize(); ++i) {
+@@ -416,6 +447,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         if (this.dead) {
+             return;
+         }
++        this.releaseBounds(); // Blossom
+         java.util.List<org.bukkit.inventory.ItemStack> loot = new java.util.ArrayList<org.bukkit.inventory.ItemStack>();
+         boolean keepInventory = this.world.getGameRules().getBoolean("keepInventory");
+ 
+@@ -935,6 +967,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+             this.removeQueue.addAll(((EntityPlayer) entityhuman).removeQueue);
+         }
+         // Paper end
++        this.releaseBounds(); // Blossom
+     }
+ 
+     protected void a(MobEffect mobeffect) {
+diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
+index f4fd955b0..d69a4731f 100644
+--- a/src/main/java/net/minecraft/server/PlayerList.java
++++ b/src/main/java/net/minecraft/server/PlayerList.java
+@@ -364,7 +364,8 @@ public abstract class PlayerList {
+         cserver.getPluginManager().callEvent(playerQuitEvent);
+         entityplayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
+         // CraftBukkit end
+-        
++
++        entityplayer.releaseBounds(); // Blossom
+         this.savePlayerFile(entityplayer);
+         WorldServer worldserver = entityplayer.u();
+ 
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 77aaf4cc9..e46f9c719 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {
+             entity.dead = true;
+             return false;
+         } else {
++            // Blossom start - tick thrown potions with the player
++            if (me.samsuik.blossom.configuration.BlossomConfig.playerBoundPotions && entity instanceof EntityPotion) {
++                EntityPotion potion = (EntityPotion) entity;
++                if (potion.getShooter() instanceof EntityPlayer) {
++                    ((EntityPlayer) potion.getShooter()).bindEntity(potion);
++                }
++            }
++            // Blossom end - tick thrown potions with the player
+             if (entity instanceof EntityHuman) {
+                 EntityHuman entityhuman = (EntityHuman) entity;
+ 
+@@ -1826,7 +1834,7 @@ public abstract class World implements IBlockAccess {
+             }
+ 
+             this.methodProfiler.a("tick");
+-            if (!entity.dead) {
++            if (!entity.dead && !entity.boundEntity) { // Blossom - tick thrown potions with the player
+                 // Blossom start - merge cannoning entities
+                 if (me.samsuik.blossom.configuration.BlossomConfig.mergeCannonEntities && entity.tryMergeWith(previous)) {
+                     continue;
+-- 
+2.50.1 (Apple Git-155)
+
