@@ -1,4 +1,4 @@
-From 7128845e972663a83bca6ebe846fcbd6a9ef4732 Mon Sep 17 00:00:00 2001
+From 2178796926f78a8aa9c5389ec0f010ec27752cc7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 30 Jun 2023 15:13:08 +0100
 Subject: [PATCH] AntiXray Replacement: DuskBerry
@@ -296,10 +296,10 @@ index 000000000..412e979df
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-index 98b731347..df4e30391 100644
+index 75de4d8db..db215adc1 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-@@ -60,4 +60,26 @@ public final class BlossomWorldConfig {
+@@ -61,4 +61,26 @@ public final class BlossomWorldConfig {
      private void remove() {
      }
  

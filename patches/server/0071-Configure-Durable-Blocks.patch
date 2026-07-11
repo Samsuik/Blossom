@@ -1,4 +1,4 @@
-From 622ad5440176a4e7ef3f55c2bc7386ea00856ee0 Mon Sep 17 00:00:00 2001
+From f2d3a44bcc49612f1647820ad5a2ee932d6094db Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
@@ -37,7 +37,7 @@ index 6c39ebc06..96e9adb12 100644
 +
  }
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-index df4e30391..85b6eebe5 100644
+index db215adc1..3667a7e86 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 @@ -1,8 +1,11 @@
@@ -52,7 +52,7 @@ index df4e30391..85b6eebe5 100644
  import org.bukkit.configuration.file.YamlConfiguration;
  
  public final class BlossomWorldConfig {
-@@ -82,4 +85,45 @@ public final class BlossomWorldConfig {
+@@ -83,4 +86,45 @@ public final class BlossomWorldConfig {
          me.samsuik.blossom.antixray.AntiXrayEngine.setEngine(new me.samsuik.blossom.antixray.DuskBerry(hiddenBlocks, berryIntensity, sections, radius));
      }
  

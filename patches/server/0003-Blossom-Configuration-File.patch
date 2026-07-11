@@ -1,4 +1,4 @@
-From c2c4b532a4eb1c40fabbcf933a19307dae512f17 Mon Sep 17 00:00:00 2001
+From 196474991ae956ec3527db8419836b0526255a04 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -291,10 +291,10 @@ index 000000000..f283caf6d
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 new file mode 100644
-index 000000000..98b731347
+index 000000000..75de4d8db
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,64 @@
 +package me.samsuik.blossom.configuration;
 +
 +import java.util.List;
@@ -305,7 +305,7 @@ index 000000000..98b731347
 +public final class BlossomWorldConfig {
 +
 +    private final String worldName;
-+    private final YamlConfiguration config;
++    private YamlConfiguration config;
 +
 +    public BlossomWorldConfig(final String worldName) {
 +        this.worldName = worldName;
@@ -314,6 +314,7 @@ index 000000000..98b731347
 +    }
 +
 +    public void init() {
++        this.config = BlossomConfig.config;
 +        BlossomConfig.readConfig(BlossomWorldConfig.class, this);
 +    }
 +
