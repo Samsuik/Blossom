@@ -1,14 +1,14 @@
-From 4a45bc05856400b6287eb3748129ee6343a1a902 Mon Sep 17 00:00:00 2001
+From c2c602b563a442f8a4ce95dd5a1d9d3f2bf40134 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 20:20:39 +0100
 Subject: [PATCH] Waterproof Redstone
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fc5ff7828..ce6d2dc1b 100644
+index ec1ee8bf7..70d8326b0 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -537,4 +537,9 @@ public final class BlossomConfig {
+@@ -539,4 +539,9 @@ public final class BlossomConfig {
          lavaObsidianGeneration = getBoolean("fluids.lava.create-obsidian", true);
      }
  

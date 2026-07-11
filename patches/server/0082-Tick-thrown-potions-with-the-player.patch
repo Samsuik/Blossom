@@ -1,4 +1,4 @@
-From 5f7e414009fe38791b23827175b256dc9a5491fd Mon Sep 17 00:00:00 2001
+From 7b0ec98c666c454ede40f39ac965cb7cef3d6e75 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 22:22:51 +0100
 Subject: [PATCH] Tick thrown potions with the player
@@ -7,10 +7,10 @@ Keeps potion ticking in sync with the player that threw them. This helps
 a lot with poor connections and low tps.
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7da658f28..a3a93d61c 100644
+index 6ec6bd2e4..284217118 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -494,5 +494,10 @@ public final class BlossomConfig {
+@@ -496,5 +496,10 @@ public final class BlossomConfig {
      private static void PearlSpawnEndermite() {
          pearlSpawnEndermite = getBoolean("projectiles.pearl.spawn-endermites", false);
      }
@@ -114,7 +114,7 @@ index f4fd955b0..d69a4731f 100644
          WorldServer worldserver = entityplayer.u();
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 77aaf4cc9..e46f9c719 100644
+index 11846da8d..9d00cd62e 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1260,6 +1260,14 @@ public abstract class World implements IBlockAccess {

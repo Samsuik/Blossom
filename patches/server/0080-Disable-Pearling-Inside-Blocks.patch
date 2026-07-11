@@ -1,14 +1,14 @@
-From 75ba1fa8b00293c435d9ae4664657835256e886a Mon Sep 17 00:00:00 2001
+From efc5ad8555eef121424b93d8b48685fa881f1af9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 14 Jul 2023 18:18:33 +0100
 Subject: [PATCH] Disable Pearling Inside Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index aeffe49f4..1d52e36c8 100644
+index c9b2c27bc..fa2c7fd9e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -484,5 +484,10 @@ public final class BlossomConfig {
+@@ -486,5 +486,10 @@ public final class BlossomConfig {
      private static void DispenserRandomness() {
          dispenserRandomness = getBoolean("dispensers.items-selection-randomness", true);
      }

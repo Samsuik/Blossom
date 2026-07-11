@@ -1,14 +1,14 @@
-From 1e84d8ffd7bcfea451f5e051c87337cbfa5c5de3 Mon Sep 17 00:00:00 2001
+From b271eaae8a8b017db52256e0c5ac7dcf70010844 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 00:40:54 +0100
 Subject: [PATCH] Configure Armour Damage Rate
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 00fc25101..79df8ef60 100644
+index 8fe25067c..88f83b02e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -457,4 +457,13 @@ public final class BlossomConfig {
+@@ -459,4 +459,13 @@ public final class BlossomConfig {
          altKBCalculation = getBoolean("player.knockback.alternate-knockback", false);
      }
  

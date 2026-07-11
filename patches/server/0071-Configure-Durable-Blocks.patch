@@ -1,11 +1,11 @@
-From f2d3a44bcc49612f1647820ad5a2ee932d6094db Mon Sep 17 00:00:00 2001
+From 388d0b3ed4f5c3bc6149c91bad2721a80f3eb4b9 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 6c39ebc06..96e9adb12 100644
+index 6c39ebc06..9f522853b 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -26,7 +26,7 @@ public final class BlossomConfig {
@@ -26,13 +26,15 @@ index 6c39ebc06..96e9adb12 100644
          set("config-version", 4);
          readConfig(BlossomConfig.class, null);
      }
-@@ -408,4 +408,9 @@ public final class BlossomConfig {
+@@ -408,4 +408,11 @@ public final class BlossomConfig {
          projectileTimeout = getInt("projectiles.time-out", 1200);
      }
  
 +    public static boolean requireTNTToBlowUpDurableBlocks;
++    public static String durabilityMessage;
 +    private static void BlockDurability() {
 +        requireTNTToBlowUpDurableBlocks = getBoolean("explosions.durability.require-tnt-to-blow-up-durable-blocks", true);
++        durabilityMessage = getString("explosions.durability.message", "&7(&eB&7) &fThis block has &7%remaining% &fof &7%max% &fdurability");
 +    }
 +
  }
@@ -100,10 +102,10 @@ index db215adc1..3667a7e86 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java b/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java
 new file mode 100644
-index 000000000..cd249dbfd
+index 000000000..aa1819e37
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/explosions/durability/DurableManager.java
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,125 @@
 +package me.samsuik.blossom.explosions.durability;
 +
 +import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -153,6 +155,10 @@ index 000000000..cd249dbfd
 +        return -1;
 +    }
 +
++    public DurableBlock get(final Block block, final int x, final int y, final int z) {
++        return getDurableBlock(block, x, y, z);
++    }
++
 +    public void removeExpired() {
 +        posToDurableMap.values().removeIf(DurableBlock::expired);
 +    }
@@ -192,7 +198,7 @@ index 000000000..cd249dbfd
 +        return new DurableBlock(durability, resistance);
 +    }
 +
-+    private static class DurableBlock {
++    public static class DurableBlock {
 +        private int durability;
 +        private final float resistance;
 +        private int expireAt;
@@ -276,7 +282,7 @@ index 2f279aa02..5780c6759 100644
  
                  if (block.getMaterial() != Material.AIR) {
 diff --git a/src/main/java/net/minecraft/server/ItemSeedFood.java b/src/main/java/net/minecraft/server/ItemSeedFood.java
-index 3229add95..44ebffffe 100644
+index 3229add95..88ff6b0f3 100644
 --- a/src/main/java/net/minecraft/server/ItemSeedFood.java
 +++ b/src/main/java/net/minecraft/server/ItemSeedFood.java
 @@ -1,5 +1,7 @@
@@ -287,16 +293,27 @@ index 3229add95..44ebffffe 100644
  public class ItemSeedFood extends ItemFood {
  
      private Block b;
-@@ -12,6 +14,15 @@ public class ItemSeedFood extends ItemFood {
+@@ -12,6 +14,26 @@ public class ItemSeedFood extends ItemFood {
      }
  
      public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, BlockPosition blockposition, EnumDirection enumdirection, float f, float f1, float f2) {
 +        // Blossom start
 +        if (itemstack.getItem() == Items.POTATO) {
-+            Block block = world.getType(blockposition).getBlock();
-+            int durability = world.durableManager.getDurability(block, blockposition.getX(), blockposition.getY(), blockposition.getZ());
-+            if (durability > 0) {
-+                entityhuman.getBukkitEntity().sendMessage(ChatColor.DARK_GRAY + " * " + ChatColor.WHITE + "Durability: " + durability);
++            final Block block = world.getType(blockposition).getBlock();
++            final java.util.Map.Entry<Integer, Double> durableBlockDefaults = world.blossomConfig.durabilityMap.get(block);
++            if (durableBlockDefaults != null) {
++                final me.samsuik.blossom.explosions.durability.DurableManager.DurableBlock durableBlock = world.durableManager.get(
++                        block, blockposition.getX(), blockposition.getY(), blockposition.getZ()
++                );
++
++                entityhuman.getBukkitEntity().sendMessage(me.samsuik.blossom.util.MessageUtil.format(
++                        me.samsuik.blossom.configuration.BlossomConfig.durabilityMessage,
++                        "remaining", durableBlock.getDurability(),
++                        "resistance", durableBlock.getResistance(),
++                        "max", durableBlockDefaults.getKey(),
++                        "namel", block.getName().toLowerCase(),
++                        "name", block.getName()
++                ));
 +            }
 +        }
 +        // Blossom end
