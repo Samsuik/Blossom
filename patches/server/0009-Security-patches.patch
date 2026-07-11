@@ -1,4 +1,4 @@
-From 6edc251cf2bab7e497ee5f6b0f08ec6d48784fd3 Mon Sep 17 00:00:00 2001
+From 020cf1f590e745c1a5bed24929096083c9b28903 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -8,7 +8,7 @@ Fixes numerous exploits that can be used to harm the server and other players.
 smiles
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f283caf6d..16beffbdf 100644
+index f283caf6d..afdab0d5c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -125,4 +125,69 @@ public final class BlossomConfig {
@@ -41,7 +41,7 @@ index f283caf6d..16beffbdf 100644
 +        }
 +
 +        packetLimiter = getBoolean("packet-limiter.enabled", true);
-+        packetSamples = Math.min(Math.max(getInt("packet-limiter.samples", 8), 1), 32);
++        packetSamples = Math.min(Math.max(getInt("packet-limiter.samples", 12), 1), 32);
 +
 +        packetLimit = new me.samsuik.blossom.network.PacketLimit(
 +            getLong("packet-limiter.packets.average", 120),
@@ -49,8 +49,8 @@ index f283caf6d..16beffbdf 100644
 +        );
 +
 +        byteLimit = new me.samsuik.blossom.network.PacketLimit(
-+            getLong("packet-limiter.bytes.average", 65536), // 64 KB
-+            getLong("packet-limiter.bytes.max", 131072)     // 128 KB
++            getLong("packet-limiter.bytes.average", 131072), // 128 KB
++            getLong("packet-limiter.bytes.max", 262144)      // 256 KB
 +        );
 +    }
 +
