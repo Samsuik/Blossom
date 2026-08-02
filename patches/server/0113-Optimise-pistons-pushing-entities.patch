@@ -1,0 +1,80 @@
+From 59142811af106ec460327a3471c6a52ef8d9aeb7 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sun, 2 Aug 2026 22:30:29 +0100
+Subject: [PATCH] Optimise pistons pushing entities
+
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityPiston.java b/src/main/java/net/minecraft/server/TileEntityPiston.java
+index 2e11fa1b4..eb9a65f6b 100644
+--- a/src/main/java/net/minecraft/server/TileEntityPiston.java
++++ b/src/main/java/net/minecraft/server/TileEntityPiston.java
+@@ -12,7 +12,7 @@ public class TileEntityPiston extends TileEntity implements IUpdatePlayerListBox
+     private boolean h;
+     private float i;
+     private float j;
+-    private List<Entity> k = Lists.newArrayList();
++    // Blossom - optimise pistons pushing entities
+ 
+     public TileEntityPiston() {}
+ 
+@@ -57,34 +57,37 @@ public class TileEntityPiston extends TileEntity implements IUpdatePlayerListBox
+         AxisAlignedBB axisalignedbb = Blocks.PISTON_EXTENSION.a(this.world, this.position, this.a, f, this.f);
+ 
+         if (axisalignedbb != null) {
+-            List list = this.world.getEntities((Entity) null, axisalignedbb);
+-
+-            if (!list.isEmpty()) {
+-                this.k.addAll(list);
+-                Iterator iterator = this.k.iterator();
+-
+-                while (iterator.hasNext()) {
+-                    Entity entity = (Entity) iterator.next();
++            // Blossom start - optimise pistons pushing entities
++            final boolean updateMomentum = this.a.getBlock() == Blocks.SLIME && this.g;
++            final double x, y, z;
++            final int ordinal = TileEntityPiston.SyntheticClass_1.a[this.f.k().ordinal()];
++
++            if (updateMomentum) {
++                x = this.f.getAdjacentX();
++                y = this.f.getAdjacentY();
++                z = this.f.getAdjacentZ();
++            } else {
++                x = f1 * (float) this.f.getAdjacentX();
++                y = f1 * (float) this.f.getAdjacentY();
++                z = f1 * (float) this.f.getAdjacentZ();
++            }
+ 
+-                    if (this.a.getBlock() == Blocks.SLIME && this.g) {
+-                        switch (TileEntityPiston.SyntheticClass_1.a[this.f.k().ordinal()]) {
++            for (final Entity entity : this.world.getEntities(null, axisalignedbb)) {
++                if (updateMomentum) {
++                    switch (ordinal) {
+                         case 1:
+-                            entity.motX = (double) this.f.getAdjacentX();
++                            entity.motX = x;
+                             break;
+-
+                         case 2:
+-                            entity.motY = (double) this.f.getAdjacentY();
++                            entity.motY = y;
+                             break;
+-
+                         case 3:
+-                            entity.motZ = (double) this.f.getAdjacentZ();
+-                        }
+-                    } else {
+-                        entity.move((double) (f1 * (float) this.f.getAdjacentX()), (double) (f1 * (float) this.f.getAdjacentY()), (double) (f1 * (float) this.f.getAdjacentZ()));
++                            entity.motZ = z;
+                     }
++                } else {
++                    entity.move(x, y, z);
+                 }
+-
+-                this.k.clear();
++                // Blossom end - optimise pistons pushing entities
+             }
+         }
+ 
+-- 
+2.50.1 (Apple Git-155)
+
