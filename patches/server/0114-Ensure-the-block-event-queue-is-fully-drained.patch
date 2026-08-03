@@ -1,14 +1,14 @@
-From ccad1f231b8dff5936f8fba89abc84e8b1269399 Mon Sep 17 00:00:00 2001
+From a8619bd6512d3e22d62f0b70aa36297af53125ec Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Mon, 3 Aug 2026 20:28:14 +0100
 Subject: [PATCH] Ensure the block event queue is fully drained
 
 
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 47ab74a86..e8114378c 100644
+index 737d90a73..1e35f783f 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -1196,7 +1196,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -1172,7 +1172,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
      }
  
      private void ak() {

@@ -1,4 +1,4 @@
-From 8893e661ae2d24706ae8172c754c8ecc3239aa07 Mon Sep 17 00:00:00 2001
+From 2be2144e38407ae9868204754007c26a576e2787 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 28 Jun 2022 23:06:32 +0100
 Subject: [PATCH] Optimise scheduled block ticking and unloading
@@ -6,10 +6,10 @@ Subject: [PATCH] Optimise scheduled block ticking and unloading
 
 diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
 new file mode 100644
-index 000000000..28caf35b3
+index 000000000..1ccb764cb
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,43 @@
 +package me.samsuik.blossom.world;
 +
 +import it.unimi.dsi.fastutil.HashCommon;
@@ -22,14 +22,20 @@ index 000000000..28caf35b3
 +public final class ScheduledBlock {
 +    private final Block type;
 +    private final BlockPosition pos;
++    private final NextTickListEntry entry;
 +
-+    public static ScheduledBlock from(final NextTickListEntry entry) {
-+        return new ScheduledBlock(entry.e, entry.a);
++    public ScheduledBlock(final NextTickListEntry entry) {
++        this.type = entry.e;
++        this.pos = entry.a;
++        this.entry = entry;
 +    }
 +
-+    public ScheduledBlock(final Block type, final BlockPosition pos) {
-+        this.type = type;
-+        this.pos = pos;
++    public BlockPosition getPosition() {
++        return this.pos;
++    }
++
++    public NextTickListEntry getEntry() {
++        return this.entry;
 +    }
 +
 +    @Override
@@ -49,19 +55,22 @@ index 000000000..28caf35b3
 +}
 diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
 new file mode 100644
-index 000000000..989cf6752
+index 000000000..5d30178e8
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,135 @@
 +package me.samsuik.blossom.world;
 +
-+import net.minecraft.server.NextTickListEntry;
++import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
++import net.minecraft.server.*;
++import org.bukkit.craftbukkit.util.LongHash;
 +
 +import java.util.*;
 +
 +public final class ScheduledBlockTicks extends AbstractSet<NextTickListEntry> {
 +    private final HashSet<ScheduledBlock> scheduledBlocks = new HashSet<>();
 +    private final TreeSet<NextTickListEntry> blocksToTick = new TreeSet<>();
++    private final Long2ObjectOpenHashMap<Set<ScheduledBlock>> chunkTickingBlocks = new Long2ObjectOpenHashMap<>();
 +
 +    @Override
 +    public int size() {
@@ -70,13 +79,19 @@ index 000000000..989cf6752
 +
 +    @Override
 +    public boolean add(final NextTickListEntry entry) {
-+        final ScheduledBlock scheduledBlock = new ScheduledBlock(entry.e, entry.a);
-+        if (this.scheduledBlocks.add(scheduledBlock)) {
-+            this.blocksToTick.add(entry);
-+            return true;
++        final ScheduledBlock scheduledBlock = new ScheduledBlock(entry);
++        if (!this.scheduledBlocks.add(scheduledBlock)) {
++            return false;
 +        }
 +
-+        return false;
++        final int x = entry.a.getX() >> 4;
++        final int z = entry.a.getZ() >> 4;
++        final long chunkPos = LongHash.toLong(x, z);
++
++        this.chunkTickingBlocks.computeIfAbsent(chunkPos, pos -> new HashSet<>()).add(scheduledBlock);
++        this.blocksToTick.add(entry);
++
++        return true;
 +    }
 +
 +    @Override
@@ -85,13 +100,67 @@ index 000000000..989cf6752
 +        final NextTickListEntry entry = (NextTickListEntry) o;
 +
 +        this.blocksToTick.remove(entry);
-+        return this.scheduledBlocks.remove(new ScheduledBlock(entry.e, entry.a));
++        return this.removeEntry(entry);
++    }
++
++    private boolean removeEntry(final NextTickListEntry entry) {
++        final ScheduledBlock scheduledBlock = new ScheduledBlock(entry);
++
++        final int x = entry.a.getX() >> 4;
++        final int z = entry.a.getZ() >> 4;
++        final long chunkPos = LongHash.toLong(x, z);
++
++        final Set<ScheduledBlock> blocks = this.chunkTickingBlocks.get(chunkPos);
++        if (blocks != null) {
++            blocks.remove(scheduledBlock);
++
++            if (blocks.isEmpty()) {
++                this.chunkTickingBlocks.remove(chunkPos);
++            }
++        }
++
++        return this.scheduledBlocks.remove(new ScheduledBlock(entry));
++    }
++
++    @Override
++    public boolean contains(final Object o) {
++        return this.scheduledBlocks.contains(o);
++    }
++
++    public List<NextTickListEntry> collectScheduledBlocks(final StructureBoundingBox boundingBox) {
++        final List<NextTickListEntry> scheduledBlocks = new ArrayList<>();
++
++        final int minChunkX = boundingBox.a >> 4;
++        final int minChunkZ = boundingBox.c >> 4;
++        final int maxChunkX = boundingBox.d >> 4;
++        final int maxChunkZ = boundingBox.f >> 4;
++
++        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
++            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
++                final long chunkPos = LongHash.toLong(chunkX, chunkZ);
++                final Set<ScheduledBlock> scheduledBlocksInChunk = this.chunkTickingBlocks.get(chunkPos);
++                if (scheduledBlocksInChunk == null) {
++                    continue;
++                }
++
++                for (final ScheduledBlock scheduledBlock : scheduledBlocksInChunk) {
++                    final BlockPosition pos = scheduledBlock.getPosition();
++
++                    if (pos.getX() >= boundingBox.a && pos.getX() < boundingBox.d && pos.getZ() >= boundingBox.c && pos.getZ() < boundingBox.f) {
++                        scheduledBlocks.add(scheduledBlock.getEntry());
++                    }
++                }
++            }
++        }
++
++        return scheduledBlocks;
 +    }
 +
 +    @Override
 +    public void clear() {
 +        this.scheduledBlocks.clear();
 +        this.blocksToTick.clear();
++        this.chunkTickingBlocks.clear();
 +    }
 +
 +    @Override
@@ -120,23 +189,21 @@ index 000000000..989cf6752
 +                this.last = null;
 +                this.it.remove();
 +
-+                final ScheduledBlock scheduledBlock = new ScheduledBlock(entry.e, entry.a);
-+                ScheduledBlockTicks.this.scheduledBlocks.remove(scheduledBlock);
++                ScheduledBlockTicks.this.removeEntry(entry);
 +            }
 +        };
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index fe82dc3db..7cfe645cb 100644
+index fe82dc3db..dbafb44c5 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
-@@ -75,7 +75,8 @@ public class Chunk {
+@@ -75,7 +75,7 @@ public class Chunk {
      private ConcurrentLinkedQueue<BlockPosition> w;
      protected gnu.trove.map.hash.TObjectIntHashMap<Class> entityCount = new gnu.trove.map.hash.TObjectIntHashMap<Class>(); // Spigot
      protected it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap<Class<?>, List<Entity>>[] classToEntityListMap = new it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap[16]; // Blossom
 -    public List<Entity>[] hardColliding = new me.samsuik.blossom.utils.collections.UnorderedIndexedList[16]; // Blossom
 +    public List<Entity>[] hardColliding = new me.samsuik.blossom.util.collections.UnorderedIndexedList[16]; // Blossom
-+    public final java.util.Set<NextTickListEntry> scheduledToTick = new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(); // Blossom - optimise scheduled block ticking
      // PaperSpigot start - Asynchronous light updates
      public AtomicInteger pendingLightUpdates = new AtomicInteger();
      public long lightUpdateTime;
@@ -216,7 +283,7 @@ index c05a6a648..0ac4d77ae 100644
          this.methodProfiler.a("entities");
          this.methodProfiler.a("global");
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 9acfa5492..e4ee40d32 100644
+index 9acfa5492..8c3484a62 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -36,7 +36,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -237,7 +304,25 @@ index 9acfa5492..e4ee40d32 100644
  
      // CraftBukkit start
      public final int dimension;
-@@ -559,21 +559,29 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -529,9 +529,15 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+     }
+ 
+     public boolean a(BlockPosition blockposition, Block block) {
+-        NextTickListEntry nextticklistentry = new NextTickListEntry(blockposition, block);
++        // Blossom start - optimise scheduled block ticking
++        for (final NextTickListEntry entry : this.V) {
++            if (entry.a.equals(blockposition) && entry.a() == block) {
++                return true;
++            }
++        }
+ 
+-        return this.V.contains(nextticklistentry);
++        return false;
++        // Blossom end - optimise scheduled block ticking
+     }
+ 
+     public void a(BlockPosition blockposition, Block block, int i) {
+@@ -559,21 +565,29 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              i = 1;
          }
  
@@ -252,7 +337,7 @@ index 9acfa5492..e4ee40d32 100644
  
              // CraftBukkit - use M, PAIL: Rename nextTickList
 -            if (!this.M.contains(nextticklistentry)) {
-+            if (chunk.scheduledToTick.add(nextticklistentry)/*!this.M.contains(nextticklistentry)*/) {
++            {
                  this.M.add(nextticklistentry);
 +                // Blossom end - optimise scheduled block ticking
              }
@@ -269,19 +354,19 @@ index 9acfa5492..e4ee40d32 100644
          NextTickListEntry nextticklistentry = new NextTickListEntry(blockposition, block);
  
          nextticklistentry.a(j);
-@@ -582,8 +590,10 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -582,8 +596,10 @@ public class WorldServer extends World implements IAsyncTaskHandler {
          }
  
          // CraftBukkit - use M, PAIL: Rename nextTickList
 -        if (!this.M.contains(nextticklistentry)) {
 +        // Blossom start - optimise scheduled block ticking
-+        if (chunk != null && chunk.scheduledToTick.add(nextticklistentry)/*!this.M.contains(nextticklistentry)*/) {
++        if (chunk != null/*!this.M.contains(nextticklistentry)*/) {
              this.M.add(nextticklistentry);
 +            // Blossom end - optimise scheduled block ticking
          }
  
      }
-@@ -635,47 +645,53 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -635,47 +651,49 @@ public class WorldServer extends World implements IAsyncTaskHandler {
                  timings.scheduledBlocksCleanup.startTiming(); // Spigot
                  NextTickListEntry nextticklistentry;
  
@@ -323,11 +408,8 @@ index 9acfa5492..e4ee40d32 100644
 -                        if (next.a().isPowerSource() || next.a() instanceof IContainer || next.a() instanceof BlockFalling) { // Blossom - falling blocks should bypass tick cap
 -                            iterator.remove();
 -                            this.V.add(next);
+-                        }
 +                    if (tickBlock) {
-+                        Chunk chunk = this.getChunkIfLoaded(nextticklistentry.a);
-+                        if (chunk != null) {
-+                            chunk.scheduledToTick.remove(nextticklistentry);
-                         }
 +                        scheduledBlockItr.remove();
 +                        this.V.add(nextticklistentry);
 +                        count++;
@@ -362,44 +444,25 @@ index 9acfa5492..e4ee40d32 100644
                          co.aikar.timings.Timing timing = iblockdata.getBlock().getTiming(); // Spigot
                          timing.startTiming(); // Spigot
  
-@@ -714,7 +730,58 @@ public class WorldServer extends World implements IAsyncTaskHandler {
-         return this.a(new StructureBoundingBox(i, 0, k, j, 256, l), flag);
+@@ -715,6 +733,31 @@ public class WorldServer extends World implements IAsyncTaskHandler {
      }
  
-+    // Blossom start - optimise nextticklist unloading
-+    private List<NextTickListEntry> getScheduledBlocksInsideBoundingBox(
-+        final StructureBoundingBox boundingBox,
-+        final int minChunkX,
-+        final int minChunkZ,
-+        final int maxChunkX,
-+        final int maxChunkZ,
-+        final boolean remove
-+    ) {
-+        List<NextTickListEntry> scheduledTickingBlocks = new it.unimi.dsi.fastutil.objects.ReferenceArrayList<>();
-+        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
-+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
-+                Chunk chunk = this.getChunkIfLoaded(chunkX, chunkZ);
-+                if (chunk == null) {
-+                    continue;
-+                }
+     public List<NextTickListEntry> a(StructureBoundingBox structureboundingbox, boolean flag) {
++        // Blossom start - optimise nextticklist unloading
++        final int minChunkX = structureboundingbox.a >> 4;
++        final int minChunkZ = structureboundingbox.c >> 4;
++        final int maxChunkX = structureboundingbox.d >> 4;
++        final int maxChunkZ = structureboundingbox.f >> 4;
++        final int totalChunks = (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
 +
-+                for (Iterator<NextTickListEntry> itr = chunk.scheduledToTick.iterator(); itr.hasNext(); ) {
-+                    NextTickListEntry scheduledBlock = itr.next();
-+                    BlockPosition position = scheduledBlock.a;
-+
-+                    if (position.getX() >= boundingBox.a && position.getX() < boundingBox.d && position.getZ() >= boundingBox.c && position.getZ() < boundingBox.f) {
-+                        if (remove) {
-+                            itr.remove();
-+                        }
-+                        scheduledTickingBlocks.add(scheduledBlock);
-+                    }
-+                }
-+            }
++        if (totalChunks >= 4 * 4) {
++            // Fallback to the old impl (iterating over all blocks in the world)
++            return this.getScheduledBlocksInsideBoundingBox(structureboundingbox, flag);
 +        }
 +
-+        if (remove) {
-+            // Might be worth adding a flag to NextTickListEntry to indicate it shouldn't be ticked.
-+            for (NextTickListEntry scheduledBlock : scheduledTickingBlocks) {
++        final List<NextTickListEntry> scheduledTickingBlocks = this.M.collectScheduledBlocks(structureboundingbox);
++        if (flag) {
++            for (final NextTickListEntry scheduledBlock : scheduledTickingBlocks) {
 +                this.M.remove(scheduledBlock);
 +                this.V.remove(scheduledBlock);
 +            }
@@ -408,15 +471,7 @@ index 9acfa5492..e4ee40d32 100644
 +        return scheduledTickingBlocks;
 +    }
 +
-     public List<NextTickListEntry> a(StructureBoundingBox structureboundingbox, boolean flag) {
-+        int minChunkX = structureboundingbox.a >> 4;
-+        int minChunkZ = structureboundingbox.c >> 4;
-+        int maxChunkX = structureboundingbox.d >> 4;
-+        int maxChunkZ = structureboundingbox.f >> 4;
-+        int totalChunks = (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
-+        if (totalChunks < 16 * 16) {
-+            return this.getScheduledBlocksInsideBoundingBox(structureboundingbox, minChunkX, minChunkZ, maxChunkX, maxChunkZ, flag);
-+        }
++    private List<NextTickListEntry> getScheduledBlocksInsideBoundingBox(StructureBoundingBox structureboundingbox, boolean flag) {
 +        // Blossom end - optimise scheduled block ticking
          ArrayList arraylist = null;
  

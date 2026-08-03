@@ -1,4 +1,4 @@
-From 99cfc6346a19af6bb55536a8675ddf158f3fcda8 Mon Sep 17 00:00:00 2001
+From abd43a71788eb1ec1e49d0d5d8b58ad41625f532 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:29:49 +0100
 Subject: [PATCH] Cache Chunk Retrieval
@@ -36,10 +36,10 @@ index 000000000..23282b120
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 39648407a..90a1573ac 100644
+index ee2213a80..cc1ca4ccc 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
-@@ -152,6 +152,7 @@ public class Chunk {
+@@ -151,6 +151,7 @@ public class Chunk {
          this.neighbors &= ~(0x1 << (x * 5 + 12 + z));
      }
      // CraftBukkit end
@@ -47,7 +47,7 @@ index 39648407a..90a1573ac 100644
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
-@@ -165,6 +166,7 @@ public class Chunk {
+@@ -164,6 +165,7 @@ public class Chunk {
          this.world = world;
          this.locX = i;
          this.locZ = j;

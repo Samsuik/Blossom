@@ -1,14 +1,14 @@
-From dbc21ebad617379846ae3e0cb823c2b682ffec5a Mon Sep 17 00:00:00 2001
+From c869a7ca4f79cc116879d7684a847ce5f2202901 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 23 May 2023 23:20:49 +0100
 Subject: [PATCH] Use faster entity storage collections
 
 
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 9336780a5..0a6534dc4 100644
+index bde0d27cc..ee2213a80 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
-@@ -168,7 +168,7 @@ public class Chunk {
+@@ -167,7 +167,7 @@ public class Chunk {
          this.heightMap = new int[256];
  
          for (int k = 0; k < this.entitySlices.length; ++k) {

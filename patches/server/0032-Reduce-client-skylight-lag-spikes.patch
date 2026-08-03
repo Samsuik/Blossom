@@ -1,11 +1,11 @@
-From 1ad6d7d3e8a9b504776f1dd6736e766048a632a8 Mon Sep 17 00:00:00 2001
+From 9fe6a717f576ec1232ae144f7d2d65dd09777f7f Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 5 Jul 2022 16:32:15 +0100
 Subject: [PATCH] Reduce client skylight lag spikes
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 8ab9b36e8..1264b7736 100644
+index 71446b885..7ab7a17c1 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -306,4 +306,9 @@ public final class BlossomConfig {
@@ -19,10 +19,10 @@ index 8ab9b36e8..1264b7736 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 37876dac1..774e3b689 100644
+index dbafb44c5..bde0d27cc 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
-@@ -180,6 +180,14 @@ public class Chunk {
+@@ -179,6 +179,14 @@ public class Chunk {
          if (!(this instanceof EmptyChunk)) {
              this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
          }
@@ -37,7 +37,7 @@ index 37876dac1..774e3b689 100644
      }
  
      public org.bukkit.Chunk bukkitChunk;
-@@ -1417,9 +1425,15 @@ public class Chunk {
+@@ -1416,9 +1424,15 @@ public class Chunk {
              Chunk.c.warn("Could not set level chunk sections, array length is " + achunksection.length + " instead of " + this.sections.length);
          } else {
              for (int i = 0; i < this.sections.length; ++i) {

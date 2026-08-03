@@ -1,11 +1,11 @@
-From acf6934979ecef0be484466b733cca3054441668 Mon Sep 17 00:00:00 2001
+From be8a0b2c1a675af33f143696d51012975a0dbaba Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 15 Jul 2023 17:48:22 +0100
 Subject: [PATCH] Chunk Unload Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index f8f3e26b9..47da19dc2 100644
+index ab8eb82f8..c27ff80d8 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -512,4 +512,15 @@ public final class BlossomConfig {
@@ -37,10 +37,10 @@ index 8efefded0..228df0c91 100644
                      chunk = world.getChunkIfLoaded(chunkX, chunkZ);
                  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 8cdda5914..24df44b01 100644
+index cc1ca4ccc..9a2c8fcc8 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
-@@ -153,6 +153,7 @@ public class Chunk {
+@@ -152,6 +152,7 @@ public class Chunk {
      }
      // CraftBukkit end
      public final long chunkKey; // Blossom - cache chunk retrieval
@@ -48,7 +48,7 @@ index 8cdda5914..24df44b01 100644
  
      public Chunk(World world, int i, int j) {
          this.sections = new ChunkSection[16];
-@@ -190,6 +191,7 @@ public class Chunk {
+@@ -189,6 +190,7 @@ public class Chunk {
              }
          }
          // Blossom end - reduce client skylight lag

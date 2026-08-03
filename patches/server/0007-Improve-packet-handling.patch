@@ -1,4 +1,4 @@
-From 8c66f8b62766a423304f7f75e318ca4198d051e8 Mon Sep 17 00:00:00 2001
+From 69e4f08cdf75999f2eec63f8c2dcaa7ddf7a8039 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 1 Jul 2022 00:10:18 +0100
 Subject: [PATCH] Improve packet handling
@@ -39,7 +39,7 @@ index 000000000..f94c4d233
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index 4a6d5dc12..63713c1d0 100644
+index 4a6d5dc12..4e570437d 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
 @@ -108,6 +108,19 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
@@ -151,7 +151,21 @@ index 4a6d5dc12..63713c1d0 100644
              // Tuinity start - make only one flush call per sendPacketQueue() call
              final boolean needsFlush = this.canFlush;
              boolean hasWrotePacket = false;
-@@ -268,7 +303,7 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+@@ -263,12 +298,19 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+                         this.flush();
+                     }
+                     // Tuinity end - make only one flush call per sendPacketQueue() call
+-
+-                    this.writePacket(networkmanager_queuedpacket.a, networkmanager_queuedpacket.b, (this.i.isEmpty() && (needsFlush || this.canFlush)) ? Boolean.TRUE : Boolean.FALSE); // Tuinity - make only one flush call per sendPacketQueue() call
++                    // Blossom start - improve packet handling
++                    this.writePacketInEventLoop(
++                            networkmanager_queuedpacket.a,
++                            networkmanager_queuedpacket.b,
++                            false,
++                            EnumProtocol.PLAY,
++                            (this.i.isEmpty() && (needsFlush || this.canFlush)) ? Boolean.TRUE : Boolean.FALSE // Tuinity - make only one flush call per sendPacketQueue() call
++                    );
++                    // Blossom end - improve packet handling
                      hasWrotePacket = true; // Tuinity - make only one flush call per sendPacketQueue() call
                  }
              } finally {
