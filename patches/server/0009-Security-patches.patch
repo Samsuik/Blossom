@@ -1,4 +1,4 @@
-From 020cf1f590e745c1a5bed24929096083c9b28903 Mon Sep 17 00:00:00 2001
+From 10a87e69fce8ff2c54bb606ca829d964bbe2b0c1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -216,13 +216,14 @@ index 000000000..8bf375281
 +}
 diff --git a/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java b/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java
 new file mode 100644
-index 000000000..ec7d9164f
+index 000000000..9ad8040e1
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/network/nbt/ItemNbtReader.java
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,77 @@
 +package me.samsuik.blossom.network.nbt;
 +
 +import io.netty.buffer.ByteBufInputStream;
++import me.samsuik.blossom.configuration.BlossomConfig;
 +import net.minecraft.server.*;
 +import org.bukkit.craftbukkit.inventory.CraftItemStack;
 +import org.spigotmc.LimitStream;
@@ -232,15 +233,17 @@ index 000000000..ec7d9164f
 +import java.io.IOException;
 +
 +public final class ItemNbtReader {
++    private static final int SOFT_NBT_DEPTH_LIMIT = 32;
++
 +    public static ItemStack readItemStackUntrusted(final PacketDataSerializer serializer, final long bytes) throws IOException {
 +        final short itemId = serializer.readShort();
++        final Item item = Item.getById(itemId);
 +        if (itemId < 0) {
 +            return null;
 +        }
 +
-+        final Item item = Item.getById(itemId);
-+        if (item == null) {
-+            return new ItemStack((Item) null, 1);
++        if (itemId != 0 && item == null) {
++            throw new IOException("Unknown item id: " + itemId);
 +        }
 +
 +        final byte count = serializer.readByte();
@@ -257,38 +260,41 @@ index 000000000..ec7d9164f
 +    }
 +
 +    private static NBTTagCompound readNbtTag(final PacketDataSerializer serializer, final long bytes) throws IOException {
-+        final int index = serializer.readerIndex();
-+        try {
-+            return serializer.readNbtComponent(bytes);
-+        } catch (final NbtByteLimitException byteLimitException) {
-+            serializer.readerIndex(index);
-+            try {
-+                return readRootComponents(serializer, new NBTReadLimiter(bytes), false);
-+            } catch (final NbtByteLimitException nbtByteLimitException) {
-+                return new NBTTagCompound();
-+            }
-+        }
-+    }
-+
-+    private static NBTTagCompound readRootComponents(final PacketDataSerializer serializer, final NBTReadLimiter limiter, final boolean named) throws IOException {
-+        final DataInput input = new DataInputStream(new LimitStream(new ByteBufInputStream(serializer), limiter));
++        final DataInput input = inputStream(serializer, new NBTReadLimiter(bytes));
 +        final byte type = input.readByte();
++        if (type == 0) {
++            return null;
++        }
++
 +        if (type != 10) {
-+            throw new IOException("Root tag must be a compound tag");
++            throw new IOException("Root tag must be a compound tag (got: " + type + ")");
 +        }
 +
 +        final String name = input.readUTF();
-+        if (!named && !name.isEmpty()) {
++        if (!name.isEmpty()) {
 +            throw new IOException("Unexpected root tag name");
 +        }
 +
-+        final NBTTagCompound rootComponent = new NBTTagCompound();
++        final int tagIndex = serializer.readerIndex();
 +        try {
-+            rootComponent.loadRootComponents(input, limiter);
-+            return rootComponent;
-+        } catch (final IOException e) {
-+            throw new IOException("Something went wrong while reading nbt", e);
++            return NbtReader.readCompound(input, 0, SOFT_NBT_DEPTH_LIMIT, new NBTReadLimiter(bytes));
++        } catch (final NbtByteLimitException nbtByteLimitException) {
++            serializer.readerIndex(tagIndex);
 +        }
++
++        final long hardByteLimit = BlossomConfig.nbtByteLimit;
++        try {
++            final NBTReadLimiter limiter = new NBTReadLimiter(hardByteLimit);
++            NbtReader.validateCompound(inputStream(serializer, limiter), 0, NbtReader.MAX_DEPTH, limiter);
++        } catch (final NbtByteLimitException nbtByteLimitException) {
++            throw new IOException("NBT compound too large (>" + hardByteLimit + " bytes)", nbtByteLimitException);
++        }
++
++        return new NBTTagCompound();
++    }
++
++    private static DataInput inputStream(final PacketDataSerializer serializer, final NBTReadLimiter limiter) {
++        return new DataInputStream(new LimitStream(new ByteBufInputStream(serializer), limiter));
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java b/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java
@@ -302,6 +308,219 @@ index 000000000..092dfe7f3
 +public final class NbtByteLimitException extends RuntimeException {
 +    public NbtByteLimitException(final String message) {
 +        super(message);
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/nbt/NbtReader.java b/src/main/java/me/samsuik/blossom/network/nbt/NbtReader.java
+new file mode 100644
+index 000000000..7d02e6b07
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/nbt/NbtReader.java
+@@ -0,0 +1,207 @@
++package me.samsuik.blossom.network.nbt;
++
++import net.minecraft.server.*;
++
++import java.io.DataInput;
++import java.io.IOException;
++
++public final class NbtReader {
++    public static final int MAX_DEPTH = 512;
++
++    public static void validateCompound(final DataInput input, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        limiter.a(384L);
++        byte type;
++        while ((type = input.readByte()) != 0) {
++            final String name = input.readUTF();
++            limiter.a(224L + 16L * name.length());
++            validateTag(input, type, depth + 1, maxDepth, limiter);
++
++            limiter.a(288L);
++        }
++    }
++
++    private static void validateList(final DataInput input, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        if (depth > maxDepth) {
++            throw new IOException("Tried to read NBT tag with too high complexity, depth > " + maxDepth);
++        }
++
++        final byte type = input.readByte();
++        final int length = input.readInt();
++
++        if (length < 0 || length > Short.MAX_VALUE) {
++            throw new IOException("Invalid NBT tag list (length: " + length + ")");
++        }
++
++        if (length != 0 && (type < 1 || type > 11)) {
++            throw new IOException("Invalid NBT tag list (type: " + type + ")");
++        }
++
++        limiter.a(224L + (length * 48L));
++
++        if (isPrimitive(type)) {
++            final int totalBytes = length * primitiveSize(type);
++            limiter.a(totalBytes * 8L);
++            input.skipBytes(totalBytes);
++        } else {
++            for (int count = 0; count < length; count++) {
++                validateTag(input, type, depth + 1, maxDepth, limiter);
++            }
++        }
++    }
++
++    private static void validateArray(final DataInput input, final byte type, final NBTReadLimiter limiter) throws IOException {
++        final int bytes = type == 7 ? Byte.BYTES : Integer.BYTES;
++        final int length = input.readInt();
++        final int totalBytes = length * bytes;
++
++        if (length < 0 || length > Short.MAX_VALUE) {
++            throw new IOException("Invalid NBT tag array (length: " + length + " bytes: " + totalBytes + ")");
++        }
++
++        limiter.a(128L + totalBytes * 8L);
++        input.skipBytes(totalBytes);
++    }
++
++    private static void validateTag(final DataInput input, final byte type, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        limiter.a(64L); // Header
++        switch (type) {
++            case 1: // Byte
++            case 2: // Short
++            case 3: // Integer
++            case 4: // Long
++            case 5: // Float
++            case 6: // Double
++                final int size = primitiveSize(type);
++                limiter.a(size * 8L);
++                input.skipBytes(size);
++                break;
++            case 8: // String
++                limiter.a(224L + (16L * input.readUTF().length()));
++                break;
++            case 7: // Byte Array
++            case 11: // Int Array
++                validateArray(input, type, limiter);
++                break;
++            case 9: // List
++                validateList(input, depth, maxDepth, limiter);
++                break;
++            case 10: // Compound
++                validateCompound(input, depth, maxDepth, limiter);
++                break;
++        }
++    }
++
++    private static boolean isPrimitive(final byte type) {
++        return type >= 1 && type <= 6;
++    }
++
++    private static int primitiveSize(final byte type) {
++        switch (type) {
++            case 1: return Byte.BYTES;
++            case 2: return Short.BYTES;
++            case 3: return Integer.BYTES;
++            case 4: return Long.BYTES;
++            case 5: return Float.BYTES;
++            case 6: return Double.BYTES;
++            default: return 0;
++        }
++    }
++
++    public static NBTTagCompound readCompound(final DataInput input, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        limiter.a(384L);
++
++        final NBTTagCompound compound = new NBTTagCompound();
++        byte type;
++        while ((type = input.readByte()) != 0) {
++            final String name = input.readUTF();
++            limiter.a(224L + 16L * name.length());
++
++            final NBTBase tag = readTag(input, type, depth + 1, maxDepth, limiter);
++            if (tag != null) {
++                compound.set(name, tag);
++            }
++
++            limiter.a(288L);
++        }
++
++        return compound;
++    }
++
++    private static NBTTagList readList(final DataInput input, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        final byte type = input.readByte();
++        final int length = input.readInt();
++
++        if (length < 0 || length > Short.MAX_VALUE) {
++            throw new IOException("Invalid NBT tag list (length: " + length + ")");
++        }
++
++        if (length != 0 && (type < 1 || type > 11)) {
++            throw new IOException("Invalid NBT tag list (type: " + type + ")");
++        }
++
++        limiter.a(224L + (length * 48L));
++
++        final NBTTagList list = new NBTTagList();
++        for (int count = 0; count < length; count++) {
++            final NBTBase tag = readTag(input, type, depth + 1, maxDepth, limiter);
++            if (tag != null) {
++                list.add(tag);
++            }
++        }
++
++        return list;
++    }
++
++    private static NBTBase readArray(final DataInput input, final byte type, final NBTReadLimiter limiter) throws IOException {
++        final int bytes = type == 7 ? Byte.BYTES : Integer.BYTES;
++        final int length = input.readInt();
++        final int totalBytes = length * bytes;
++
++        if (length < 0 || length > Short.MAX_VALUE) {
++            throw new IOException("Invalid NBT tag array (length: " + length + " bytes: " + totalBytes + ")");
++        }
++
++        limiter.a(128L + totalBytes * 8L);
++
++        if (type == 7) {
++            final byte[] array = new byte[length];
++            input.readFully(array);
++            return new NBTTagByteArray(array);
++        } else {
++            final int[] array = new int[length];
++            for (int index = 0; index < length; index++) {
++                array[index] = input.readInt();
++            }
++            return new NBTTagIntArray(array);
++        }
++    }
++
++    private static NBTBase readTag(final DataInput input, final byte type, final int depth, final int maxDepth, final NBTReadLimiter limiter) throws IOException {
++        if (depth > maxDepth) {
++            validateTag(input, type, depth, MAX_DEPTH, limiter);
++            return null;
++        }
++
++        limiter.a(64L); // Header
++        switch (type) {
++            case 0: // End
++            case 1: // Byte
++            case 2: // Short
++            case 3: // Integer
++            case 4: // Long
++            case 5: // Float
++            case 6: // Double
++            case 8: // String
++                return NBTTagCompound.readTag(type, "", input, depth, limiter);
++            case 7: // Byte Array
++            case 11: // Int Array
++                return readArray(input, type, limiter);
++            case 9: // List
++                return readList(input, depth, maxDepth, limiter);
++            case 10: // Compound
++                return readCompound(input, depth, maxDepth, limiter);
++            default:
++                throw new IOException("Invalid tag type: " + type);
++        }
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/util/SanitizeCharacters.java b/src/main/java/me/samsuik/blossom/util/SanitizeCharacters.java
@@ -860,45 +1079,10 @@ index 13e9d0b39..14aa3a587 100644
          datainput.readFully(this.data);
      }
 diff --git a/src/main/java/net/minecraft/server/NBTTagCompound.java b/src/main/java/net/minecraft/server/NBTTagCompound.java
-index 22d7c2ab3..6d9f0fffe 100644
+index 22d7c2ab3..0c0aa8378 100644
 --- a/src/main/java/net/minecraft/server/NBTTagCompound.java
 +++ b/src/main/java/net/minecraft/server/NBTTagCompound.java
-@@ -16,6 +16,34 @@ public class NBTTagCompound extends NBTBase {
- 
-     public NBTTagCompound() {}
- 
-+    // Blossom start - security patches
-+    public final void loadRootComponents(final DataInput input, final NBTReadLimiter limiter) throws IOException {
-+        limiter.a(448L);
-+        this.map.clear();
-+
-+        byte type;
-+        while ((type = a(input, limiter)) != 0) {
-+            final String name = b(input, limiter);
-+            limiter.a(224L + 16L * name.length());
-+
-+            final NBTBase nbtbase;
-+            if (type > 0 && type < 7 || type == 8) { // primitives and strings
-+                nbtbase = a(type, name, input, 1, limiter);
-+            } else {
-+                nbtbase = NBTBase.createTag(type);
-+                if (nbtbase == null) {
-+                    continue; // invalid tag
-+                }
-+                limiter.a(448L); // better to overestimate
-+            }
-+
-+            if (this.map.put(name, nbtbase) != null) {
-+                limiter.a(288L);
-+            }
-+        }
-+    }
-+    // Blossom end - security patches
-+
-     void write(DataOutput dataoutput) throws IOException {
-         Iterator iterator = this.map.keySet().iterator();
- 
-@@ -30,7 +58,7 @@ public class NBTTagCompound extends NBTBase {
+@@ -30,7 +30,7 @@ public class NBTTagCompound extends NBTBase {
      }
  
      void load(DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
@@ -907,7 +1091,7 @@ index 22d7c2ab3..6d9f0fffe 100644
          if (i > 512) {
              throw new RuntimeException("Tried to read NBT tag with too high complexity, depth > 512");
          } else {
-@@ -41,7 +69,7 @@ public class NBTTagCompound extends NBTBase {
+@@ -41,7 +41,7 @@ public class NBTTagCompound extends NBTBase {
              while ((b0 = a(datainput, nbtreadlimiter)) != 0) {
                  String s = b(datainput, nbtreadlimiter);
  
@@ -916,6 +1100,25 @@ index 22d7c2ab3..6d9f0fffe 100644
                  NBTBase nbtbase = a(b0, s, datainput, i + 1, nbtreadlimiter);
  
                  if (this.map.put(s, nbtbase) != null) {
+@@ -324,6 +324,18 @@ public class NBTTagCompound extends NBTBase {
+         return datainput.readUTF();
+     }
+ 
++    // Blossom start - security patches
++    public static NBTBase readTag(
++        final byte type,
++        final String name,
++        final DataInput input,
++        final int depth,
++        final NBTReadLimiter limiter
++    ) throws IOException {
++        return a(type, name, input, depth, limiter);
++    }
++    // Blossom end - security patches
++
+     static NBTBase a(byte b0, String s, DataInput datainput, int i, NBTReadLimiter nbtreadlimiter) throws IOException {
+         NBTBase nbtbase = NBTBase.createTag(b0);
+ 
 diff --git a/src/main/java/net/minecraft/server/NBTTagIntArray.java b/src/main/java/net/minecraft/server/NBTTagIntArray.java
 index e206e509b..8301c3069 100644
 --- a/src/main/java/net/minecraft/server/NBTTagIntArray.java
@@ -967,7 +1170,7 @@ index d1967dcb5..a6cb8e28a 100644
  
      public byte getTypeId() {
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index e4cbc449e..0a331f72f 100644
+index 63713c1d0..0249587b5 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
 @@ -380,6 +380,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
