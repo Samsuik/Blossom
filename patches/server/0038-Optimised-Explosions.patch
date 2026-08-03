@@ -1,11 +1,11 @@
-From e285c321e53119720bd3ff75e10ca6ea28f81d42 Mon Sep 17 00:00:00 2001
+From ca80de7431b0dfe2a487a93ef188adc6b357cca3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 993313261..cdd0778ff 100644
+index 19477a12e..6e050e7b2 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -334,4 +334,13 @@ public final class BlossomConfig {
@@ -1043,10 +1043,10 @@ index 3475c0d19..b2aba44f8 100644
          explosion.a();
          explosion.a(true);
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 4c31b4ea6..c3ee2031e 100644
+index b9df930f6..3e15bea98 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
-@@ -1137,6 +1137,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -1139,6 +1139,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              explosion.clearBlocks();
          }
  
@@ -1060,7 +1060,7 @@ index 4c31b4ea6..c3ee2031e 100644
          Iterator iterator = this.players.iterator();
  
          while (iterator.hasNext()) {
-@@ -1147,7 +1154,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -1149,7 +1156,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
              }
          }
  

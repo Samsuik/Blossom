@@ -1,46 +1,129 @@
-From 6c734f849883ce956880636cba91ea763402a067 Mon Sep 17 00:00:00 2001
+From 8893e661ae2d24706ae8172c754c8ecc3239aa07 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 28 Jun 2022 23:06:32 +0100
 Subject: [PATCH] Optimise scheduled block ticking and unloading
 
 
-diff --git a/src/main/java/me/samsuik/blossom/utils/ScheduledBlockSet.java b/src/main/java/me/samsuik/blossom/utils/ScheduledBlockSet.java
+diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
 new file mode 100644
-index 000000000..98886b4aa
+index 000000000..28caf35b3
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/utils/ScheduledBlockSet.java
-@@ -0,0 +1,33 @@
-+package me.samsuik.blossom.utils;
++++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
+@@ -0,0 +1,37 @@
++package me.samsuik.blossom.world;
++
++import it.unimi.dsi.fastutil.HashCommon;
++import net.minecraft.server.Block;
++import net.minecraft.server.BlockPosition;
++import net.minecraft.server.NextTickListEntry;
++
++import java.util.Objects;
++
++public final class ScheduledBlock {
++    private final Block type;
++    private final BlockPosition pos;
++
++    public static ScheduledBlock from(final NextTickListEntry entry) {
++        return new ScheduledBlock(entry.e, entry.a);
++    }
++
++    public ScheduledBlock(final Block type, final BlockPosition pos) {
++        this.type = type;
++        this.pos = pos;
++    }
++
++    @Override
++    public boolean equals(Object o) {
++        if (!(o instanceof ScheduledBlock)) return false;
++
++        final ScheduledBlock that = (ScheduledBlock) o;
++        return Objects.equals(this.type, that.type) && Objects.equals(this.pos, that.pos);
++    }
++
++    @Override
++    public int hashCode() {
++        int result = HashCommon.mix(this.type.hashCode());
++        result = 31 * result + Long.hashCode(pos.asLong());
++        return result;
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
+new file mode 100644
+index 000000000..989cf6752
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
+@@ -0,0 +1,73 @@
++package me.samsuik.blossom.world;
 +
 +import net.minecraft.server.NextTickListEntry;
-+import org.bukkit.craftbukkit.util.HashTreeSet;
 +
-+import java.util.Collection;
++import java.util.*;
 +
-+public final class ScheduledBlockSet extends HashTreeSet<NextTickListEntry> {
++public final class ScheduledBlockTicks extends AbstractSet<NextTickListEntry> {
++    private final HashSet<ScheduledBlock> scheduledBlocks = new HashSet<>();
++    private final TreeSet<NextTickListEntry> blocksToTick = new TreeSet<>();
++
 +    @Override
 +    public int size() {
-+        return this.tree.size();
++        return this.scheduledBlocks.size();
 +    }
 +
 +    @Override
-+    public boolean isEmpty() {
-+        return this.tree.isEmpty();
++    public boolean add(final NextTickListEntry entry) {
++        final ScheduledBlock scheduledBlock = new ScheduledBlock(entry.e, entry.a);
++        if (this.scheduledBlocks.add(scheduledBlock)) {
++            this.blocksToTick.add(entry);
++            return true;
++        }
++
++        return false;
 +    }
 +
 +    @Override
-+    public boolean add(NextTickListEntry scheduledBlock) {
-+        return this.tree.add(scheduledBlock);
++    public boolean remove(final Object o) {
++        if (!(o instanceof NextTickListEntry)) return false;
++        final NextTickListEntry entry = (NextTickListEntry) o;
++
++        this.blocksToTick.remove(entry);
++        return this.scheduledBlocks.remove(new ScheduledBlock(entry.e, entry.a));
 +    }
 +
 +    @Override
-+    public boolean addAll(Collection c) {
-+        return this.tree.addAll(c);
++    public void clear() {
++        this.scheduledBlocks.clear();
++        this.blocksToTick.clear();
 +    }
 +
 +    @Override
-+    public boolean remove(Object object) {
-+        return this.tree.remove(object);
++    public Iterator<NextTickListEntry> iterator() {
++        return new Iterator<NextTickListEntry>() {
++            private final Iterator<NextTickListEntry> it = ScheduledBlockTicks.this.blocksToTick.iterator();
++            private NextTickListEntry last;
++
++            @Override
++            public boolean hasNext() {
++                return this.it.hasNext();
++            }
++
++            @Override
++            public NextTickListEntry next() {
++                return this.last = it.next();
++            }
++
++            @Override
++            public void remove() {
++                final NextTickListEntry entry = this.last;
++                if (entry == null) {
++                    throw new IllegalStateException("No element to remove");
++                }
++
++                this.last = null;
++                this.it.remove();
++
++                final ScheduledBlock scheduledBlock = new ScheduledBlock(entry.e, entry.a);
++                ScheduledBlockTicks.this.scheduledBlocks.remove(scheduledBlock);
++            }
++        };
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
@@ -70,6 +153,55 @@ index e867a944f..3eb29e754 100644
                  }
              }
          }
+diff --git a/src/main/java/net/minecraft/server/NextTickListEntry.java b/src/main/java/net/minecraft/server/NextTickListEntry.java
+index 648d25534..2027c5ccb 100644
+--- a/src/main/java/net/minecraft/server/NextTickListEntry.java
++++ b/src/main/java/net/minecraft/server/NextTickListEntry.java
+@@ -3,7 +3,7 @@ package net.minecraft.server;
+ public class NextTickListEntry implements Comparable<NextTickListEntry> {
+ 
+     private static long d;
+-    private final Block e;
++    public final Block e; // Blossom - optimise scheduled block ticking
+     public final BlockPosition a;
+     public long b;
+     public int c;
+@@ -11,7 +11,13 @@ public class NextTickListEntry implements Comparable<NextTickListEntry> {
+ 
+     public NextTickListEntry(BlockPosition blockposition, Block block) {
+         this.f = (long) (NextTickListEntry.d++);
+-        this.a = blockposition;
++        // Blossom start - optimise scheduled block ticking
++        if (blockposition instanceof BlockPosition.MutableBlockPosition) {
++            this.a = new BlockPosition(blockposition.getX(), blockposition.getY(), blockposition.getZ());
++        } else {
++            this.a = blockposition;
++        }
++        // Blossom end - optimise scheduled block ticking
+         this.e = block;
+     }
+ 
+@@ -20,13 +26,17 @@ public class NextTickListEntry implements Comparable<NextTickListEntry> {
+             return false;
+         } else {
+             NextTickListEntry nextticklistentry = (NextTickListEntry) object;
+-
+-            return this.a.equals(nextticklistentry.a) && Block.a(this.e, nextticklistentry.e);
++            return this.b == nextticklistentry.b && this.c == nextticklistentry.c && this.f == nextticklistentry.f; // Blossom - optimise scheduled block ticking
+         }
+     }
+ 
+     public int hashCode() {
+-        return this.a.hashCode();
++        // Blossom start - optimise scheduled block ticking
++        int result = Long.hashCode(this.b);
++        result = 31 * result + Integer.hashCode(this.c);
++        result = 31 * result + Long.hashCode(this.f);
++        return result;
++        // Blossom end - optimise scheduled block ticking
+     }
+ 
+     public NextTickListEntry a(long i) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
 index c05a6a648..0ac4d77ae 100644
 --- a/src/main/java/net/minecraft/server/World.java
@@ -84,7 +216,7 @@ index c05a6a648..0ac4d77ae 100644
          this.methodProfiler.a("entities");
          this.methodProfiler.a("global");
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 9acfa5492..546769d3c 100644
+index 9acfa5492..e4ee40d32 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -36,7 +36,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -92,7 +224,7 @@ index 9acfa5492..546769d3c 100644
      private final PlayerChunkMap manager;
      // private final Set<NextTickListEntry> L = Sets.newHashSet(); // PAIL: Rename nextTickListHash
 -    private final HashTreeSet<NextTickListEntry> M = new HashTreeSet<NextTickListEntry>(); // CraftBukkit - HashTreeSet // PAIL: Rename nextTickList
-+    private final HashTreeSet<NextTickListEntry> M = new me.samsuik.blossom.utils.ScheduledBlockSet(); // Blossom - optimise scheduled block ticking // CraftBukkit - HashTreeSet // PAIL: Rename nextTickList
++    private final me.samsuik.blossom.world.ScheduledBlockTicks M = new me.samsuik.blossom.world.ScheduledBlockTicks(); // Blossom - optimise scheduled block ticking
      private final Map<UUID, Entity> entitiesByUUID = Maps.newHashMap();
      public ChunkProviderServer chunkProviderServer;
      public boolean savingDisabled;
@@ -230,16 +362,18 @@ index 9acfa5492..546769d3c 100644
                          co.aikar.timings.Timing timing = iblockdata.getBlock().getTiming(); // Spigot
                          timing.startTiming(); // Spigot
  
-@@ -714,7 +730,56 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -714,7 +730,58 @@ public class WorldServer extends World implements IAsyncTaskHandler {
          return this.a(new StructureBoundingBox(i, 0, k, j, 256, l), flag);
      }
  
 +    // Blossom start - optimise nextticklist unloading
 +    private List<NextTickListEntry> getScheduledBlocksInsideBoundingBox(
-+            StructureBoundingBox boundingBox,
-+            int minChunkX, int minChunkZ,
-+            int maxChunkX, int maxChunkZ,
-+            boolean remove
++        final StructureBoundingBox boundingBox,
++        final int minChunkX,
++        final int minChunkZ,
++        final int maxChunkX,
++        final int maxChunkZ,
++        final boolean remove
 +    ) {
 +        List<NextTickListEntry> scheduledTickingBlocks = new it.unimi.dsi.fastutil.objects.ReferenceArrayList<>();
 +        for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
@@ -287,19 +421,6 @@ index 9acfa5492..546769d3c 100644
          ArrayList arraylist = null;
  
          for (int i = 0; i < 2; ++i) {
-diff --git a/src/main/java/org/bukkit/craftbukkit/util/HashTreeSet.java b/src/main/java/org/bukkit/craftbukkit/util/HashTreeSet.java
-index 80a5c29f3..f4b4690f8 100644
---- a/src/main/java/org/bukkit/craftbukkit/util/HashTreeSet.java
-+++ b/src/main/java/org/bukkit/craftbukkit/util/HashTreeSet.java
-@@ -9,7 +9,7 @@ import java.util.TreeSet;
- public class HashTreeSet<V> implements Set<V> {
- 
-     private HashSet<V> hash = new HashSet<V>();
--    private TreeSet<V> tree = new TreeSet<V>();
-+    protected TreeSet<V> tree = new TreeSet<V>(); // Blossom - optimise scheduled block ticking; private -> protected
- 
-     public HashTreeSet() {
- 
 -- 
 2.50.1 (Apple Git-155)
 
