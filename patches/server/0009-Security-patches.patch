@@ -1,4 +1,4 @@
-From cd4f9349bd11f9dcded33534a5b23f9aca5d3638 Mon Sep 17 00:00:00 2001
+From 2b954c453743e2c2ea50b588e7fd7fe0e85da7b8 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -81,6 +81,41 @@ index f283caf6d..afdab0d5c 100644
 +    }
 +
  }
+diff --git a/src/main/java/me/samsuik/blossom/network/NetworkException.java b/src/main/java/me/samsuik/blossom/network/NetworkException.java
+new file mode 100644
+index 000000000..3a1d40ba6
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/NetworkException.java
+@@ -0,0 +1,16 @@
++package me.samsuik.blossom.network;
++
++public abstract class NetworkException extends RuntimeException {
++    public NetworkException(final String message) {
++        super(message);
++    }
++
++    public NetworkException(final String message, final Throwable cause) {
++        super(message, cause);
++    }
++
++    @Override
++    public String getMessage() {
++        return super.getMessage() + " (" + this.getCause().getMessage() + ")";
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/network/PacketDecodeException.java b/src/main/java/me/samsuik/blossom/network/PacketDecodeException.java
+new file mode 100644
+index 000000000..30b6ff17e
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/network/PacketDecodeException.java
+@@ -0,0 +1,7 @@
++package me.samsuik.blossom.network;
++
++public final class PacketDecodeException extends NetworkException {
++    public PacketDecodeException(final String message, final Throwable cause) {
++        super(message, cause);
++    }
++}
 diff --git a/src/main/java/me/samsuik/blossom/network/PacketLimit.java b/src/main/java/me/samsuik/blossom/network/PacketLimit.java
 new file mode 100644
 index 000000000..907b26771
@@ -203,13 +238,13 @@ index 000000000..c286e260c
 +}
 diff --git a/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
 new file mode 100644
-index 000000000..8bf375281
+index 000000000..088a4732c
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/network/PacketRateLimitException.java
 @@ -0,0 +1,7 @@
 +package me.samsuik.blossom.network;
 +
-+public final class PacketRateLimitException extends RuntimeException {
++public final class PacketRateLimitException extends NetworkException {
 +    public PacketRateLimitException(final String message) {
 +        super(message);
 +    }
@@ -299,13 +334,15 @@ index 000000000..9ad8040e1
 +}
 diff --git a/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java b/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java
 new file mode 100644
-index 000000000..092dfe7f3
+index 000000000..f5b65582a
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/network/nbt/NbtByteLimitException.java
-@@ -0,0 +1,7 @@
+@@ -0,0 +1,9 @@
 +package me.samsuik.blossom.network.nbt;
 +
-+public final class NbtByteLimitException extends RuntimeException {
++import me.samsuik.blossom.network.NetworkException;
++
++public final class NbtByteLimitException extends NetworkException {
 +    public NbtByteLimitException(final String message) {
 +        super(message);
 +    }
@@ -1252,10 +1289,41 @@ index d1967dcb5..a6cb8e28a 100644
  
      public byte getTypeId() {
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index 4e570437d..3966c4b59 100644
+index 4e570437d..323ed41fc 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
-@@ -387,6 +387,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+@@ -154,15 +154,27 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
+ 
+     public void exceptionCaught(ChannelHandlerContext channelhandlercontext, Throwable throwable) throws Exception {
+         ChatMessage chatmessage;
++        // Blossom start - security patches
++        if (throwable.getCause() instanceof me.samsuik.blossom.network.PacketDecodeException) {
++            throwable = throwable.getCause();
++        }
+ 
+         if (throwable instanceof TimeoutException) {
+             chatmessage = new ChatMessage("disconnect.timeout", new Object[0]);
+         } else {
+-            chatmessage = new ChatMessage("disconnect.genericReason", new Object[] { "Internal Exception: " + throwable});
++            chatmessage = new ChatMessage("disconnect.genericReason", new Object[] { "Internal Exception: " + throwable.getMessage()});
+         }
+ 
+-        this.close(chatmessage);
+-        if (MinecraftServer.getServer().isDebugging()) throwable.printStackTrace(); // Spigot
++        if (throwable.getCause() instanceof me.samsuik.blossom.network.PacketRateLimitException) {
++            this.preparing = false;
++            this.channel.close();
++            this.channel.config().setAutoRead(false);
++        } else {
++            this.close(chatmessage);
++        }
++
++        if (MinecraftServer.getServer().isDebugging()) g.error("An exception occurred while handling a packet", throwable); // Spigot
++        // Blossom end - security patches
+     }
+ 
+     protected void a(ChannelHandlerContext channelhandlercontext, Packet packet) throws Exception {
+@@ -387,6 +399,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
              } else {
                  this.channel.pipeline().addBefore("encoder", "compress", new PacketCompressor(i));
              }
@@ -1323,9 +1391,18 @@ index 40e615ff1..136f8018e 100644
          ItemStack itemstack = null;
          short short0 = this.readShort();
 diff --git a/src/main/java/net/minecraft/server/PacketDecoder.java b/src/main/java/net/minecraft/server/PacketDecoder.java
-index bbebe3a9f..34c5268e1 100644
+index bbebe3a9f..3ddd54f7c 100644
 --- a/src/main/java/net/minecraft/server/PacketDecoder.java
 +++ b/src/main/java/net/minecraft/server/PacketDecoder.java
+@@ -21,7 +21,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
+     }
+ 
+     protected void decode(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
+-        if (bytebuf.readableBytes() != 0) {
++        if (bytebuf.readableBytes() != 0 && channelhandlercontext.channel().isOpen()) { // Blossom - security patches
+             PacketDataSerializer packetdataserializer = new PacketDataSerializer(bytebuf);
+             int i = packetdataserializer.e();
+             Packet packet = ((EnumProtocol) channelhandlercontext.channel().attr(NetworkManager.c).get()).a(this.c, i);
 @@ -29,7 +29,14 @@ public class PacketDecoder extends ByteToMessageDecoder {
              if (packet == null) {
                  throw new IOException("Bad packet id " + i);
@@ -1334,8 +1411,8 @@ index bbebe3a9f..34c5268e1 100644
 +                // Blossom start - security patches
 +                try {
 +                    packet.a(packetdataserializer);
-+                } catch (final Exception exception) {
-+                    throw new IOException("Failed to decode packet " + packet.getClass().getSimpleName(), exception);
++                } catch (final Throwable throwable) {
++                    throw new me.samsuik.blossom.network.PacketDecodeException("Failed to decode packet " + packet.getClass().getName(), throwable);
 +                }
 +                // Blossom end - security patches
 +
