@@ -1,4 +1,4 @@
-From 133e981b45144419258c2f00baeeb659ce3d6553 Mon Sep 17 00:00:00 2001
+From cd4f9349bd11f9dcded33534a5b23f9aca5d3638 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -586,6 +586,88 @@ index a685e0812..e94008318 100644
      public double d(double d0, double d1, double d2) {
          double d3 = (double) this.getX() + 0.5D - d0;
          double d4 = (double) this.getY() + 0.5D - d1;
+diff --git a/src/main/java/net/minecraft/server/ChatBaseComponent.java b/src/main/java/net/minecraft/server/ChatBaseComponent.java
+index dc496c21b..574fa3b57 100644
+--- a/src/main/java/net/minecraft/server/ChatBaseComponent.java
++++ b/src/main/java/net/minecraft/server/ChatBaseComponent.java
+@@ -56,7 +56,7 @@ public abstract class ChatBaseComponent implements IChatBaseComponent {
+     }
+ 
+     public Iterator<IChatBaseComponent> iterator() {
+-        return Iterators.concat(Iterators.forArray(new ChatBaseComponent[] { this}), a((Iterable) this.a));
++        return a(java.util.Collections.singleton(this)); // Blossom - security patches
+     }
+ 
+     public final String c() {
+@@ -73,29 +73,46 @@ public abstract class ChatBaseComponent implements IChatBaseComponent {
+     }
+ 
+     public static Iterator<IChatBaseComponent> a(Iterable<IChatBaseComponent> iterable) {
+-        Iterator iterator = Iterators.concat(Iterators.transform(iterable.iterator(), new Function() {
+-            public Iterator<IChatBaseComponent> a(IChatBaseComponent ichatbasecomponent) {
+-                return ichatbasecomponent.iterator();
++        // Blossom start - security patches
++        return new com.google.common.collect.AbstractIterator<IChatBaseComponent>() {
++            private final java.util.ArrayDeque<Iterator<IChatBaseComponent>> stack = new java.util.ArrayDeque<>(
++                    java.util.Collections.singleton(iterable.iterator())
++            );
++            private final java.util.Set<IChatBaseComponent> seen = new it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet<>();
++
++            @Override
++            protected IChatBaseComponent computeNext() {
++                while (!this.stack.isEmpty()) {
++                    final Iterator<IChatBaseComponent> current = this.stack.peek();
++                    if (!current.hasNext()) {
++                        this.stack.pop();
++                        continue;
++                    }
++
++                    final IChatBaseComponent component = current.next();
++                    if (component == null) {
++                        continue;
++                    }
++
++                    final Iterable<IChatBaseComponent> siblings = component.a();
++                    if (siblings != null) {
++                        this.stack.push(siblings.iterator());
++                        if (stack.size() >= 128) {
++                            break; // No reason for components to be nested to this degree
++                        }
++                    }
++
++                    if (this.seen.add(component)) {
++                        final IChatBaseComponent copy = component.f();
++                        copy.setChatModifier(copy.getChatModifier().n());
++                        return copy;
++                    }
++                }
++
++                return this.endOfData();
+             }
+-
+-            public Object apply(Object object) {
+-                return this.a((IChatBaseComponent) object);
+-            }
+-        }));
+-
+-        iterator = Iterators.transform(iterator, new Function() {
+-            public IChatBaseComponent a(IChatBaseComponent ichatbasecomponent) {
+-                IChatBaseComponent ichatbasecomponent1 = ichatbasecomponent.f();
+-
+-                ichatbasecomponent1.setChatModifier(ichatbasecomponent1.getChatModifier().n());
+-                return ichatbasecomponent1;
+-            }
+-
+-            public Object apply(Object object) {
+-                return this.a((IChatBaseComponent) object);
+-            }
+-        });
+-        return iterator;
++        };
++        // Blossom end - security patches
+     }
+ 
+     public boolean equals(Object object) {
 diff --git a/src/main/java/net/minecraft/server/Container.java b/src/main/java/net/minecraft/server/Container.java
 index c2f7ccd75..029c38bb3 100644
 --- a/src/main/java/net/minecraft/server/Container.java
