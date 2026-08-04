@@ -1,4 +1,4 @@
-From 5276f1b84b262969ca0987ca06eaa651039f19ee Mon Sep 17 00:00:00 2001
+From 133e981b45144419258c2f00baeeb659ce3d6553 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -1288,7 +1288,7 @@ index e176c9ca0..6ac4ec483 100644
  
      public void b(PacketDataSerializer packetdataserializer) throws IOException {
 diff --git a/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
-index 0d811e789..11daaa427 100644
+index 0d811e789..50dee2007 100644
 --- a/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
 +++ b/src/main/java/net/minecraft/server/PacketPlayInTabComplete.java
 @@ -20,7 +20,7 @@ public class PacketPlayInTabComplete implements Packet<PacketListenerPlayIn> {
@@ -1296,7 +1296,7 @@ index 0d811e789..11daaa427 100644
  
      public void a(PacketDataSerializer packetdataserializer) throws IOException {
 -        this.a = packetdataserializer.c(32767);
-+        this.a = packetdataserializer.c(128); // Blossom - security patches
++        this.a = packetdataserializer.c(256); // Blossom - security patches
          boolean flag = packetdataserializer.readBoolean();
  
          if (flag) {
