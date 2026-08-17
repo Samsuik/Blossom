@@ -1,4 +1,4 @@
-From 2b954c453743e2c2ea50b588e7fd7fe0e85da7b8 Mon Sep 17 00:00:00 2001
+From 6963e1d7f7df07aeec7a831ddb7b42c542ef83c3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -83,10 +83,10 @@ index f283caf6d..afdab0d5c 100644
  }
 diff --git a/src/main/java/me/samsuik/blossom/network/NetworkException.java b/src/main/java/me/samsuik/blossom/network/NetworkException.java
 new file mode 100644
-index 000000000..3a1d40ba6
+index 000000000..e5d74e724
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/network/NetworkException.java
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,17 @@
 +package me.samsuik.blossom.network;
 +
 +public abstract class NetworkException extends RuntimeException {
@@ -100,7 +100,8 @@ index 000000000..3a1d40ba6
 +
 +    @Override
 +    public String getMessage() {
-+        return super.getMessage() + " (" + this.getCause().getMessage() + ")";
++        final Throwable cause = this.getCause();
++        return super.getMessage() + (cause != null ? " (" + cause.getMessage() + ")" : "");
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/network/PacketDecodeException.java b/src/main/java/me/samsuik/blossom/network/PacketDecodeException.java
