@@ -1,4 +1,4 @@
-From 6963e1d7f7df07aeec7a831ddb7b42c542ef83c3 Mon Sep 17 00:00:00 2001
+From ebd4c18c6a13287e9c5dd145ba88fe4482100254 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -1290,7 +1290,7 @@ index d1967dcb5..a6cb8e28a 100644
  
      public byte getTypeId() {
 diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
-index 4e570437d..323ed41fc 100644
+index 4e570437d..2e2923e7a 100644
 --- a/src/main/java/net/minecraft/server/NetworkManager.java
 +++ b/src/main/java/net/minecraft/server/NetworkManager.java
 @@ -154,15 +154,27 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet> {
@@ -1319,7 +1319,7 @@ index 4e570437d..323ed41fc 100644
 +            this.close(chatmessage);
 +        }
 +
-+        if (MinecraftServer.getServer().isDebugging()) g.error("An exception occurred while handling a packet", throwable); // Spigot
++        g.error("An exception occurred while handling a packet", throwable); // Spigot
 +        // Blossom end - security patches
      }
  
