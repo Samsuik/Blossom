@@ -1,4 +1,4 @@
-From 143fc6bd1932c8c5dc9252642e40b2d27484e664 Mon Sep 17 00:00:00 2001
+From 495ffb5454c5a17468d4e77849d15ce4199300b3 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 15 Sep 2020 19:36:22 +0100
 Subject: [PATCH] Visibility Settings and API
@@ -104,7 +104,7 @@ index 000000000..820d34199
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 16beffbdf..af119513f 100644
+index 9a1dcea7a..c12745392 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -190,4 +190,13 @@ public final class BlossomConfig {
@@ -1072,7 +1072,7 @@ index 38586aad7..2095ab3ff 100644
                          for (i = 0; i < this.dirtyCount; ++i) {
                              j = (this.dirtyBlocks[i] >> 12 & 15) + this.location.x * 16;
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 007b1d4cb..b6765add5 100644
+index 4a6b2b640..48084a110 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -787,8 +787,10 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -1104,7 +1104,7 @@ index 007b1d4cb..b6765add5 100644
          } catch (Throwable throwable) {
              CrashReport crashreport = CrashReport.a(throwable, "Sending packet");
              CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Packet being sent");
-@@ -1698,6 +1707,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1705,6 +1714,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      }
  
                      event.setCancelled(cancelled);

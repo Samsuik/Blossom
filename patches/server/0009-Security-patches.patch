@@ -1,4 +1,4 @@
-From 1ba57e07b5b21c57d0f293ec4047f6545a8b4cd1 Mon Sep 17 00:00:00 2001
+From f73f21079d0bfa848ff2fe1832024b83fa7f14bd Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -793,6 +793,23 @@ index c2f7ccd75..029c38bb3 100644
                      }
                  }
              } else if (k == 3 && entityhuman.abilities.canInstantlyBuild && playerinventory.getCarried() == null && i >= 0) {
+diff --git a/src/main/java/net/minecraft/server/ContainerEnchantTable.java b/src/main/java/net/minecraft/server/ContainerEnchantTable.java
+index 5c473bef9..52b0a0688 100644
+--- a/src/main/java/net/minecraft/server/ContainerEnchantTable.java
++++ b/src/main/java/net/minecraft/server/ContainerEnchantTable.java
+@@ -194,6 +194,12 @@ public class ContainerEnchantTable extends Container {
+     }
+ 
+     public boolean a(EntityHuman entityhuman, int i) {
++        // Blossom start - security patches
++        if (i < 0 || i >= this.costs.length) {
++            return false;
++        }
++        // Blossom end - security patches
++
+         ItemStack itemstack = this.enchantSlots.getItem(0);
+         ItemStack itemstack1 = this.enchantSlots.getItem(1);
+         int j = i + 1;
 diff --git a/src/main/java/net/minecraft/server/EnchantmentManager.java b/src/main/java/net/minecraft/server/EnchantmentManager.java
 index 98656815f..80dd93f6f 100644
 --- a/src/main/java/net/minecraft/server/EnchantmentManager.java
@@ -1487,7 +1504,7 @@ index a9a2a794d..288dc184d 100644
  
      public void b(PacketDataSerializer packetdataserializer) throws IOException {
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 3a917037b..007b1d4cb 100644
+index 3a917037b..4a6b2b640 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -792,20 +792,20 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
@@ -1529,7 +1546,21 @@ index 3a917037b..007b1d4cb 100644
                  try {
                      this.minecraftServer.server.playerCommandState = true;
                      this.handleCommand(s);
-@@ -1460,6 +1466,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1330,6 +1336,13 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+     public void a(PacketPlayInUseEntity packetplayinuseentity) {
+         if (this.player.dead) return; // CraftBukkit
+         if (this.ensureMainThread(packetplayinuseentity)) return; // Blossom - improve packet handling
++        // Blossom start - security patches
++        final Vec3D targetVec = packetplayinuseentity.b();
++        if (targetVec != null && (!Double.isFinite(targetVec.a) || !Double.isFinite(targetVec.b) || !Double.isFinite(targetVec.c))) {
++            return;
++        }
++        // Blossom end - security patches
++
+         WorldServer worldserver = this.minecraftServer.getWorldServer(this.player.dimension);
+         Entity entity = packetplayinuseentity.a((World) worldserver);
+         // Spigot Start
+@@ -1460,6 +1473,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
          if (this.player.dead) return; // CraftBukkit
          if (this.ensureMainThread(packetplayinclosewindow)) return; // Blossom - improve packet handling
  
@@ -1537,7 +1568,7 @@ index 3a917037b..007b1d4cb 100644
          CraftEventFactory.handleInventoryCloseEvent(this.player); // CraftBukkit
  
          this.player.p();
-@@ -1486,6 +1493,18 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1486,6 +1500,18 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      return;
                  }
  
@@ -1556,7 +1587,7 @@ index 3a917037b..007b1d4cb 100644
                  InventoryView inventory = this.player.activeContainer.getBukkitView();
                  SlotType type = CraftInventoryView.getSlotType(inventory, packetplayinwindowclick.b());
  
-@@ -1602,7 +1621,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1602,7 +1628,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                  } else if (packetplayinwindowclick.f() == 3) {
                      if (packetplayinwindowclick.c() == 2) {
                          click = ClickType.MIDDLE;
@@ -1565,7 +1596,20 @@ index 3a917037b..007b1d4cb 100644
                              action = InventoryAction.NOTHING;
                          } else {
                              Slot slot = this.player.activeContainer.getSlot(packetplayinwindowclick.b());
-@@ -1802,6 +1821,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1794,6 +1820,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+     public void a(PacketPlayInSetCreativeSlot packetplayinsetcreativeslot) {
+         if (this.ensureMainThread(packetplayinsetcreativeslot)) return; // Blossom - improve packet handling
+         if (this.player.playerInteractManager.isCreative()) {
++            // Blossom start - security patches
++            if (packetplayinsetcreativeslot.a() >= 36 + PlayerInventory.getHotbarSize()) {
++                return;
++            }
++            // Blossom end - security patches
++
+             boolean flag = packetplayinsetcreativeslot.a() < 0;
+             ItemStack itemstack = packetplayinsetcreativeslot.getItemStack();
+ 
+@@ -1802,6 +1834,12 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
                  if (nbttagcompound.hasKey("x") && nbttagcompound.hasKey("y") && nbttagcompound.hasKey("z")) {
                      BlockPosition blockposition = new BlockPosition(nbttagcompound.getInt("x"), nbttagcompound.getInt("y"), nbttagcompound.getInt("z"));
@@ -1578,7 +1622,7 @@ index 3a917037b..007b1d4cb 100644
                      TileEntity tileentity = this.player.world.getTileEntity(blockposition);
  
                      if (tileentity != null) {
-@@ -1821,7 +1846,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1821,7 +1859,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              boolean flag2 = itemstack == null || itemstack.getItem() != null && (!invalidItems.contains(Item.getId(itemstack.getItem())) || !org.spigotmc.SpigotConfig.filterCreativeItems); // Spigot
              boolean flag3 = itemstack == null || itemstack.getData() >= 0 && itemstack.count <= 64 && itemstack.count > 0;
              // CraftBukkit start - Call click event
@@ -1587,7 +1631,7 @@ index 3a917037b..007b1d4cb 100644
  
                  org.bukkit.entity.HumanEntity player = this.player.getBukkitEntity();
                  InventoryView inventory = new CraftInventoryView(player, player.getInventory(), this.player.defaultContainer);
-@@ -1923,7 +1948,14 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1923,7 +1961,14 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              String[] lines = new String[4];
  
              for (int i = 0; i < aichatbasecomponent.length; ++i) {
@@ -1603,7 +1647,7 @@ index 3a917037b..007b1d4cb 100644
              }
              SignChangeEvent event = new SignChangeEvent((org.bukkit.craftbukkit.block.CraftBlock) player.getWorld().getBlockAt(x, y, z), this.server.getPlayer(this.player), lines);
              this.server.getPluginManager().callEvent(event);
-@@ -1970,22 +2002,22 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -1970,22 +2015,22 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
      public void a(PacketPlayInTabComplete packetplayintabcomplete) {
          if (this.ensureMainThread(packetplayintabcomplete)) return; // Blossom - improve packet handling
@@ -1634,7 +1678,7 @@ index 3a917037b..007b1d4cb 100644
      }
  
      public void a(PacketPlayInSettings packetplayinsettings) {
-@@ -2001,6 +2033,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2001,6 +2046,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
          try { // CraftBukkit
          if ("MC|BEdit".equals(packetplayincustompayload.a())) {
@@ -1651,7 +1695,7 @@ index 3a917037b..007b1d4cb 100644
              packetdataserializer = new PacketDataSerializer(Unpooled.wrappedBuffer(packetplayincustompayload.b()));
  
              try {
-@@ -2033,6 +2075,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2033,6 +2088,16 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
  
              return;
          } else if ("MC|BSign".equals(packetplayincustompayload.a())) {
@@ -1668,7 +1712,7 @@ index 3a917037b..007b1d4cb 100644
              packetdataserializer = new PacketDataSerializer(Unpooled.wrappedBuffer(packetplayincustompayload.b()));
  
              try {
-@@ -2092,7 +2144,15 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2092,7 +2157,15 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                      CommandBlockListenerAbstract commandblocklistenerabstract = null;
  
                      if (b0 == 0) {
@@ -1685,7 +1729,7 @@ index 3a917037b..007b1d4cb 100644
  
                          if (tileentity instanceof TileEntityCommand) {
                              commandblocklistenerabstract = ((TileEntityCommand) tileentity).getCommandBlock();
-@@ -2153,7 +2213,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
+@@ -2153,7 +2226,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
              ContainerAnvil containeranvil = (ContainerAnvil) this.player.activeContainer;
  
              if (packetplayincustompayload.b() != null && packetplayincustompayload.b().readableBytes() >= 1) {
