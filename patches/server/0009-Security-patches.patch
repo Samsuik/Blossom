@@ -1,4 +1,4 @@
-From f73f21079d0bfa848ff2fe1832024b83fa7f14bd Mon Sep 17 00:00:00 2001
+From d1f95cb2c0c5a4e294d59e53476afd60a119eab7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -1775,7 +1775,7 @@ index 3e8e7af9b..67a964bd0 100644
          }
          return this.getItem() != null;
 diff --git a/src/main/java/net/minecraft/server/TileEntityBanner.java b/src/main/java/net/minecraft/server/TileEntityBanner.java
-index aa5ad2ef0..14e6fe135 100644
+index aa5ad2ef0..4eb959587 100644
 --- a/src/main/java/net/minecraft/server/TileEntityBanner.java
 +++ b/src/main/java/net/minecraft/server/TileEntityBanner.java
 @@ -13,17 +13,47 @@ public class TileEntityBanner extends TileEntity {
@@ -1786,7 +1786,7 @@ index aa5ad2ef0..14e6fe135 100644
 +    private static final java.util.Set<String> PATTERN_IDENTIFIERS = new java.util.HashSet<>();
 +    static {
 +        for (final EnumBannerPatternType type : EnumBannerPatternType.values()) {
-+            PATTERN_IDENTIFIERS.add(type.name());
++            PATTERN_IDENTIFIERS.add(type.identifier());
 +        }
 +    }
 +
