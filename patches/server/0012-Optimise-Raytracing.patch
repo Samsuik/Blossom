@@ -1,4 +1,4 @@
-From 6e81ea433f8adc1b49efd734b6d72cf0c05f33eb Mon Sep 17 00:00:00 2001
+From 740e1620d34e6c954edcb621d838fa53c7147040 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 19 Jun 2022 21:18:56 +0100
 Subject: [PATCH] Optimise Raytracing
@@ -184,6 +184,24 @@ index 1a2cdd1bc..88131b507 100644
  
      public IBlockData getPlacedState(World world, BlockPosition blockposition, EnumDirection enumdirection, float f, float f1, float f2, int i, EntityLiving entityliving) {
          IBlockData iblockdata = this.getBlockData();
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index adc306dec..be46d43af 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1798,7 +1798,12 @@ public abstract class EntityLiving extends Entity {
+     }
+ 
+     public boolean hasLineOfSight(Entity entity) {
+-        return this.world.rayTrace(new Vec3D(this.locX, this.locY + (double) this.getHeadHeight(), this.locZ), new Vec3D(entity.locX, entity.locY + (double) entity.getHeadHeight(), entity.locZ)) == null;
++        // Blossom start - optimise raytracing
++        final Vec3D from = new Vec3D(this.locX, this.locY + (double) this.getHeadHeight(), this.locZ);
++        final Vec3D to = new Vec3D(entity.locX, entity.locY + (double) entity.getHeadHeight(), entity.locZ);
++
++        return this.world.rayTraceStripped(from, to) == null;
++        // Blossom end - optimise raytracing
+     }
+ 
+     public Vec3D ap() {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
 index e32319641..a7e9ff1d5 100644
 --- a/src/main/java/net/minecraft/server/World.java
