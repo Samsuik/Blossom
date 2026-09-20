@@ -1,4 +1,4 @@
-From eaa3a1506e489632c6512169ba16393fd2ab32c1 Mon Sep 17 00:00:00 2001
+From e52448415af71eaaeaadb082da3783d2b1b42ca4 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 21 Feb 2021 22:36:38 +0000
@@ -347,7 +347,7 @@ index 4bf790cdf..98864383a 100644
              this.j(this.getType() - 1);
          }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index a7e9ff1d5..c05a6a648 100644
+index a7e9ff1d5..16f6c0f53 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1460,25 +1460,32 @@ public abstract class World implements IBlockAccess {
@@ -397,13 +397,13 @@ index a7e9ff1d5..c05a6a648 100644
      }
  
      public boolean a(WorldBorder worldborder, Entity entity) {
-@@ -2853,6 +2860,49 @@ public abstract class World implements IBlockAccess {
+@@ -2853,12 +2860,56 @@ public abstract class World implements IBlockAccess {
          return null;
      }
  
-+    // Blossom start - provide limited getEntities
++    // Blossom start - optimise entity retrieval; provide limited entity retrieval methods
 +    public List<Entity> getEntitiesLimited(Entity entity, AxisAlignedBB axisalignedbb, Predicate<? super Entity> by, int amount, int search) {
-+        List<Entity> entities = new ArrayList<>();
++        List<Entity> entities = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
 +
 +        int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
 +        int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
@@ -424,7 +424,7 @@ index a7e9ff1d5..c05a6a648 100644
 +    }
 +
 +    public <T extends Entity> List<T> getEntitiesLimitedByType(Class<? extends T> oclass, AxisAlignedBB axisalignedbb, Predicate<? super T> by, int amount, int search) {
-+        List<T> entities = new ArrayList<>();
++        List<T> entities = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
 +
 +        int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
 +        int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
@@ -443,10 +443,45 @@ index a7e9ff1d5..c05a6a648 100644
 +
 +        return entities;
 +    }
-+    // Blossom end
++    // Blossom end - optimise entity retrieval; provide limited entity retrieval methods
++
      public List<Entity> getEntities(Entity entity, AxisAlignedBB axisalignedbb) {
          return this.a(entity, axisalignedbb, IEntitySelector.d);
      }
+ 
+     public List<Entity> a(Entity entity, AxisAlignedBB axisalignedbb, Predicate<? super Entity> predicate) {
+-        ArrayList arraylist = Lists.newArrayList();
++        List<Entity> arraylist = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(); // Blossom - optimise entity retrieval
+         int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
+         int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
+         int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
+@@ -2876,7 +2927,7 @@ public abstract class World implements IBlockAccess {
+     }
+ 
+     public <T extends Entity> List<T> a(Class<? extends T> oclass, Predicate<? super T> predicate) {
+-        ArrayList arraylist = Lists.newArrayList();
++        List arraylist = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(); // Blossom - optimise entity retrieval
+         Iterator iterator = this.entityList.iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -2891,7 +2942,7 @@ public abstract class World implements IBlockAccess {
+     }
+ 
+     public <T extends Entity> List<T> b(Class<? extends T> oclass, Predicate<? super T> predicate) {
+-        ArrayList arraylist = Lists.newArrayList();
++        List arraylist = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(); // Blossom - optimise entity retrieval
+         Iterator iterator = this.players.iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -2914,7 +2965,7 @@ public abstract class World implements IBlockAccess {
+         int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
+         int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
+         int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
+-        ArrayList arraylist = Lists.newArrayList();
++        List<T> arraylist = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(); // Blossom - optimise entity retrieval
+ 
+         for (int i1 = i; i1 <= j; ++i1) {
+             for (int j1 = k; j1 <= l; ++j1) {
 -- 
 2.50.1 (Apple Git-155)
 
