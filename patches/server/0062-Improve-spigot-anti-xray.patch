@@ -1,0 +1,519 @@
+From 831b1e62979b06949717601564cf5083e72778bd Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sat, 26 Sep 2026 17:45:52 +0100
+Subject: [PATCH] Improve spigot anti xray
+
+
+diff --git a/src/main/java/me/samsuik/blossom/antixray/AntiXrayEngine.java b/src/main/java/me/samsuik/blossom/antixray/AntiXrayEngine.java
+new file mode 100644
+index 000000000..b8b7692b2
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/antixray/AntiXrayEngine.java
+@@ -0,0 +1,141 @@
++package me.samsuik.blossom.antixray;
++
++import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
++import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
++import net.minecraft.server.*;
++import org.spigotmc.AntiXray;
++
++import java.util.List;
++import java.util.Random;
++
++public abstract class AntiXrayEngine {
++    private static AntiXrayEngine instance;
++
++    public static AntiXrayEngine getEngine() {
++        return AntiXrayEngine.instance;
++    }
++
++    public static void setEngine(final AntiXrayEngine engine) {
++        AntiXrayEngine.instance = engine;
++    }
++
++    protected static final int[] NEIGHBOR_OFFSETS_R1;
++    protected static final int[] NEIGHBOR_OFFSETS_R2;
++
++    protected final Random random = new Random();
++    protected final int sections;
++    protected final List<Block> hiddenBlocks;
++    protected final List<Block> replaceBlocks;
++
++    private final LongOpenHashSet queuedUpdates = new LongOpenHashSet();
++
++    public AntiXrayEngine(final int sections, final List<Block> hiddenBlocks, final List<Block> replaceBlocks) {
++        this.sections = sections;
++        this.hiddenBlocks = hiddenBlocks;
++        this.replaceBlocks = replaceBlocks;
++    }
++
++    public abstract void obfuscate(
++        final int chunkX,
++        final int chunkZ,
++        final int bitmask,
++        final byte[] buffer,
++        final World world
++    );
++
++    public void flushUpdates(final World world) {
++        final BlockPosition.MutableBlockPosition mutablePos = new BlockPosition.MutableBlockPosition();
++        for (final long update : this.queuedUpdates) {
++            final int x = BlockPosition.getX(update);
++            final int y = BlockPosition.getY(update);
++            final int z = BlockPosition.getZ(update);
++
++            world.notify(mutablePos.setValues(x, y, z));
++        }
++
++        this.queuedUpdates.clear();
++    }
++
++    public void updateNearbyBlocks(final World world, final BlockPosition pos) {
++        this.updateNearbyBlocks(world, pos, false);
++    }
++
++    public void updateNearbyBlocks(final World world, final BlockPosition pos, final boolean player) {
++        if (!world.spigotConfig.antiXray) {
++            return;
++        }
++
++        for (final int offset : (player ? NEIGHBOR_OFFSETS_R2 : NEIGHBOR_OFFSETS_R1)) {
++            final int x = pos.getX() + x(offset);
++            final int y = pos.getY() + y(offset);
++            final int z = pos.getZ() + z(offset);
++
++            this.queuedUpdates.add(BlockPosition.asLong(x, y, z));
++        }
++    }
++
++    public final boolean isExposed(final World world, final BlockPosition pos) {
++        return this.isExposed(world, pos.getX(), pos.getY(), pos.getZ());
++    }
++
++    public final boolean isExposed(final World world, final int x, final int y, final int z) {
++        final BlockPosition.MutableBlockPosition mutablePos = new BlockPosition.MutableBlockPosition();
++        for (final int offset : NEIGHBOR_OFFSETS_R1) {
++            final int blockX = x + x(offset);
++            final int blockY = y + y(offset);
++            final int blockZ = z + z(offset);
++            mutablePos.setValues(blockX, blockY, blockZ);
++
++            if (!AntiXray.isSolidBlock(AntiXray.getType(world, mutablePos))) {
++                return true;
++            }
++        }
++
++        return false;
++    }
++
++    protected static int x(final int packed) {
++        return (packed << 28) >> 28;
++    }
++
++    protected static int y(final int packed) {
++        return (packed << 20) >> 28;
++    }
++
++    protected static int z(final int packed) {
++        return (packed << 12) >> 28;
++    }
++
++    protected static int packed(final int x, final int y, final int z) {
++        return (x & 0xf) | ((y & 0xf) << 8) | ((z & 0xf) << 16);
++    }
++
++    static {
++        final IntOpenHashSet r1 = new IntOpenHashSet();
++        final IntOpenHashSet r2 = new IntOpenHashSet();
++
++        for (final EnumDirection dir : EnumDirection.values()) {
++            for (final EnumDirection dir2 : EnumDirection.values()) {
++                final int x = dir.getAdjacentX() + dir2.getAdjacentX();
++                final int y = dir.getAdjacentY() + dir2.getAdjacentY();
++                final int z = dir.getAdjacentZ() + dir2.getAdjacentZ();
++
++                r2.add(packed(x, y, z));
++            }
++
++            final int x = dir.getAdjacentX();
++            final int y = dir.getAdjacentY();
++            final int z = dir.getAdjacentZ();
++            final int packed = packed(x, y, z);
++
++            r1.add(packed);
++            r2.add(packed);
++        }
++
++        r1.remove(0);
++        r2.remove(0);
++
++        NEIGHBOR_OFFSETS_R1 = r1.toArray(new int[0]);
++        NEIGHBOR_OFFSETS_R2 = r2.toArray(new int[0]);
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
+index 23130ba96..7b48815ee 100644
+--- a/src/main/java/net/minecraft/server/BlockFlowing.java
++++ b/src/main/java/net/minecraft/server/BlockFlowing.java
+@@ -94,7 +94,6 @@ public class BlockFlowing extends BlockFluids {
+                     world.d(blockposition.up(), this);
+                     world.d(blockposition.north(), this);
+                     world.d(blockposition.south(), this);
+-                    world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
+                     // PaperSpigot end
+                 }
+             }
+diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+index 3a5c2e943..1b125a12f 100644
+--- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
++++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
+@@ -124,7 +124,7 @@ public class EntityFallingBlock extends Entity {
+                 blockposition = new BlockPosition(this);
+                 if (this.world.getType(blockposition).getBlock() == block && !CraftEventFactory.callEntityChangeBlockEvent(this, blockposition.getX(), blockposition.getY(), blockposition.getZ(), Blocks.AIR, 0).isCancelled()) {
+                     this.world.setAir(blockposition);
+-                    world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++                    me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().updateNearbyBlocks(world, blockposition, false); // Spigot // Blossom - improve antixray
+                 } else if (!this.world.isClientSide) {
+                     this.die();
+                     return;
+@@ -167,7 +167,7 @@ public class EntityFallingBlock extends Entity {
+                                     return;
+                                 }
+                                 this.world.setTypeAndData(blockposition, this.block, 3);
+-                                world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++                                // world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Blossom // Spigot
+                                 this.respawn(); // Blossom - merge cannoning entities
+                                 // CraftBukkit end
+                                 if (block instanceof BlockFalling) {
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index eb313e3fe..4e2e86671 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -244,7 +244,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+                 final ChunkCoordIntPair chunkPos = chunkCoordIntPairQueue.get(index);
+                 if (chunkPos != null) {
+                     final Chunk chunk = this.world.getChunkIfLoaded(chunkPos.x, chunkPos.z);
+-                    if (chunk == null || !chunk.isReady()) {
++                    if (chunk == null || !chunk.isReady() || this.world.spigotConfig.antiXray && !chunk.areNeighborsLoaded(1)) { // Blossom - improve antixray
+                         continue;
+                     }
+ 
+diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
+index c9a92151f..015b9486c 100644
+--- a/src/main/java/net/minecraft/server/Explosion.java
++++ b/src/main/java/net/minecraft/server/Explosion.java
+@@ -346,7 +346,7 @@ public class Explosion {
+                 blockposition = (BlockPosition) iterator.next();
+                 Block block = this.world.getType(blockposition).getBlock();
+ 
+-                world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++                me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().updateNearbyBlocks(world, blockposition, false); // Spigot // Blossom - improve antixray
+                 // Blossom - unnecessary
+ 
+                 if (block.getMaterial() != Material.AIR) {
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+index 9293e983b..6c193f468 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+@@ -40,7 +40,7 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+         this.b = chunk.locZ;
+         this.d = flag;
+         this.c = chunk.getChunkMap(flag, i); // PaperSpigot
+-        chunk.world.spigotConfig.antiXrayInstance.obfuscateSync(chunk.locX, chunk.locZ, c.b, c.a, chunk.world);
++        me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().obfuscate(this.a, this.b, c.b, c.a, chunk.world); // Blossom start - improve antixray
+     }
+ 
+     // Blossom start - optimise chunk and entity packets
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunkBulk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunkBulk.java
+index 805b22f24..9752d0412 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunkBulk.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunkBulk.java
+@@ -86,7 +86,7 @@ public class PacketPlayOutMapChunkBulk implements Packet<PacketListenerPlayOut>
+         }
+ 
+         for (i = 0; i < this.a.length; ++i) {
+-            world.spigotConfig.antiXrayInstance.obfuscate(this.a[i], this.b[i], this.c[i].b, this.c[i].a, world); // Spigot
++            me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().obfuscate(this.a[i], this.b[i], this.c[i].b, this.c[i].a, world); // Spigot // Blossom - improve antixray
+             packetdataserializer.writeBytes(this.c[i].a);
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index f941b7da6..2c9340ac7 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -202,7 +202,7 @@ public class PlayerInteractManager {
+             }
+ 
+         }
+-        world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++        me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().updateNearbyBlocks(world, blockposition, true); // Spigot // Blossom - improve antixray
+     }
+ 
+     public void a(BlockPosition blockposition) {
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index c11df1f0c..a2f3a9ad7 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -533,7 +533,7 @@ public abstract class World implements IBlockAccess {
+         this.d(blockposition.up(), block);
+         this.d(blockposition.north(), block);
+         this.d(blockposition.south(), block);
+-        spigotConfig.antiXrayInstance.updateNearbyBlocks(this, blockposition); // Spigot
++        // Blossom - improve antixray
+     }
+ 
+     public void a(BlockPosition blockposition, Block block, EnumDirection enumdirection) {
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 0ce0e78a5..04d656b28 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -252,7 +252,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+         timings.chunkTicks.startTiming(); // Spigot
+         this.h();
+         timings.chunkTicks.stopTiming(); // Spigot
+-        spigotConfig.antiXrayInstance.flushUpdates(this); // PaperSpigot
++        me.samsuik.blossom.antixray.AntiXrayEngine.getEngine().flushUpdates(this); // PaperSpigot // Blossom - improve antixray
+         this.methodProfiler.c("chunkMap");
+         timings.doChunkMap.startTiming(); // Spigot
+         this.manager.flush();
+diff --git a/src/main/java/org/spigotmc/AntiXray.java b/src/main/java/org/spigotmc/AntiXray.java
+index ec884c625..0b0f1f0d5 100644
+--- a/src/main/java/org/spigotmc/AntiXray.java
++++ b/src/main/java/org/spigotmc/AntiXray.java
+@@ -2,11 +2,7 @@ package org.spigotmc;
+ 
+ import gnu.trove.set.TByteSet;
+ import gnu.trove.set.hash.TByteHashSet;
+-import net.minecraft.server.Block;
+-import net.minecraft.server.BlockPosition;
+-import net.minecraft.server.Blocks;
+-import net.minecraft.server.ChunkSection;
+-import net.minecraft.server.World;
++import net.minecraft.server.*;
+ import org.bukkit.craftbukkit.util.CraftMagicNumbers;
+ import co.aikar.timings.SpigotTimings;
+ 
+@@ -15,12 +11,10 @@ import java.util.HashSet;
+ import java.util.Set;
+ // PaperSpigot end
+ // TacoSpigot start
+-import net.minecraft.server.Chunk;
+ import net.techcable.tacospigot.utils.BlockHelper;
+ // TacoSpigot end
+ 
+-public class AntiXray
+-{
++public class AntiXray extends me.samsuik.blossom.antixray.AntiXrayEngine { // Blossom - improve antixray
+ 
+     // Used to keep track of which blocks to obfuscate
+     private final boolean[] obfuscateBlocks = new boolean[ Short.MAX_VALUE ];
+@@ -30,70 +24,46 @@ public class AntiXray
+     public boolean queueUpdates = true;
+     public final Set<BlockPosition> pendingUpdates = new HashSet<BlockPosition>();
+     // PaperSpigot end
++    // Blossom start - improve antixray
++    private final int engineMode;
++
++    public AntiXray(
++        final int engineMode,
++        final int sections,
++        final java.util.List<Block> hiddenBlocks,
++        final java.util.List<Block> replaceBlocks
++    ) {
++        super(sections, hiddenBlocks, replaceBlocks);
++        this.engineMode = engineMode;
+ 
+-    public AntiXray(SpigotWorldConfig config)
+-    {
+         // Set all listed blocks as true to be obfuscated
+-        for ( int id : ( config.engineMode == 1 ) ? config.hiddenBlocks : config.replaceBlocks )
+-        {
+-            obfuscateBlocks[id] = true;
++        for (final Block block : hiddenBlocks) {
++            obfuscateBlocks[Block.getId(block)] = true;
++        }
++
++        if (engineMode == 2) {
++            for (Block block : replaceBlocks) {
++                obfuscateBlocks[Block.getId(block)] = true;
++            }
+         }
+ 
+         // For every block
+         TByteSet blocks = new TByteHashSet();
+-        for ( Integer i : config.hiddenBlocks )
++        for (final Block block : hiddenBlocks)
+         {
+-            Block block = Block.getById( i );
+             // Check it exists and is not a tile entity
+             if ( block != null && !block.isTileEntity() )
+             {
+                 // Add it to the set of replacement blocks
+-                blocks.add( (byte) (int) i );
++                blocks.add((byte) Block.getId(block));
++                // Blossom end - improve antixray
+             }
+         }
+         // Bake it to a flat array of replacements
+         replacementOres = blocks.toArray();
+     }
+ 
+-    /**
+-     * PaperSpigot - Flush queued block updates for world.
+-     */
+-    public void flushUpdates(World world)
+-    {
+-        if ( world.spigotConfig.antiXray && !pendingUpdates.isEmpty() )
+-        {
+-            queueUpdates = false;
+-
+-            for ( BlockPosition position : pendingUpdates )
+-            {
+-                updateNearbyBlocks( world, position );
+-            }
+-
+-            pendingUpdates.clear();
+-            queueUpdates = true;
+-        }
+-    }
+-
+-    /**
+-     * Starts the timings handler, then updates all blocks within the set radius
+-     * of the given coordinate, revealing them if they are hidden ores.
+-     */
+-    public void updateNearbyBlocks(World world, BlockPosition position)
+-    {
+-        if ( world.spigotConfig.antiXray )
+-        {
+-            // PaperSpigot start
+-            if ( queueUpdates )
+-            {
+-                pendingUpdates.add( position );
+-                return;
+-            }
+-            // PaperSpigot end
+-            SpigotTimings.antiXrayUpdateTimer.startTiming();
+-            updateNearbyBlocks( world, position, 2, false ); // 2 is the radius, we shouldn't change it as that would make it exponentially slower
+-            SpigotTimings.antiXrayUpdateTimer.stopTiming();
+-        }
+-    }
++    // Blossom - improve antixray
+ 
+     /**
+      * Starts the timings handler, and then removes all non exposed ores from
+@@ -144,7 +114,7 @@ public class AntiXray
+ 
+             BlockPosition.MutableBlockPosition pos = new BlockPosition.MutableBlockPosition(); // TacoSpigot - preallocate MutableBlockPosition
+             // Chunks can have up to 16 sections
+-            for ( int i = 0; i < 16; i++ )
++            for ( int i = 0; i < this.sections; i++ )
+             {
+                 // If the bitmask indicates this chunk is sent...
+                 if ( ( bitmask & 1 << i ) != 0 )
+@@ -180,10 +150,10 @@ public class AntiXray
+                                         continue;
+                                     }
+                                     // On the otherhand, if radius is 0, or the nearby blocks are all non air, we can obfuscate
+-                                    if ( !hasTransparentBlockAdjacent( world, /* new BlockPosition( startX + x, ( i << 4 ) + y, startZ + z ) */ pos, initialRadius ) ) // TacoSpigot - use prexisting MutableBlockPosition
++                                    if (!this.isExposed(world, pos)) // TacoSpigot - use prexisting MutableBlockPosition // Blossom - improve antixray
+                                     {
+                                         int newId = blockId;
+-                                        switch ( world.spigotConfig.engineMode )
++                                        switch (this.engineMode) // Blossom - improve antixray
+                                         {
+                                             case 1:
+                                                 // Replace with replacement material
+@@ -191,10 +161,7 @@ public class AntiXray
+                                                 break;
+                                             case 2:
+                                                 // Replace with random ore.
+-                                                if ( randomOre >= replacementOres.length )
+-                                                {
+-                                                    randomOre = 0;
+-                                                }
++                                                randomOre = random.nextInt(replacementOres.length); // Blossom - improve antixray
+                                                 newId = replacementOres[randomOre++] & 0xFF;
+                                                 break;
+                                         }
+@@ -242,7 +209,7 @@ public class AntiXray
+             Block block = getType(world, position); // TacoSpigot - directly access the underlying data
+ 
+             // See if it needs update
+-            if ( obfuscateBlocks[Block.getId( block )] ) // TacoSpigot - always update
++            if ( this.engineMode == 2 || obfuscateBlocks[Block.getId( block )] ) // TacoSpigot - always update
+             {
+                 // Send the update
+                 world.notify( position );
+@@ -283,7 +250,7 @@ public class AntiXray
+         // TacoSpigot end
+     }
+ 
+-    private static boolean isSolidBlock(Block block) {
++    public static boolean isSolidBlock(Block block) { // Blossom - improve antixray
+         // Mob spawners are treated as solid blocks as far as the
+         // game is concerned for lighting and other tasks but for
+         // rendering they can be seen through therefor we special
+diff --git a/src/main/java/org/spigotmc/SpigotWorldConfig.java b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+index 8e86212aa..eea904a8b 100644
+--- a/src/main/java/org/spigotmc/SpigotWorldConfig.java
++++ b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+@@ -218,9 +218,10 @@ public class SpigotWorldConfig
+     
+     public boolean antiXray;
+     public int engineMode;
+-    public List<Integer> hiddenBlocks;
+-    public List<Integer> replaceBlocks;
+-    public AntiXray antiXrayInstance;
++    public int maxSections;
++    public List<net.minecraft.server.Block> hiddenBlocks;
++    public List<net.minecraft.server.Block> replaceBlocks;
++    // Blossom - improve antixray
+     private void antiXray()
+     {
+         antiXray = getBoolean( "anti-xray.enabled", true );
+@@ -233,19 +234,30 @@ public class SpigotWorldConfig
+         {
+             set( "anti-xray.blocks", null );
+         }
+-        hiddenBlocks = getList( "anti-xray.hide-blocks", Arrays.asList( new Integer[]
+-        {
+-            14, 15, 16, 21, 48, 49, 54, 56, 73, 74, 82, 129, 130
+-        } ) );
+-        log( "\tHidden Blocks: " + hiddenBlocks );
+-
+-        replaceBlocks = getList( "anti-xray.replace-blocks", Arrays.asList( new Integer[]
+-        {
+-            1, 5
+-        } ) );
+-        log( "\tReplace Blocks: " + replaceBlocks );
+ 
+-        antiXrayInstance = new AntiXray( this );
++        // Blossom start - improve antixray
++        final List<String> hideBlocks = getList( "anti-xray.hidden-blocks", Arrays.asList(
++            "mossy_cobblestone", "obsidian", "clay", "gravel",
++            "quartz_ore", "diamond_ore", "emerald_ore", "lapis_ore",
++            "lit_redstone_ore", "redstone_ore", "gold_ore", "iron_ore", "coal_ore"
++        ));
++
++        final List<String> replaceBlocks = getList( "anti-xray.replacement-blocks", Arrays.asList(
++                "stone", "planks"
++        ));
++
++        this.hiddenBlocks = hideBlocks.stream()
++                .map(net.minecraft.server.Block::getByName)
++                .collect(java.util.stream.Collectors.toList());
++
++        this.replaceBlocks = replaceBlocks.stream()
++                .map(net.minecraft.server.Block::getByName)
++                .collect(java.util.stream.Collectors.toList());
++
++        this.maxSections = getInt("anti-xray.max-sections", 4);
++        final AntiXray antiXray = new AntiXray(this.engineMode, this.maxSections, this.hiddenBlocks, this.replaceBlocks);
++        me.samsuik.blossom.antixray.AntiXrayEngine.setEngine(antiXray);
++        // Blossom end - improve antixray
+     }
+ 
+     public boolean zombieAggressiveTowardsVillager;
+-- 
+2.50.1 (Apple Git-155)
+

@@ -1,4 +1,4 @@
-From 196474991ae956ec3527db8419836b0526255a04 Mon Sep 17 00:00:00 2001
+From 665bd69d89738c6d1a85f683a64f44fe87e9f006 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 13 Jun 2022 02:49:50 +0100
 Subject: [PATCH] Blossom Configuration File
@@ -291,10 +291,10 @@ index 000000000..f283caf6d
 +}
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
 new file mode 100644
-index 000000000..75de4d8db
+index 000000000..3eed71998
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomWorldConfig.java
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,65 @@
 +package me.samsuik.blossom.configuration;
 +
 +import java.util.List;
@@ -356,6 +356,7 @@ index 000000000..75de4d8db
 +    }
 +
 +    private void remove() {
++        this.remove("dusk-berry");
 +    }
 +
 +}

@@ -1,4 +1,4 @@
-From a08b51ede4d848bda0faae7d0575739ae002efad Mon Sep 17 00:00:00 2001
+From 0a99dbc09a5c3a58989bba9bf4e869f7f8d59f62 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 23 May 2023 23:07:20 +0100
 Subject: [PATCH] utils
@@ -128,7 +128,7 @@ index 000000000..4ac236ca8
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/BlockPosition.java b/src/main/java/net/minecraft/server/BlockPosition.java
-index ac43e5a90..1ce794bd2 100644
+index ac43e5a90..4f964f10f 100644
 --- a/src/main/java/net/minecraft/server/BlockPosition.java
 +++ b/src/main/java/net/minecraft/server/BlockPosition.java
 @@ -152,6 +152,32 @@ public class BlockPosition extends BaseBlockPosition {
@@ -140,16 +140,16 @@ index ac43e5a90..1ce794bd2 100644
 +        return ((long) x & BlockPosition.h) << BlockPosition.g | ((long) y & BlockPosition.i) << BlockPosition.f | ((long) z & BlockPosition.j);
 +    }
 +
-+    public static int getX(final long pack) {
-+        return (int) (pack >> BlockPosition.g & BlockPosition.h);
++    public static int getX(final long packed) {
++        return (int) (packed >> 38);
 +    }
 +
-+    public static int getY(final long pack) {
-+        return (int) (pack >> BlockPosition.f & BlockPosition.i);
++    public static int getY(final long packed) {
++        return (int) (packed << 26 >> 52);
 +    }
 +
-+    public static int getZ(final long pack) {
-+        return (int) (pack & BlockPosition.j);
++    public static int getZ(final long packed) {
++        return (int) (packed << 38 >> 38);
 +    }
 +
 +    public final BlockPosition.MutableBlockPosition mutable() {

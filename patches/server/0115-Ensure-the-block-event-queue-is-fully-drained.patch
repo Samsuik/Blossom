@@ -1,0 +1,22 @@
+From 8f7a1f8101bdd2aced69c4b956d8c40c4e8bf83e Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Mon, 3 Aug 2026 20:28:14 +0100
+Subject: [PATCH] Ensure the block event queue is fully drained
+
+
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 05ca57899..d619173ef 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -1172,7 +1172,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+     }
+ 
+     private void ak() {
+-        while (!this.S[this.T].isEmpty()) {
++        while (!this.S[0].isEmpty() || !this.S[1].isEmpty()) { // Blossom - ensure the block event queue is fully drained
+             int i = this.T;
+ 
+             this.T ^= 1;
+-- 
+2.50.1 (Apple Git-155)
+

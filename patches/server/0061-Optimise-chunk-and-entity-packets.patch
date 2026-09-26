@@ -1,0 +1,241 @@
+From 1117da509711993a30fed2842f498c05a444c304 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Sat, 26 Sep 2026 14:48:46 +0100
+Subject: [PATCH] Optimise chunk and entity packets
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 26b7a8d5f..eb313e3fe 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -33,7 +33,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     public final PlayerInteractManager playerInteractManager;
+     public double d;
+     public double e;
+-    public final List<ChunkCoordIntPair> chunkCoordIntPairQueue = Lists.newLinkedList();
++    public final List<ChunkCoordIntPair> chunkCoordIntPairQueue = new java.util.ArrayList<>(); // Blossom - optimise chunk and entity packets
+     public final java.util.Deque<Integer> removeQueue = new java.util.ArrayDeque<>(); // Paper
+     private final ServerStatisticManager bK;
+     private float bL = Float.MIN_VALUE;
+@@ -217,70 +217,58 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+             this.activeContainer = this.defaultContainer;
+         }
+ 
+-        while (!this.removeQueue.isEmpty()) {
+-            int i = Math.min(this.removeQueue.size(), Integer.MAX_VALUE);
+-            int[] aint = new int[i];
+-            Iterator iterator = this.removeQueue.iterator();
+-            int j = 0;
+-
+-            // Paper start
+-            /* while (iterator.hasNext() && j < i) {
+-                aint[j++] = ((Integer) iterator.next()).intValue();
+-                iterator.remove();
+-            } */
+-
+-            Integer integer;
+-            while (j < i && (integer = this.removeQueue.poll()) != null) {
+-                aint[j++] = integer.intValue();
+-            }
+-            // Paper end
++        // Blossom start - optimise chunk and entity packets
++        final int removeQueueSize = this.removeQueue.size();
++        final it.unimi.dsi.fastutil.ints.IntArrayList toRemove = new it.unimi.dsi.fastutil.ints.IntArrayList(removeQueueSize);
++        Integer entityId;
++        while ((entityId = this.removeQueue.poll()) != null) {
++            toRemove.add(entityId);
++        }
+ 
+-            this.playerConnection.sendPacket(new PacketPlayOutEntityDestroy(aint));
++        if (!toRemove.isEmpty()) {
++            this.playerConnection.sendPacket(new PacketPlayOutEntityDestroy(toRemove.toArray(new int[0])));
+         }
+ 
+         if (!this.chunkCoordIntPairQueue.isEmpty()) {
+-            ArrayList arraylist = Lists.newArrayList();
+-            Iterator iterator1 = this.chunkCoordIntPairQueue.iterator();
+-            ArrayList arraylist1 = Lists.newArrayList();
+-
+-            Chunk chunk;
+-
+-            while (iterator1.hasNext() && arraylist.size() < this.world.spigotConfig.maxBulkChunk) { // Spigot
+-                ChunkCoordIntPair chunkcoordintpair = (ChunkCoordIntPair) iterator1.next();
+-
+-                if (chunkcoordintpair != null) {
+-                    if (this.world.isLoaded(new BlockPosition(chunkcoordintpair.x << 4, 0, chunkcoordintpair.z << 4))) {
+-                        chunk = this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z);
+-                        if (chunk.isReady()) {
+-                            arraylist.add(chunk);
+-                            arraylist1.addAll(chunk.tileEntities.values()); // CraftBukkit - Get tile entities directly from the chunk instead of the world
+-                            iterator1.remove();
+-                        }
++            final int maxBulkChunks = this.world.spigotConfig.maxBulkChunk;
++            final int expectedCount = Math.min(maxBulkChunks, chunkCoordIntPairQueue.size());
++
++            final List<Chunk> chunksToSend = new ArrayList<>(expectedCount);
++            final List<ChunkCoordIntPair> chunkCoordIntPairQueue = this.chunkCoordIntPairQueue;
++
++            for (int index = chunkCoordIntPairQueue.size() - 1; index >= 0; index--) {
++                if (chunksToSend.size() > maxBulkChunks) {
++                    break;
++                }
++
++                final ChunkCoordIntPair chunkPos = chunkCoordIntPairQueue.get(index);
++                if (chunkPos != null) {
++                    final Chunk chunk = this.world.getChunkIfLoaded(chunkPos.x, chunkPos.z);
++                    if (chunk == null || !chunk.isReady()) {
++                        continue;
+                     }
+-                } else {
+-                    iterator1.remove();
++
++                    chunksToSend.add(chunk);
+                 }
++
++                chunkCoordIntPairQueue.remove(index);
+             }
+ 
+-            if (!arraylist.isEmpty()) {
+-                if (arraylist.size() == 1) {
+-                    this.playerConnection.sendPacket(new PacketPlayOutMapChunk((Chunk) arraylist.get(0), true, '\uffff', true)); // Blossom - visibility settings and api
++            if (!chunksToSend.isEmpty()) {
++                if (chunksToSend.size() == 1) {
++                    this.playerConnection.sendPacket(new PacketPlayOutMapChunk(chunksToSend.get(0), true, '\uffff', true)); // Blossom - visibility settings and api
+                 } else {
+-                    this.playerConnection.sendPacket(new PacketPlayOutMapChunkBulk(arraylist));
++                    this.playerConnection.sendPacket(new PacketPlayOutMapChunkBulk(chunksToSend));
+                 }
+ 
+-                Iterator iterator2 = arraylist1.iterator();
+-
+-                while (iterator2.hasNext()) {
+-                    TileEntity tileentity = (TileEntity) iterator2.next();
+-
+-                    this.a(tileentity);
++                for (final Chunk chunk : chunksToSend) {
++                    for (final TileEntity tileEntity : chunk.tileEntities.values()) {
++                        this.a(tileEntity);
++                    }
+                 }
+ 
+-                iterator2 = arraylist.iterator();
+-
+-                while (iterator2.hasNext()) {
+-                    chunk = (Chunk) iterator2.next();
++                for (final Chunk chunk : chunksToSend) {
++                    // Blossom end - optimise chunk and entity packets
+                     this.u().getTracker().a(this, chunk);
+                 }
+             }
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+index 2a3f528d1..9293e983b 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+@@ -43,6 +43,16 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+         chunk.world.spigotConfig.antiXrayInstance.obfuscateSync(chunk.locX, chunk.locZ, c.b, c.a, chunk.world);
+     }
+ 
++    // Blossom start - optimise chunk and entity packets
++    public PacketPlayOutMapChunk(final int x, final int z) {
++        this.a = x;
++        this.b = z;
++        this.d = true;
++        this.c = new ChunkMap();
++        this.c.a = new byte[0];
++    }
++    // Blossom end - optimise chunk and entity packets
++
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+         this.a = packetdataserializer.readInt();
+         this.b = packetdataserializer.readInt();
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 3bc3ccd78..c5ae5d091 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -262,7 +262,7 @@ public class PlayerChunkMap {
+                 }
+ 
+                 if (j1 > 1 || j1 < -1 || k1 > 1 || k1 < -1) {
+-                    Collections.sort(entityplayer.chunkCoordIntPairQueue, new ChunkCoordComparator(entityplayer));
++                    entityplayer.chunkCoordIntPairQueue.sort(new ChunkCoordComparator(entityplayer).reversed()); // Blossom - optimise chunk and entity packets
+                 }
+                 // CraftBukkit end
+             }
+@@ -424,7 +424,7 @@ public class PlayerChunkMap {
+                 Chunk chunk = PlayerChunkMap.this.world.getChunkAt(this.location.x, this.location.z);
+ 
+                 if (chunk.isReady()) {
+-                    entityplayer.playerConnection.sendPacket(new PacketPlayOutMapChunk(chunk, true, 0));
++                    entityplayer.playerConnection.sendPacket(new PacketPlayOutMapChunk(chunk.locX, chunk.locZ)); // Blossom - optimise chunk and entity packets
+                 }
+ 
+                 this.players.remove(entityplayer); // CraftBukkit
+@@ -492,45 +492,46 @@ public class PlayerChunkMap {
+                 int j;
+                 int k;
+ 
++                final Chunk chunk = PlayerChunkMap.this.world.getChunkAt(this.location.x, this.location.z); // Blossom - optimise chunk and entity packets
+                 if (this.dirtyCount == 1) {
+                     i = (this.dirtyBlocks[0] >> 12 & 15) + this.location.x * 16;
+                     j = this.dirtyBlocks[0] & 255;
+                     k = (this.dirtyBlocks[0] >> 8 & 15) + this.location.z * 16;
+                     BlockPosition blockposition = new BlockPosition(i, j, k);
+ 
+-                    this.a((Packet) (new PacketPlayOutBlockChange(PlayerChunkMap.this.world, blockposition, true))); // Blossom - visibility settings and api
+-                    if (PlayerChunkMap.this.world.getType(blockposition).getBlock().isTileEntity()) {
+-                        this.a(PlayerChunkMap.this.world.getTileEntity(blockposition));
++                    // Blossom start - optimise chunk and entity packets
++                    final IBlockData state = chunk.getBlockData(blockposition);
++                    this.a(new PacketPlayOutBlockChange(state, blockposition)); // Blossom - visibility settings and api
++                    if (state.getBlock().isTileEntity()) {
++                        this.a(chunk.getTileEntities().get(blockposition));
++                        // Blossom end - optimise chunk and entity packets
+                     }
+                 } else {
+                     int l;
+ 
+                     if (this.dirtyCount == 64) {
+-                        i = this.location.x * 16;
+-                        j = this.location.z * 16;
+-                        this.a((Packet) (new PacketPlayOutMapChunk(PlayerChunkMap.this.world.getChunkAt(this.location.x, this.location.z), false, this.f, true))); // Blossom - visibility settings and api
+-
+-                        for (k = 0; k < 16; ++k) {
+-                            if ((this.f & 1 << k) != 0) {
+-                                l = k << 4;
+-                                List list = PlayerChunkMap.this.world.getTileEntities(i, l, j, i + 16, l + 16, j + 16);
+-
+-                                for (int i1 = 0; i1 < list.size(); ++i1) {
+-                                    this.a((TileEntity) list.get(i1));
+-                                }
++                        // Blossom start - optimise chunk and entity packets
++                        this.a(new PacketPlayOutMapChunk(chunk, false, this.f, true)); // Blossom - visibility settings and api
++
++                        for (final TileEntity tileEntity : chunk.tileEntities.values()) {
++                            final int sectionPos = tileEntity.position.getY() >> 4;
++                            if ((this.f & (1 << sectionPos)) != 0) {
++                                this.a(tileEntity);
+                             }
+                         }
+                     } else {
+-                        this.a((Packet) (new PacketPlayOutMultiBlockChange(this.dirtyCount, this.dirtyBlocks, PlayerChunkMap.this.world.getChunkAt(this.location.x, this.location.z), true))); // Blossom - visibility settings and api
++                        final BlockPosition.MutableBlockPosition mutablePos = new BlockPosition.MutableBlockPosition();
++                        this.a(new PacketPlayOutMultiBlockChange(this.dirtyCount, this.dirtyBlocks, chunk, true)); // Blossom - visibility settings and api
+ 
+                         for (i = 0; i < this.dirtyCount; ++i) {
+                             j = (this.dirtyBlocks[i] >> 12 & 15) + this.location.x * 16;
+                             k = this.dirtyBlocks[i] & 255;
+                             l = (this.dirtyBlocks[i] >> 8 & 15) + this.location.z * 16;
+-                            BlockPosition blockposition1 = new BlockPosition(j, k, l);
++                            mutablePos.setValues(j, k, l);
+ 
+-                            if (PlayerChunkMap.this.world.getType(blockposition1).getBlock().isTileEntity()) {
+-                                this.a(PlayerChunkMap.this.world.getTileEntity(blockposition1));
++                            if (chunk.getBlockData(mutablePos).getBlock().isTileEntity()) {
++                                this.a(chunk.getTileEntities().get(mutablePos));
++                                // Blossom end - optimise chunk and entity packets
+                             }
+                         }
+                     }
+-- 
+2.50.1 (Apple Git-155)
+
