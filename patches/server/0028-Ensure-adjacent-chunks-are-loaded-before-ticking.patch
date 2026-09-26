@@ -1,0 +1,40 @@
+From 4400902b18f6df49ccaae12eff57dfaccc66dcf5 Mon Sep 17 00:00:00 2001
+From: Samsuik <40902469+Samsuik@users.noreply.github.com>
+Date: Tue, 28 Jun 2022 23:39:35 +0100
+Subject: [PATCH] Ensure adjacent chunks are loaded before ticking
+
+This patch attempts to replicate the "lazy chunk" behaviour found
+on modern versions to stop blocks loading chunks.
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 9155ceb9a..d8ec4db18 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1757,7 +1757,7 @@ public abstract class World implements IBlockAccess {
+                 final Chunk chunk = tileentity.getCurrentChunk(); // Paper
+                 BlockPosition blockposition = tileentity.getPosition();
+ 
+-                if (chunk != null && this.N.a(blockposition)) { // Paper
++                if (chunk != null && this.N.a(blockposition) && chunk.areNeighborsLoaded(1)) { // Paper // Blossom - ensure adjacent chunks are loaded before ticking
+                     try {
+                         tileentity.tickTimer.startTiming(); // Spigot
+                         ((IUpdatePlayerListBox) tileentity).c();
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 8c3484a62..fbc776d79 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -415,6 +415,11 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 this.methodProfiler.a("getChunk");
+                 Chunk chunk = this.getChunkAt(chunkX, chunkZ);
+                 // CraftBukkit end
++                // Blossom start - ensure adjacent chunks are loaded before ticking
++                if (!chunk.areNeighborsLoaded(1)) {
++                    continue;
++                }
++                // Blossom end - ensure adjacent chunks are loaded before ticking
+ 
+                 this.a(k, l, chunk);
+                 this.methodProfiler.c("tickChunk");
+-- 
+2.50.1 (Apple Git-155)
+
