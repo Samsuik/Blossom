@@ -1,4 +1,4 @@
-From 3c91bd681e35d062c469e0e2c24ce967d171fc4d Mon Sep 17 00:00:00 2001
+From caac7836ec234c9bb2db3d092ec47762ac041904 Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Wed, 16 Dec 2020 22:10:37 +0000
@@ -6,10 +6,10 @@ Subject: [PATCH] Pearl Through Special Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 67dc16910..f20104141 100644
+index 01d1d9705..6820babff 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -267,4 +267,13 @@ public final class BlossomConfig {
+@@ -268,4 +268,13 @@ public final class BlossomConfig {
          smoothPotting = getBoolean("projectiles.potion.smooth", true);
      }
  

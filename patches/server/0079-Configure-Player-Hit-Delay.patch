@@ -1,14 +1,14 @@
-From 78313a99ca180fbf04a4b5d4bcc03186c4d83cb3 Mon Sep 17 00:00:00 2001
+From b7fee218c655d816fbffe412a724f942bcb8deec Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Mon, 10 Jul 2023 17:05:57 +0100
 Subject: [PATCH] Configure Player Hit Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 2094317f5..b8b0efe71 100644
+index 76adda447..1b65c3bea 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -472,5 +472,14 @@ public final class BlossomConfig {
+@@ -473,5 +473,14 @@ public final class BlossomConfig {
      private static void MonsterEggsChangeSpawners() {
          monsterEggsChangeSpawners = getBoolean("player.monster-eggs-change-spawners", false);
      }

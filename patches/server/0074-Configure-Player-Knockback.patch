@@ -1,14 +1,14 @@
-From 0e9b7677adaae043a5c5d7b5b6a60968c9fea915 Mon Sep 17 00:00:00 2001
+From c6bcf25a9c360d0ee0105154869fbcdc187b2fd7 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 9 Jul 2023 23:54:44 +0100
 Subject: [PATCH] Configure Player Knockback
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index fc7f0a5e2..359157709 100644
+index c52ce9f9d..e3f20cb6e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -415,4 +415,48 @@ public final class BlossomConfig {
+@@ -416,4 +416,48 @@ public final class BlossomConfig {
          durabilityMessage = getString("explosions.durability.message", "&7(&eB&7) &fThis block has &7%remaining% &fof &7%max% &fdurability");
      }
  

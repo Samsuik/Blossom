@@ -1,14 +1,14 @@
-From ee9e865a69335c851ed915f573204ef8d498fc33 Mon Sep 17 00:00:00 2001
+From bc09b038bac5dcd259b3bd392d88967bc56d1b78 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 22:11:04 +0000
 Subject: [PATCH] Add Intervals on Item Logic
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 3ce992b8c..bb04de8c3 100644
+index 08df8cfee..c0327fb56 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -253,4 +253,13 @@ public final class BlossomConfig {
+@@ -254,4 +254,13 @@ public final class BlossomConfig {
          silenceSounds = getBoolean("mobs.sounds.silenced", false);
      }
  

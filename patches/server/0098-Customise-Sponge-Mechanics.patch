@@ -1,14 +1,14 @@
-From e97e4ca4331e77d9f0cc635d8f5f3edeaf9b768e Mon Sep 17 00:00:00 2001
+From c546302c870f26dd8d359a15d3f772c2bab402ff Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 24 Oct 2023 15:04:04 +0100
 Subject: [PATCH] Customise Sponge Mechanics
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 39aee934e..cbdd5015e 100644
+index 0abcf1945..dc8af9888 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -563,4 +563,11 @@ public final class BlossomConfig {
+@@ -564,4 +564,11 @@ public final class BlossomConfig {
          throttlePlacement = getBoolean("player.throttle-block-placement", false);
      }
  

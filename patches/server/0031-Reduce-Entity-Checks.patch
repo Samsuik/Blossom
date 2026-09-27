@@ -1,14 +1,14 @@
-From 6dba6638a70afa616e533586923b62265f42a7a5 Mon Sep 17 00:00:00 2001
+From 90bcc051ec7845cb423e13647e9401e1f9ac160c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 2 Jul 2022 15:12:44 +0100
 Subject: [PATCH] Reduce Entity Checks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index d38108fee..8ab9b36e8 100644
+index a998bb746..08cd1819c 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -297,4 +297,13 @@ public final class BlossomConfig {
+@@ -298,4 +298,13 @@ public final class BlossomConfig {
          trackVerticalDistance = getDouble("entity-tracker.vertical-distance-mod", defaultVerticalDistanceMod);
      }
  
@@ -218,7 +218,7 @@ index 5f4bc4225..09df308b6 100644
              // PaperSpigot start - Allow nerfed mobs to jump
              if (goalFloat != null) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index a50e6154c..0c67d29d1 100644
+index 0c17af20f..2991bbcbe 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -176,7 +176,7 @@ public abstract class EntityLiving extends Entity {
@@ -254,7 +254,7 @@ index a50e6154c..0c67d29d1 100644
          }
  
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 0ac4d77ae..d81dd4277 100644
+index d8ec4db18..269b5ec82 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -2010,7 +2010,25 @@ public abstract class World implements IBlockAccess {

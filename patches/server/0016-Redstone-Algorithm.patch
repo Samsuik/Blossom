@@ -1,16 +1,52 @@
-From 788edab7afb628729b97279b95169b0c5ae68fee Mon Sep 17 00:00:00 2001
+From 5823d97c87c848b65dff69e8e3ab299655b5639c Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 25 Oct 2020 01:54:44 +0100
 Subject: [PATCH] Redstone Algorithm
 
 
-diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index c12745392..3e7a9437d 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -199,4 +199,31 @@ public final class BlossomConfig {
+         fpsSettingInnerRing = me.samsuik.blossom.util.ModernMaterial.getMaterial(getString("fps.inner-ring", "YELLOW_STAINED_GLASS_PANE"));
+     }
+ 
++    public static boolean optimisedGlowstone;
++    public static me.samsuik.blossom.redstone.RedstoneAlgorithm redstoneAlgorithm = me.samsuik.blossom.redstone.RedstoneAlgorithm.VANILLA;
++    private static void RedstoneAlgorithm() {
++        try {
++            String value = getString("redstone.algorithm", "pandawire");
++            String upperCase = value.toUpperCase(java.util.Locale.ROOT);
++            redstoneAlgorithm = me.samsuik.blossom.redstone.RedstoneAlgorithm.valueOf(upperCase);
++        } catch (Exception e) {
++            redstoneAlgorithm = me.samsuik.blossom.redstone.RedstoneAlgorithm.PANDAWIRE;
++            LOGGER.info("malformed \"redstone.algorithm\" defaulting to \"pandawire\"");
++        }
++        optimisedGlowstone = getBoolean("redstone.panda-wire.optimise-glowstone-wiring", false);
++    }
++
++    public static net.minecraft.server.BlockRedstoneWire redstoneAlgorithm() {
++        switch (redstoneAlgorithm) {
++            case PANDAWIRE_EX:
++                return new me.samsuik.blossom.redstone.ExtPandaRedstoneWire();
++            case PANDAWIRE:
++                return new me.samsuik.blossom.redstone.PandaRedstoneWire();
++            case VANILLA:
++                return new net.minecraft.server.BlockRedstoneWire();
++            default:
++                throw new IllegalStateException();
++        }
++    }
++
+ }
+diff --git a/src/main/java/me/samsuik/blossom/redstone/ExtPandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/redstone/ExtPandaRedstoneWire.java
 new file mode 100644
-index 000000000..348693892
+index 000000000..f0202eaef
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/blocks/redstone/ExtPandaRedstoneWire.java
++++ b/src/main/java/me/samsuik/blossom/redstone/ExtPandaRedstoneWire.java
 @@ -0,0 +1,499 @@
-+package me.samsuik.blossom.blocks.redstone;
++package me.samsuik.blossom.redstone;
 +
 +import com.google.common.collect.Lists;
 +import com.google.common.collect.Sets;
@@ -509,13 +545,13 @@ index 000000000..348693892
 +    }
 +
 +}
-diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
+diff --git a/src/main/java/me/samsuik/blossom/redstone/PandaRedstoneWire.java b/src/main/java/me/samsuik/blossom/redstone/PandaRedstoneWire.java
 new file mode 100644
-index 000000000..e2e52762d
+index 000000000..2dbb5c5c2
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/blocks/redstone/PandaRedstoneWire.java
++++ b/src/main/java/me/samsuik/blossom/redstone/PandaRedstoneWire.java
 @@ -0,0 +1,442 @@
-+package me.samsuik.blossom.blocks.redstone;
++package me.samsuik.blossom.redstone;
 +
 +import com.google.common.collect.Lists;
 +import com.google.common.collect.Sets;
@@ -958,54 +994,19 @@ index 000000000..e2e52762d
 +
 +}
 \ No newline at end of file
-diff --git a/src/main/java/me/samsuik/blossom/blocks/redstone/RedstoneAlgorithm.java b/src/main/java/me/samsuik/blossom/blocks/redstone/RedstoneAlgorithm.java
+diff --git a/src/main/java/me/samsuik/blossom/redstone/RedstoneAlgorithm.java b/src/main/java/me/samsuik/blossom/redstone/RedstoneAlgorithm.java
 new file mode 100644
-index 000000000..8e73701e6
+index 000000000..ae050a4ac
 --- /dev/null
-+++ b/src/main/java/me/samsuik/blossom/blocks/redstone/RedstoneAlgorithm.java
++++ b/src/main/java/me/samsuik/blossom/redstone/RedstoneAlgorithm.java
 @@ -0,0 +1,7 @@
-+package me.samsuik.blossom.blocks.redstone;
++package me.samsuik.blossom.redstone;
 +
 +public enum RedstoneAlgorithm {
 +    VANILLA,
 +    PANDAWIRE,
 +    PANDAWIRE_EX,
 +}
-diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index af119513f..38960a7a4 100644
---- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-+++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -199,4 +199,30 @@ public final class BlossomConfig {
-         fpsSettingInnerRing = me.samsuik.blossom.util.ModernMaterial.getMaterial(getString("fps.inner-ring", "YELLOW_STAINED_GLASS_PANE"));
-     }
- 
-+    public static boolean optimisedGlowstone;
-+    public static me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.VANILLA;
-+    private static void RedstoneAlgorithm() {
-+        try {
-+            String value = getString("redstone.algorithm", "pandawire");
-+            String upperCase = value.toUpperCase(java.util.Locale.ROOT);
-+            redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.valueOf(upperCase);
-+        } catch (Exception e) {
-+            redstoneAlgorithm = me.samsuik.blossom.blocks.redstone.RedstoneAlgorithm.PANDAWIRE;
-+            LOGGER.info("malformed \"redstone.algorithm\" defaulting to \"pandawire\"");
-+        }
-+        optimisedGlowstone = getBoolean("redstone.panda-wire.optimise-glowstone-wiring", false);
-+    }
-+
-+    public static net.minecraft.server.BlockRedstoneWire redstoneAlgorithm() {
-+        switch (redstoneAlgorithm) {
-+            case PANDAWIRE_EX:
-+                return new me.samsuik.blossom.blocks.redstone.ExtPandaRedstoneWire();
-+            case PANDAWIRE:
-+                return new me.samsuik.blossom.blocks.redstone.PandaRedstoneWire();
-+            default:
-+            case VANILLA:
-+                return new net.minecraft.server.BlockRedstoneWire();
-+        }
-+    }
-+
- }
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
 index 0911ae12a..2dc3b1755 100644
 --- a/src/main/java/net/minecraft/server/Block.java

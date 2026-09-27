@@ -1,14 +1,14 @@
-From 1f62705f95880c113f14a0fb38cebc28a085835d Mon Sep 17 00:00:00 2001
+From fd4ab0e20ea1bb016cd092633f70426c53c28b9d Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Fri, 16 Jun 2023 20:33:09 +0100
 Subject: [PATCH] Activation Range Delay
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 7f0d03bfc..dd5079d1a 100644
+index cff7f8a87..1cbf9cc8a 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -362,4 +362,9 @@ public final class BlossomConfig {
+@@ -363,4 +363,9 @@ public final class BlossomConfig {
          mergeEntitiesOnSpawn = getBoolean("tnt.merging.on-spawn", true);
      }
  
@@ -19,7 +19,7 @@ index 7f0d03bfc..dd5079d1a 100644
 +
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index f6b948967..5a1b29cdd 100644
+index 2a07329c1..01e2a306c 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1646,6 +1646,7 @@ public abstract class World implements IBlockAccess {

@@ -1,11 +1,11 @@
-From f1feac4a385807fb4528893d57e7e1e717a00864 Mon Sep 17 00:00:00 2001
+From 76e0be9e40c7cd6c0cb275ca4d4c333624431400 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 8 Jul 2023 21:49:22 +0100
 Subject: [PATCH] Configure Durable Blocks
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 02178151d..fc7f0a5e2 100644
+index 90bc0936d..c52ce9f9d 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 @@ -26,7 +26,7 @@ public final class BlossomConfig {
@@ -26,7 +26,7 @@ index 02178151d..fc7f0a5e2 100644
          set("config-version", 4);
          readConfig(BlossomConfig.class, null);
      }
-@@ -408,4 +408,11 @@ public final class BlossomConfig {
+@@ -409,4 +409,11 @@ public final class BlossomConfig {
          projectileTimeout = getInt("projectiles.time-out", 1200);
      }
  
@@ -337,7 +337,7 @@ index 953f5b62b..4a3b053a0 100644
  
              // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index a2f3a9ad7..822893e2d 100644
+index 7ebb4de49..ffd388e82 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -173,6 +173,7 @@ public abstract class World implements IBlockAccess {

@@ -1,14 +1,14 @@
-From 7a6c2e0bee4492e12bb651af32312c27d1e9b6f2 Mon Sep 17 00:00:00 2001
+From 38fcdad3ba4ac725fa655cf9cc962bfe12257d3b Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 18 Jul 2023 22:04:29 +0100
 Subject: [PATCH] Configure Chunk Executor Threads
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index ecaa5a8fc..148993018 100644
+index 08efabb18..2a931039f 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -550,5 +550,12 @@ public final class BlossomConfig {
+@@ -551,5 +551,12 @@ public final class BlossomConfig {
          lavaCobbleThreshold = getInt("fluids.cobble-generation-threshold", -1);
          if (lavaCobbleThreshold < 0) lavaCobbleThreshold = Integer.MAX_VALUE;
      }

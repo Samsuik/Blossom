@@ -1,14 +1,14 @@
-From 0a944f9b5d51204a617fe0852e797ba61aa916d8 Mon Sep 17 00:00:00 2001
+From 1f99a1a4d614887bbdbee0e9ebcec7a4a1011fce Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 27 May 2023 16:47:19 +0100
 Subject: [PATCH] Optimised Explosions
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index 19477a12e..6e050e7b2 100644
+index f5b0441ec..003ca8c2e 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -334,4 +334,13 @@ public final class BlossomConfig {
+@@ -335,4 +335,13 @@ public final class BlossomConfig {
          ironGolemsTakeFallDamage = getBoolean("mobs.iron-golems.take-fall-damage", false);
      }
  
@@ -1008,7 +1008,7 @@ index 99259030f..cb54eb3fe 100644
 +    // Blossom end - optimised explosions; override equals and hashCode methods
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 3475c0d19..b2aba44f8 100644
+index 09899847c..de3f969e1 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -165,6 +165,7 @@ public abstract class World implements IBlockAccess {
@@ -1043,7 +1043,7 @@ index 3475c0d19..b2aba44f8 100644
          explosion.a();
          explosion.a(true);
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index bc900434b..0ce0e78a5 100644
+index fbc776d79..13d35af66 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -1115,6 +1115,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {

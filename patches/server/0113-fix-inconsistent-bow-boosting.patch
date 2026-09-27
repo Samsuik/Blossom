@@ -1,14 +1,14 @@
-From 1b985912f4e23e7549e881fc9401eba000465cff Mon Sep 17 00:00:00 2001
+From 857b8eb5b9af3c2590f49f364b56e9b85a4c104a Mon Sep 17 00:00:00 2001
 From: Samsuik <kfian294ma4@gmail.com>
 Date: Tue, 14 Oct 2025 11:35:06 +0100
 Subject: [PATCH] fix inconsistent bow boosting
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index cbdd5015e..656b9636a 100644
+index dc8af9888..0c7d2780d 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -570,4 +570,8 @@ public final class BlossomConfig {
+@@ -571,4 +571,8 @@ public final class BlossomConfig {
          spongeRadius = getInt("fluids.sponge.flow-radius", 2);
      }
  

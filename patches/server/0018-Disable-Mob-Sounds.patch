@@ -1,14 +1,14 @@
-From 4d0fac988e36d316488c971b01ed0d24c5242ed5 Mon Sep 17 00:00:00 2001
+From c30756d256bf4fd08c4a36384a9ae962d57b1165 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Thu, 29 Oct 2020 21:09:34 +0000
 Subject: [PATCH] Disable Mob Sounds
 
 
 diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-index b74a3ed96..3ce992b8c 100644
+index d203eb297..08df8cfee 100644
 --- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
 +++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
-@@ -246,4 +246,11 @@ public final class BlossomConfig {
+@@ -247,4 +247,11 @@ public final class BlossomConfig {
          requirePlayers = getBoolean("spawners.nearby.require-players", true);
      }
  
@@ -46,7 +46,7 @@ index e2a588d74..51b7f598e 100644
  
      public void b(boolean flag) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index adc306dec..f01a2b623 100644
+index be46d43af..be390ef8d 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -155,7 +155,7 @@ public abstract class EntityLiving extends Entity {
