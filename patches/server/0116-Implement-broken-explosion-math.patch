@@ -1,0 +1,48 @@
+From bf09a609e3da66bd90405779ef738a278d2699f5 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Wed, 7 Oct 2026 19:49:38 +0100
+Subject: [PATCH] Implement broken explosion math
+
+
+diff --git a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+index 0c7d2780d..ec8a1dbea 100644
+--- a/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
++++ b/src/main/java/me/samsuik/blossom/configuration/BlossomConfig.java
+@@ -575,4 +575,9 @@ public final class BlossomConfig {
+     private static void FixBowBoosting() {
+         fixBowBoosting = getBoolean("player.fix-inconsistent-bow-boosting", false);
+     }
++
++    public static boolean brokenExplosionMath;
++    private static void BrokenExplosionMath() {
++        brokenExplosionMath = getBoolean("explosions.broken-explosion-math", false);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
+index 73248ebea..ebf4fc2e3 100644
+--- a/src/main/java/net/minecraft/server/Explosion.java
++++ b/src/main/java/net/minecraft/server/Explosion.java
+@@ -249,12 +249,17 @@ public class Explosion {
+ 
+             if (distanceSqr < maxDistance * maxDistance && distanceSqr != 0.0D) {
+                 double distance = MathHelper.sqrt(distanceSqr);
+-                x /= distance;
+-                y /= distance;
+-                z /= distance;
+                 double density = world.densityCache.getExplosionDensity(entity, vec3d);
+                 double exposure = (1.0D - (distance / maxDistance)) * density;
+ 
++                if (me.samsuik.blossom.configuration.BlossomConfig.brokenExplosionMath) {
++                    exposure /= distance;
++                } else {
++                    x /= distance;
++                    y /= distance;
++                    z /= distance;
++                }
++
+                 if (!entity.isCannoningEntity) {
+                     impactLivingEntity(entity, x, y, z, exposure, maxDistance);
+                 } else {
+-- 
+2.50.1 (Apple Git-155)
+
