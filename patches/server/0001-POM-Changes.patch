@@ -1,13 +1,22 @@
-From 4721f5fa0aa164d2c3c4f92fd05c6a7878e408fc Mon Sep 17 00:00:00 2001
+From 810d561dd6f0a3cd7dbf6088b99b2480b0624262 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 12 Jun 2022 19:57:36 +0100
 Subject: [PATCH] POM Changes
 
 
 diff --git a/pom.xml b/pom.xml
-index 08e5e9077..f065b1aa1 100644
+index 08e5e9077..1d77a1939 100644
 --- a/pom.xml
 +++ b/pom.xml
+@@ -76,7 +76,7 @@
+         <dependency>
+             <groupId>org.xerial</groupId>
+             <artifactId>sqlite-jdbc</artifactId>
+-            <version>3.7.2</version>
++            <version>3.53.4.0</version> <!-- update sqlite jdbc -->
+             <type>jar</type>
+             <scope>compile</scope>
+         </dependency>
 @@ -115,8 +115,8 @@
          </pluginRepository>
          <!-- PaperSpigot - Repo for gitdescribe -->
