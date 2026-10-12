@@ -1,4 +1,4 @@
-From d1f95cb2c0c5a4e294d59e53476afd60a119eab7 Mon Sep 17 00:00:00 2001
+From 8069e976a3119246a56039c20ba62fe1d6f5e955 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 9 May 2023 16:43:24 +0100
 Subject: [PATCH] Security patches
@@ -1478,7 +1478,7 @@ index 0d811e789..50dee2007 100644
  
          if (flag) {
 diff --git a/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
-index 703e47c52..805196d67 100644
+index 703e47c52..e4dea2e86 100644
 --- a/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
 +++ b/src/main/java/net/minecraft/server/PacketPlayInUpdateSign.java
 @@ -14,7 +14,7 @@ public class PacketPlayInUpdateSign implements Packet<PacketListenerPlayIn> {
@@ -1486,7 +1486,7 @@ index 703e47c52..805196d67 100644
  
          for (int i = 0; i < 4; ++i) {
 -            String s = packetdataserializer.c(384);
-+            String s = packetdataserializer.c(64); // Blossom - security patches
++            String s = packetdataserializer.c(92); // Blossom - security patches
              IChatBaseComponent ichatbasecomponent = IChatBaseComponent.ChatSerializer.a(s);
  
              this.b[i] = ichatbasecomponent;
