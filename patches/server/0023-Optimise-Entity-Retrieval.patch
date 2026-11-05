@@ -1,4 +1,4 @@
-From e52448415af71eaaeaadb082da3783d2b1b42ca4 Mon Sep 17 00:00:00 2001
+From abe473aa3589c6eb9aaa2547dba6d62225b04e1b Mon Sep 17 00:00:00 2001
 From: "40902469+Samsuik@users.noreply.github.com"
  <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 21 Feb 2021 22:36:38 +0000
@@ -289,7 +289,7 @@ index 06aa403d1..554d2f39e 100644
              if (this.ae()) { // Spigot: Add this.ae() condition (second !this.isDead near bottom of EntityLiving)
              for (int i = 0; i < list.size(); ++i) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index f01a2b623..977e331d9 100644
+index be390ef8d..149d8ee59 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -1702,15 +1702,11 @@ public abstract class EntityLiving extends Entity {
@@ -347,7 +347,7 @@ index 4bf790cdf..98864383a 100644
              this.j(this.getType() - 1);
          }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index a7e9ff1d5..16f6c0f53 100644
+index a7e9ff1d5..46ad36141 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1460,25 +1460,32 @@ public abstract class World implements IBlockAccess {
@@ -397,7 +397,7 @@ index a7e9ff1d5..16f6c0f53 100644
      }
  
      public boolean a(WorldBorder worldborder, Entity entity) {
-@@ -2853,12 +2860,56 @@ public abstract class World implements IBlockAccess {
+@@ -2853,12 +2860,54 @@ public abstract class World implements IBlockAccess {
          return null;
      }
  
@@ -412,10 +412,9 @@ index a7e9ff1d5..16f6c0f53 100644
 +
 +        for (int i1 = i; i1 <= j; ++i1) {
 +            for (int j1 = k; j1 <= l; ++j1) {
-+                if (this.isChunkLoaded(i1, j1, true)) {
-+                    if (this.getChunkAt(i1, j1).collectEntitiesLimited(entity, axisalignedbb, entities, by, amount, search)) {
-+                        return entities;
-+                    }
++                final Chunk chunk = this.getChunkIfLoaded(i1, j1);
++                if (chunk != null && chunk.collectEntitiesLimited(entity, axisalignedbb, entities, by, amount, search)) {
++                    return entities;
 +                }
 +            }
 +        }
@@ -433,10 +432,9 @@ index a7e9ff1d5..16f6c0f53 100644
 +
 +        for (int i1 = i; i1 <= j; ++i1) {
 +            for (int j1 = k; j1 <= l; ++j1) {
-+                if (this.isChunkLoaded(i1, j1, true)) {
-+                    if (this.getChunkAt(i1, j1).collectEntitiesLimitedByType(oclass, axisalignedbb, entities, by, amount, search)) {
-+                        return entities;
-+                    }
++                final Chunk chunk = this.getChunkIfLoaded(i1, j1);
++                if (chunk != null && chunk.collectEntitiesLimitedByType(oclass, axisalignedbb, entities, by, amount, search)) {
++                    return entities;
 +                }
 +            }
 +        }
@@ -455,7 +453,21 @@ index a7e9ff1d5..16f6c0f53 100644
          int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
          int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
          int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
-@@ -2876,7 +2927,7 @@ public abstract class World implements IBlockAccess {
+@@ -2866,8 +2915,11 @@ public abstract class World implements IBlockAccess {
+ 
+         for (int i1 = i; i1 <= j; ++i1) {
+             for (int j1 = k; j1 <= l; ++j1) {
+-                if (this.isChunkLoaded(i1, j1, true)) {
+-                    this.getChunkAt(i1, j1).a(entity, axisalignedbb, arraylist, predicate);
++                // Blossom start - optimise entity retrieval
++                final Chunk chunk = this.getChunkIfLoaded(i1, j1);
++                if (chunk != null) {
++                    chunk.a(entity, axisalignedbb, arraylist, predicate);
++                    // Blossom end - optimise entity retrieval
+                 }
+             }
+         }
+@@ -2876,7 +2928,7 @@ public abstract class World implements IBlockAccess {
      }
  
      public <T extends Entity> List<T> a(Class<? extends T> oclass, Predicate<? super T> predicate) {
@@ -464,7 +476,7 @@ index a7e9ff1d5..16f6c0f53 100644
          Iterator iterator = this.entityList.iterator();
  
          while (iterator.hasNext()) {
-@@ -2891,7 +2942,7 @@ public abstract class World implements IBlockAccess {
+@@ -2891,7 +2943,7 @@ public abstract class World implements IBlockAccess {
      }
  
      public <T extends Entity> List<T> b(Class<? extends T> oclass, Predicate<? super T> predicate) {
@@ -473,7 +485,7 @@ index a7e9ff1d5..16f6c0f53 100644
          Iterator iterator = this.players.iterator();
  
          while (iterator.hasNext()) {
-@@ -2914,7 +2965,7 @@ public abstract class World implements IBlockAccess {
+@@ -2914,12 +2966,15 @@ public abstract class World implements IBlockAccess {
          int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
          int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
          int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
@@ -482,6 +494,16 @@ index a7e9ff1d5..16f6c0f53 100644
  
          for (int i1 = i; i1 <= j; ++i1) {
              for (int j1 = k; j1 <= l; ++j1) {
+-                if (this.isChunkLoaded(i1, j1, true)) {
+-                    this.getChunkAt(i1, j1).a(oclass, axisalignedbb, arraylist, predicate);
++                // Blossom start - optimise entity retrieval
++                final Chunk chunk = this.getChunkIfLoaded(i1, j1);
++                if (chunk != null) {
++                    chunk.a(oclass, axisalignedbb, arraylist, predicate);
++                    // Blossom end - optimise entity retrieval
+                 }
+             }
+         }
 -- 
-2.50.1 (Apple Git-155)
+2.54.0 (Apple Git-157)
 
