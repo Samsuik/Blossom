@@ -1,0 +1,35 @@
+From db00266ad907c5b6211850c7ad10568222259bdc Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Thu, 5 Nov 2026 15:31:26 +0000
+Subject: [PATCH] fix creating tile entities with a mutable blockpos
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 9a2c8fcc8..6a9e3d885 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -950,6 +950,8 @@ public class Chunk {
+     }
+ 
+     public void a(BlockPosition blockposition, TileEntity tileentity) {
++        blockposition = blockposition.immutable(); // Blossom - fix tile entities with a mutable blockpos
++
+         tileentity.a(this.world);
+         tileentity.a(blockposition);
+         if (this.getType(blockposition) instanceof IContainer) {
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 7ecbdb6b8..9c4abffa8 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -2539,6 +2539,8 @@ public abstract class World implements IBlockAccess {
+ 
+     public void setTileEntity(BlockPosition blockposition, TileEntity tileentity) {
+         if (tileentity != null && !tileentity.x()) {
++            blockposition = blockposition.immutable(); // Blossom - fix tile entities with a mutable blockpos
++
+             // CraftBukkit start
+             if (captureBlockStates) {
+                 tileentity.a(this);
+-- 
+2.54.0 (Apple Git-157)
+
