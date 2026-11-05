@@ -1,4 +1,4 @@
-From 2be2144e38407ae9868204754007c26a576e2787 Mon Sep 17 00:00:00 2001
+From 30125e70c0e50e2f916249e1a2f5e84ba7bb9b67 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Tue, 28 Jun 2022 23:06:32 +0100
 Subject: [PATCH] Optimise scheduled block ticking and unloading
@@ -6,7 +6,7 @@ Subject: [PATCH] Optimise scheduled block ticking and unloading
 
 diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
 new file mode 100644
-index 000000000..1ccb764cb
+index 000000000..67cfc3e85
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlock.java
 @@ -0,0 +1,43 @@
@@ -49,27 +49,36 @@ index 000000000..1ccb764cb
 +    @Override
 +    public int hashCode() {
 +        int result = HashCommon.mix(this.type.hashCode());
-+        result = 31 * result + Long.hashCode(pos.asLong());
++        result = 31 * result + Long.hashCode(this.pos.asLong());
 +        return result;
 +    }
 +}
 diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
 new file mode 100644
-index 000000000..5d30178e8
+index 000000000..d71afc129
 --- /dev/null
 +++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
-@@ -0,0 +1,135 @@
+@@ -0,0 +1,149 @@
 +package me.samsuik.blossom.world;
 +
 +import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
++import it.unimi.dsi.fastutil.objects.ObjectAVLTreeSet;
++import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 +import net.minecraft.server.*;
 +import org.bukkit.craftbukkit.util.LongHash;
 +
 +import java.util.*;
 +
 +public final class ScheduledBlockTicks extends AbstractSet<NextTickListEntry> {
-+    private final HashSet<ScheduledBlock> scheduledBlocks = new HashSet<>();
-+    private final TreeSet<NextTickListEntry> blocksToTick = new TreeSet<>();
++    private final ObjectOpenHashSet<ScheduledBlock> scheduledBlocks = new ObjectOpenHashSet<ScheduledBlock>() {
++        @Override
++        protected void rehash(final int newSize) {
++            if (newSize >= this.n) {
++                super.rehash(newSize);
++            }
++        }
++    };
++    private final ObjectAVLTreeSet<NextTickListEntry> blocksToTick = new ObjectAVLTreeSet<>();
 +    private final Long2ObjectOpenHashMap<Set<ScheduledBlock>> chunkTickingBlocks = new Long2ObjectOpenHashMap<>();
 +
 +    @Override
@@ -79,13 +88,18 @@ index 000000000..5d30178e8
 +
 +    @Override
 +    public boolean add(final NextTickListEntry entry) {
++        final BlockPosition position = entry.a;
++        if (position instanceof BlockPosition.MutableBlockPosition) {
++            return false;
++        }
++
 +        final ScheduledBlock scheduledBlock = new ScheduledBlock(entry);
 +        if (!this.scheduledBlocks.add(scheduledBlock)) {
 +            return false;
 +        }
 +
-+        final int x = entry.a.getX() >> 4;
-+        final int z = entry.a.getZ() >> 4;
++        final int x = position.getX() >> 4;
++        final int z = position.getZ() >> 4;
 +        final long chunkPos = LongHash.toLong(x, z);
 +
 +        this.chunkTickingBlocks.computeIfAbsent(chunkPos, pos -> new HashSet<>()).add(scheduledBlock);
@@ -270,7 +284,7 @@ index 648d25534..2027c5ccb 100644
  
      public NextTickListEntry a(long i) {
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index c05a6a648..0ac4d77ae 100644
+index 16f6c0f53..9155ceb9a 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1595,6 +1595,8 @@ public abstract class World implements IBlockAccess {
@@ -477,5 +491,5 @@ index 9acfa5492..8c3484a62 100644
  
          for (int i = 0; i < 2; ++i) {
 -- 
-2.50.1 (Apple Git-155)
+2.54.0 (Apple Git-157)
 

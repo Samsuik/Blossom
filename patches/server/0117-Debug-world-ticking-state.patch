@@ -1,0 +1,182 @@
+From 48f1056e31be83629576af4ebcca7661ec809076 Mon Sep 17 00:00:00 2001
+From: Samsuik <kfian294ma4@gmail.com>
+Date: Thu, 5 Nov 2026 15:16:33 +0000
+Subject: [PATCH] Debug world ticking state
+
+
+diff --git a/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java b/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java
+index f33e04bc9..ab90ff7dd 100644
+--- a/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java
++++ b/src/main/java/me/samsuik/blossom/commands/BlossomCommand.java
+@@ -19,10 +19,7 @@ public final class BlossomCommand extends Command {
+     @Override
+     public boolean execute(final CommandSender sender, final String label, final String[] args) {
+         if (args.length > 0) {
+-            final List<Command> commands = new ArrayList<>(BaseCommand.COMMANDS);
+-            commands.add(SimpleCommandMap.versionCommand);
+-
+-            for (final Command base : commands) {
++            for (final Command base : BlossomCommands.subCommands()) {
+                 if (base.getName().equalsIgnoreCase(args[0])) {
+                     return base.execute(sender, label, Arrays.copyOfRange(args, 1, args.length));
+                 }
+diff --git a/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java b/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java
+index 5247d6a14..6416c1c35 100644
+--- a/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java
++++ b/src/main/java/me/samsuik/blossom/commands/BlossomCommands.java
+@@ -1,8 +1,12 @@
+ package me.samsuik.blossom.commands;
+ 
+ import me.samsuik.blossom.commands.subcommands.ConfigCommand;
++import me.samsuik.blossom.commands.subcommands.DebugCommand;
+ import org.bukkit.command.Command;
++import org.bukkit.command.SimpleCommandMap;
+ 
++import java.util.ArrayList;
++import java.util.List;
+ import java.util.Map;
+ 
+ public final class BlossomCommands {
+@@ -21,4 +25,12 @@ public final class BlossomCommands {
+         commands.put("fps", new me.samsuik.blossom.commands.subcommands.FPSCommand());
+         commands.put("tps", new me.samsuik.blossom.commands.subcommands.TPSCommand());
+     }
++
++    public static List<Command> subCommands() {
++        final List<Command> commands = new ArrayList<>(BaseCommand.COMMANDS);
++        commands.add(SimpleCommandMap.versionCommand);
++        commands.add(new DebugCommand());
++
++        return commands;
++    }
+ }
+diff --git a/src/main/java/me/samsuik/blossom/commands/subcommands/DebugCommand.java b/src/main/java/me/samsuik/blossom/commands/subcommands/DebugCommand.java
+new file mode 100644
+index 000000000..377cddddb
+--- /dev/null
++++ b/src/main/java/me/samsuik/blossom/commands/subcommands/DebugCommand.java
+@@ -0,0 +1,52 @@
++package me.samsuik.blossom.commands.subcommands;
++
++import me.samsuik.blossom.commands.BaseCommand;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.WorldServer;
++import org.bukkit.command.CommandSender;
++
++import java.util.Arrays;
++import java.util.List;
++
++public final class DebugCommand extends BaseCommand {
++    private static final List<String> PARAMETERS = Arrays.asList("dump", "reset");
++
++    public DebugCommand() {
++        super("debug");
++        this.setPermission("blossom.debug");
++    }
++
++    @Override
++    public boolean execute(final CommandSender sender, final String alias, final String[] args) {
++        if (args.length == 0 || !PARAMETERS.contains(args[0])) {
++            return false;
++        }
++
++        final boolean reset = args[0].equals("reset");
++        final StringBuilder info = new StringBuilder();
++
++        for (final WorldServer world : MinecraftServer.getServer().worlds) {
++            final String name = world.getWorld().getName();
++            if (args.length >= 2 && !name.equals(args[1])) {
++                continue;
++            }
++
++            final String action = reset ? "Reset" : "Dumped";
++            info.append(action + " World: \"" + name + "\"\n");
++
++            if (reset) {
++                world.resetTickingState();
++            } else {
++                world.dumpTickingState(info);
++            }
++        }
++
++        sender.sendMessage(info.toString());
++        return true;
++    }
++
++    @Override
++    public List<String> tabComplete(final CommandSender sender, final String alias, final String[] args) throws IllegalArgumentException {
++        return PARAMETERS;
++    }
++}
+diff --git a/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
+index d71afc129..2dddf42f1 100644
+--- a/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
++++ b/src/main/java/me/samsuik/blossom/world/ScheduledBlockTicks.java
+@@ -20,6 +20,12 @@ public final class ScheduledBlockTicks extends AbstractSet<NextTickListEntry> {
+     private final ObjectAVLTreeSet<NextTickListEntry> blocksToTick = new ObjectAVLTreeSet<>();
+     private final Long2ObjectOpenHashMap<Set<ScheduledBlock>> chunkTickingBlocks = new Long2ObjectOpenHashMap<>();
+ 
++    // Blossom start - debug world ticking state
++    public void dumpTickingState(final StringBuilder builder) {
++        builder.append("- Scheduled Blocks: " + this.scheduledBlocks.size() + "/" + this.blocksToTick.size() + "\n");
++    }
++    // Blossom end - debug world ticking state
++
+     @Override
+     public int size() {
+         return this.scheduledBlocks.size();
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 625aef86e..eb7fd2ec9 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -71,6 +71,47 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+         this.getWorldBorder().a(minecraftserver.aI());
+     }
+ 
++    // Blossom start - debug world ticking state
++    public final void dumpTickingState(final StringBuilder builder) {
++        builder.append("- Entities: " + this.entityList.size() + "\n");
++
++        final Map<String, Integer> typeCount = new HashMap<>();
++        for (final TileEntity blockEntity : this.tileEntityList) {
++            if (blockEntity != null) {
++                final String name = blockEntity.getClass().getSimpleName().replace("TileEntity", "");
++                typeCount.put(name, typeCount.getOrDefault(name, 0) + 1);
++            }
++        }
++
++        builder.append("- Ticking Block Entities: " + this.tileEntityList.size() + "\n");
++        typeCount.forEach((name, count) -> builder.append("- * \"" + name + "\": " + count + "\n"));
++
++        this.M.dumpTickingState(builder);
++
++        builder.append("- Block Events:\n");
++        builder.append("- * Current Queue: " + this.T + "\n");
++
++        int ind = 0;
++        for (final BlockActionDataList blockEventList : this.S) {
++            builder.append("- * " + ind + ": " + blockEventList.size() + "\n");
++            ind++;
++        }
++
++        builder.append("- Game Time: " + this.getTime());
++    }
++
++    public final void resetTickingState() {
++        this.tileEntityList.removeIf(blockEntity -> blockEntity instanceof TileEntityPiston);
++
++        this.M.clear();
++        this.T = 0;
++
++        for (final BlockActionDataList blockEventList : this.S) {
++            blockEventList.clear();
++        }
++    }
++    // Blossom end - debug world ticking state
++
+     public World b() {
+         this.worldMaps = new PersistentCollection(this.dataManager);
+         String s = PersistentVillage.a(this.worldProvider);
+-- 
+2.54.0 (Apple Git-157)
+
