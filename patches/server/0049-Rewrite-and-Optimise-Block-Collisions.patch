@@ -1,4 +1,4 @@
-From 583693c0ab4e015107320d78ec904bb45ffe33d8 Mon Sep 17 00:00:00 2001
+From 59ff92f2fdec14231b2aad519172b1c1d88b0322 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -129,10 +129,10 @@ index 431097ec3..91d205aed 100644
          if (axisalignedbb.e > this.b && axisalignedbb.b < this.e && axisalignedbb.f > this.c && axisalignedbb.c < this.f) {
              double d1;
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 305437e50..355ac5d4f 100644
+index 305437e50..2a34dc37e 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
-@@ -194,6 +194,37 @@ public class Block {
+@@ -194,6 +194,50 @@ public class Block {
          return iblockdata;
      }
  
@@ -147,7 +147,7 @@ index 305437e50..355ac5d4f 100644
 +    ) {
 +        if (iblockdata.isShapeDynamic() || !me.samsuik.blossom.configuration.BlossomConfig.useFastBlockCollisions) {
 +            // When dynamic or the optimisation is disabled; fallback to the uncached method
-+            this.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
++            this.blossom$addCollisionShapes(world, blockposition, iblockdata, axisalignedbb, list, entity);
 +        } else {
 +            List<AxisAlignedBB> shape = iblockdata.shape(); // cached shape
 +            //noinspection ForLoopReplaceableByForEach
@@ -160,6 +160,19 @@ index 305437e50..355ac5d4f 100644
 +        }
 +    }
 +
++    public final void blossom$addCollisionShapes(
++        final World world,
++        final BlockPosition blockposition,
++        final IBlockData iblockdata,
++        final AxisAlignedBB axisalignedbb,
++        final List<AxisAlignedBB> list,
++        final Entity entity
++    ) {
++        // Recalculate the collision shape in case it has been modified.
++        this.updateShape(world, blockposition);
++        this.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
++    }
++
 +    protected boolean blossom$dynamicShape() {
 +        return false;
 +    }
@@ -170,7 +183,7 @@ index 305437e50..355ac5d4f 100644
      public Block(Material material, MaterialMapColor materialmapcolor) {
          this.y = true;
          this.stepSound = Block.e;
-@@ -1071,10 +1102,17 @@ public class Block {
+@@ -1071,10 +1115,17 @@ public class Block {
                  int i = Block.REGISTRY.b(block13) << 4 | block13.toLegacyData(iblockdata);
                  // TacoSpigot start
  
@@ -190,10 +203,25 @@ index 305437e50..355ac5d4f 100644
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {
 diff --git a/src/main/java/net/minecraft/server/BlockAnvil.java b/src/main/java/net/minecraft/server/BlockAnvil.java
-index 4707dcc1c..4c5aa0d4e 100644
+index 4707dcc1c..c632bbb8b 100644
 --- a/src/main/java/net/minecraft/server/BlockAnvil.java
 +++ b/src/main/java/net/minecraft/server/BlockAnvil.java
-@@ -41,7 +41,14 @@ public class BlockAnvil extends BlockFalling {
+@@ -14,6 +14,14 @@ public class BlockAnvil extends BlockFalling {
+         this.a(CreativeModeTab.c);
+     }
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     public boolean d() {
+         return false;
+     }
+@@ -41,7 +49,14 @@ public class BlockAnvil extends BlockFalling {
      }
  
      public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
@@ -230,6 +258,25 @@ index 4918483ad..d1fbca9e2 100644
          float f2 = 0.5F;
  
          this.a(f1, 0.0F, f, 1.0F - f, f2, 1.0F - f);
+diff --git a/src/main/java/net/minecraft/server/BlockChest.java b/src/main/java/net/minecraft/server/BlockChest.java
+index 5bef63202..07190ac7e 100644
+--- a/src/main/java/net/minecraft/server/BlockChest.java
++++ b/src/main/java/net/minecraft/server/BlockChest.java
+@@ -8,6 +8,14 @@ public class BlockChest extends BlockContainer {
+     public static final BlockStateDirection FACING = BlockStateDirection.of("facing", (Predicate) EnumDirection.EnumDirectionLimit.HORIZONTAL);
+     public final int b;
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     protected BlockChest(int i) {
+         super(Material.WOOD);
+         this.j(this.blockStateList.getBlockData().set(BlockChest.FACING, EnumDirection.NORTH));
 diff --git a/src/main/java/net/minecraft/server/BlockCocoa.java b/src/main/java/net/minecraft/server/BlockCocoa.java
 index c77b648ae..5e331161c 100644
 --- a/src/main/java/net/minecraft/server/BlockCocoa.java
@@ -286,6 +333,25 @@ index 43e1da0ee..527a2e0c5 100644
              this.a(0.3125F, 0.8125F, 0.3125F, 0.6875F, 1.0F, 0.6875F);
              super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
          }
+diff --git a/src/main/java/net/minecraft/server/BlockFence.java b/src/main/java/net/minecraft/server/BlockFence.java
+index 1d500553b..7f313ded1 100644
+--- a/src/main/java/net/minecraft/server/BlockFence.java
++++ b/src/main/java/net/minecraft/server/BlockFence.java
+@@ -9,6 +9,14 @@ public class BlockFence extends Block {
+     public static final BlockStateBoolean SOUTH = BlockStateBoolean.of("south");
+     public static final BlockStateBoolean WEST = BlockStateBoolean.of("west");
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     public BlockFence(Material material) {
+         this(material, material.r());
+     }
 diff --git a/src/main/java/net/minecraft/server/BlockFenceGate.java b/src/main/java/net/minecraft/server/BlockFenceGate.java
 index c02281293..1e5ca050d 100644
 --- a/src/main/java/net/minecraft/server/BlockFenceGate.java
@@ -306,6 +372,25 @@ index c02281293..1e5ca050d 100644
  
          if (enumdirection_enumaxis == EnumDirection.EnumAxis.Z) {
              this.a(0.0F, 0.0F, 0.375F, 1.0F, 1.0F, 0.625F);
+diff --git a/src/main/java/net/minecraft/server/BlockHopper.java b/src/main/java/net/minecraft/server/BlockHopper.java
+index 1bfbea2d2..a23b36d71 100644
+--- a/src/main/java/net/minecraft/server/BlockHopper.java
++++ b/src/main/java/net/minecraft/server/BlockHopper.java
+@@ -16,6 +16,14 @@ public class BlockHopper extends BlockContainer {
+     });
+     public static final BlockStateBoolean ENABLED = BlockStateBoolean.of("enabled");
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     public BlockHopper() {
+         super(Material.ORE, MaterialMapColor.m);
+         this.j(this.blockStateList.getBlockData().set(BlockHopper.FACING, EnumDirection.DOWN).set(BlockHopper.ENABLED, Boolean.valueOf(true)));
 diff --git a/src/main/java/net/minecraft/server/BlockLadder.java b/src/main/java/net/minecraft/server/BlockLadder.java
 index c12c43bb1..1f6beaefd 100644
 --- a/src/main/java/net/minecraft/server/BlockLadder.java
@@ -359,6 +444,25 @@ index 3592951f9..b6320f6a5 100644
          return super.a(world, blockposition, iblockdata);
      }
  
+diff --git a/src/main/java/net/minecraft/server/BlockPistonExtension.java b/src/main/java/net/minecraft/server/BlockPistonExtension.java
+index 3b0e8d8bd..27194af78 100644
+--- a/src/main/java/net/minecraft/server/BlockPistonExtension.java
++++ b/src/main/java/net/minecraft/server/BlockPistonExtension.java
+@@ -9,6 +9,14 @@ public class BlockPistonExtension extends Block {
+     public static final BlockStateEnum<BlockPistonExtension.EnumPistonType> TYPE = BlockStateEnum.of("type", BlockPistonExtension.EnumPistonType.class);
+     public static final BlockStateBoolean SHORT = BlockStateBoolean.of("short");
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     public BlockPistonExtension() {
+         super(Material.PISTON);
+         this.j(this.blockStateList.getBlockData().set(BlockPistonExtension.FACING, EnumDirection.NORTH).set(BlockPistonExtension.TYPE, BlockPistonExtension.EnumPistonType.DEFAULT).set(BlockPistonExtension.SHORT, Boolean.valueOf(false)));
 diff --git a/src/main/java/net/minecraft/server/BlockPistonMoving.java b/src/main/java/net/minecraft/server/BlockPistonMoving.java
 index 80a5ee63d..1eb17d087 100644
 --- a/src/main/java/net/minecraft/server/BlockPistonMoving.java
@@ -417,10 +521,10 @@ index 03b1a8bc8..5777ce1f2 100644
          return new AxisAlignedBB((double) blockposition.getX() + this.minX, (double) blockposition.getY() + this.minY, (double) blockposition.getZ() + this.minZ, (double) blockposition.getX() + this.maxX, (double) ((float) blockposition.getY() + (float) i * f), (double) blockposition.getZ() + this.maxZ);
      }
 diff --git a/src/main/java/net/minecraft/server/BlockStairs.java b/src/main/java/net/minecraft/server/BlockStairs.java
-index 0a60daeb2..314039611 100644
+index 0a60daeb2..563993c60 100644
 --- a/src/main/java/net/minecraft/server/BlockStairs.java
 +++ b/src/main/java/net/minecraft/server/BlockStairs.java
-@@ -16,6 +16,13 @@ public class BlockStairs extends Block {
+@@ -16,6 +16,19 @@ public class BlockStairs extends Block {
      private boolean R;
      private int S;
  
@@ -429,12 +533,18 @@ index 0a60daeb2..314039611 100644
 +    protected final boolean blossom$dynamicShape() {
 +        return true;
 +    }
++
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
 +    // Blossom end - rewrite and optimise block collisions
 +
      protected BlockStairs(IBlockData iblockdata) {
          super(iblockdata.getBlock().material);
          this.j(this.blockStateList.getBlockData().set(BlockStairs.FACING, EnumDirection.NORTH).set(BlockStairs.HALF, EnumHalf.BOTTOM).set(BlockStairs.SHAPE, EnumStairShape.STRAIGHT));
-@@ -374,6 +381,7 @@ public class BlockStairs extends Block {
+@@ -374,6 +387,7 @@ public class BlockStairs extends Block {
          return flag1;
      }
  
@@ -442,7 +552,7 @@ index 0a60daeb2..314039611 100644
      public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
          this.e(world, blockposition);
          super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
-@@ -543,29 +551,29 @@ public class BlockStairs extends Block {
+@@ -543,29 +557,29 @@ public class BlockStairs extends Block {
      public IBlockData updateState(IBlockData iblockdata, IBlockAccess iblockaccess, BlockPosition blockposition) {
          if (this.h(iblockaccess, blockposition)) {
              switch (this.g(iblockaccess, blockposition)) {
@@ -564,10 +674,25 @@ index fda96405b..8963fb3ea 100644
              return Collections.unmodifiableCollection(this.b.keySet());
          }
 diff --git a/src/main/java/net/minecraft/server/BlockStepAbstract.java b/src/main/java/net/minecraft/server/BlockStepAbstract.java
-index 70db05c40..ecded0ef8 100644
+index 70db05c40..bbf9a4eb7 100644
 --- a/src/main/java/net/minecraft/server/BlockStepAbstract.java
 +++ b/src/main/java/net/minecraft/server/BlockStepAbstract.java
-@@ -23,10 +23,16 @@ public abstract class BlockStepAbstract extends Block {
+@@ -7,6 +7,14 @@ public abstract class BlockStepAbstract extends Block {
+ 
+     public static final BlockStateEnum<EnumSlabHalf> HALF = BlockStateEnum.of("half", EnumSlabHalf.class);
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     public BlockStepAbstract(Material material) {
+         super(material);
+         if (this.l()) {
+@@ -23,10 +31,16 @@ public abstract class BlockStepAbstract extends Block {
      }
  
      public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
@@ -585,7 +710,7 @@ index 70db05c40..ecded0ef8 100644
  
              if (iblockdata.getBlock() == this) {
                  if (iblockdata.get(BlockStepAbstract.HALF) == EnumSlabHalf.TOP) {
-@@ -49,7 +55,7 @@ public abstract class BlockStepAbstract extends Block {
+@@ -49,7 +63,7 @@ public abstract class BlockStepAbstract extends Block {
      }
  
      public void a(World world, BlockPosition blockposition, IBlockData iblockdata, AxisAlignedBB axisalignedbb, List<AxisAlignedBB> list, Entity entity) {
@@ -594,6 +719,25 @@ index 70db05c40..ecded0ef8 100644
          super.a(world, blockposition, iblockdata, axisalignedbb, list, entity);
      }
  
+diff --git a/src/main/java/net/minecraft/server/BlockThin.java b/src/main/java/net/minecraft/server/BlockThin.java
+index 5a89a779c..ed2429af7 100644
+--- a/src/main/java/net/minecraft/server/BlockThin.java
++++ b/src/main/java/net/minecraft/server/BlockThin.java
+@@ -11,6 +11,14 @@ public class BlockThin extends Block {
+     public static final BlockStateBoolean WEST = BlockStateBoolean.of("west");
+     private final boolean a;
+ 
++    // Blossom start - rewrite and optimise block collisions
++    @Override
++    public AxisAlignedBB a(World world, BlockPosition blockposition, IBlockData iblockdata) {
++        this.updateShape(world, blockposition);
++        return super.a(world, blockposition, iblockdata);
++    }
++    // Blossom end - rewrite and optimise block collisions
++
+     protected BlockThin(Material material, boolean flag) {
+         super(material);
+         this.j(this.blockStateList.getBlockData().set(BlockThin.NORTH, Boolean.valueOf(false)).set(BlockThin.EAST, Boolean.valueOf(false)).set(BlockThin.SOUTH, Boolean.valueOf(false)).set(BlockThin.WEST, Boolean.valueOf(false)));
 diff --git a/src/main/java/net/minecraft/server/BlockTrapdoor.java b/src/main/java/net/minecraft/server/BlockTrapdoor.java
 index 88131b507..7b76efa42 100644
 --- a/src/main/java/net/minecraft/server/BlockTrapdoor.java
@@ -867,7 +1011,7 @@ index 3c3ab0c59..e7829ad75 100644
 +    // Blossom end  - rewrite and optimise block collisions
  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 611ba6336..c7faf5a71 100644
+index 611ba6336..accea4be3 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
@@ -1011,7 +1155,7 @@ index 611ba6336..c7faf5a71 100644
 +            }
 +
 +            if (iblockdata.isShapeDynamic()) {
-+                iblockdata.getBlock().a(this, new BlockPosition(x, y, z), iblockdata, scan, shapes, entity);
++                iblockdata.getBlock().blossom$addCollisionShapes(this, new BlockPosition(x, y, z), iblockdata, scan, shapes, entity);
 +                // inserted bbs may be inside the entity bb which can cause the collision to fail
 +                for (int i = 0; i < shapes.size(); i++) {
 +                    AxisAlignedBB bb = shapes.get(i);
@@ -1084,6 +1228,15 @@ index 611ba6336..c7faf5a71 100644
                                  }
                                  // PaperSpigot end
                              }
+@@ -1514,7 +1667,7 @@ public abstract class World implements IBlockAccess {
+                             iblockdata = Blocks.BEDROCK.getBlockData();
+                         }
+ 
+-                        iblockdata.getBlock().a(this, blockposition_mutableblockposition, iblockdata, axisalignedbb, arraylist, (Entity) null);
++                        iblockdata.getBlock().blossom$addCollisionShapes(this, blockposition_mutableblockposition, iblockdata, axisalignedbb, arraylist, (Entity) null); // Blossom - rewrite and optimise block collisions
+                     }
+                 }
+             }
 -- 
 2.54.0 (Apple Git-157)
 
