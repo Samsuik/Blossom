@@ -1,11 +1,11 @@
-From 0216284acc17d2e523c17382f1f8de8d88535ec2 Mon Sep 17 00:00:00 2001
+From 91919d601477afd87e6ef1f28c5e58d40d189b6e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 1 Jul 2023 22:55:49 +0100
 Subject: [PATCH] Fix wrong comparison operator used in entity height nerf
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityFallingBlock.java b/src/main/java/net/minecraft/server/EntityFallingBlock.java
-index 1b125a12f..64ca907f8 100644
+index 1cf03ace1..51892a079 100644
 --- a/src/main/java/net/minecraft/server/EntityFallingBlock.java
 +++ b/src/main/java/net/minecraft/server/EntityFallingBlock.java
 @@ -141,7 +141,7 @@ public class EntityFallingBlock extends Entity {
@@ -18,11 +18,11 @@ index 1b125a12f..64ca907f8 100644
                      this.a(new ItemStack(block, 1, block.getDropData(this.block)), 0.0F);
                  }
 diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
-index d83fb1886..b6f9455e0 100644
+index 6b16c7bbe..21ba2f0f7 100644
 --- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 +++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
 @@ -111,7 +111,7 @@ public class EntityTNTPrimed extends Entity {
-         this.move_cannon(this.motX, this.motY, this.motZ); // Blossom
+         this.blossom$moveSimple(this.motX, this.motY, this.motZ); // Blossom - rewrite and optimise block collisions
  
          // PaperSpigot start - Drop TNT entities above the specified height
 -        if (this.world.paperSpigotConfig.tntEntityHeightNerf != 0 && this.locY > this.world.paperSpigotConfig.tntEntityHeightNerf) {
@@ -31,5 +31,5 @@ index d83fb1886..b6f9455e0 100644
          }
          // PaperSpigot end
 -- 
-2.50.1 (Apple Git-155)
+2.54.0 (Apple Git-157)
 

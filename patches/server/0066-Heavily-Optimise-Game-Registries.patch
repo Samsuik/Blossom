@@ -1,11 +1,11 @@
-From 424fb04beaf4bfb8be53a77675b133f8c937a728 Mon Sep 17 00:00:00 2001
+From 3498726ef195c275ee1e3299952508caf72831e1 Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sun, 2 Jul 2023 00:34:24 +0100
 Subject: [PATCH] Heavily Optimise Game Registries
 
 
 diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
-index 4bf6630ab..b66e47237 100644
+index 355ac5d4f..eb98d8b3d 100644
 --- a/src/main/java/net/minecraft/server/Block.java
 +++ b/src/main/java/net/minecraft/server/Block.java
 @@ -114,6 +114,23 @@ public class Block {
@@ -32,7 +32,7 @@ index 4bf6630ab..b66e47237 100644
  
      public static int getId(Block block) {
          return Block.REGISTRY.b(block);
-@@ -1117,6 +1134,7 @@ public class Block {
+@@ -1116,6 +1133,7 @@ public class Block {
      }
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {
@@ -41,7 +41,7 @@ index 4bf6630ab..b66e47237 100644
      }
  
 diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
-index 61dba6cab..76ad0732d 100644
+index 8963fb3ea..05236aad1 100644
 --- a/src/main/java/net/minecraft/server/BlockStateList.java
 +++ b/src/main/java/net/minecraft/server/BlockStateList.java
 @@ -116,6 +116,7 @@ public class BlockStateList {
@@ -204,5 +204,5 @@ index d9d458239..c3621cede 100644
      }
  }
 -- 
-2.50.1 (Apple Git-155)
+2.54.0 (Apple Git-157)
 
