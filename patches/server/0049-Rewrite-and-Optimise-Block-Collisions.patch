@@ -1,4 +1,4 @@
-From 59ff92f2fdec14231b2aad519172b1c1d88b0322 Mon Sep 17 00:00:00 2001
+From 7756a5b89943b055cbc46d2ee0151461ee56d83e Mon Sep 17 00:00:00 2001
 From: Samsuik <40902469+Samsuik@users.noreply.github.com>
 Date: Sat, 17 Jun 2023 15:47:14 +0100
 Subject: [PATCH] Rewrite and Optimise Block Collisions
@@ -203,7 +203,7 @@ index 305437e50..2a34dc37e 100644
  
      private static void a(int i, MinecraftKey minecraftkey, Block block) {
 diff --git a/src/main/java/net/minecraft/server/BlockAnvil.java b/src/main/java/net/minecraft/server/BlockAnvil.java
-index 4707dcc1c..c632bbb8b 100644
+index 4707dcc1c..de075fbe3 100644
 --- a/src/main/java/net/minecraft/server/BlockAnvil.java
 +++ b/src/main/java/net/minecraft/server/BlockAnvil.java
 @@ -14,6 +14,14 @@ public class BlockAnvil extends BlockFalling {
@@ -221,7 +221,7 @@ index 4707dcc1c..c632bbb8b 100644
      public boolean d() {
          return false;
      }
-@@ -41,7 +49,14 @@ public class BlockAnvil extends BlockFalling {
+@@ -41,7 +49,15 @@ public class BlockAnvil extends BlockFalling {
      }
  
      public void updateShape(IBlockAccess iblockaccess, BlockPosition blockposition) {
@@ -233,6 +233,7 @@ index 4707dcc1c..c632bbb8b 100644
 +    @Override
 +    public final void blossom$updateShape(IBlockData iblockdata) {
 +        EnumDirection enumdirection = (EnumDirection) iblockdata.get(BlockAnvil.FACING);
++        if (enumdirection == null) return;
 +        // Blossom end - rewrite and optimise block collisions
  
          if (enumdirection.k() == EnumDirection.EnumAxis.X) {
